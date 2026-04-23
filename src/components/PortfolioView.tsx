@@ -16,7 +16,8 @@ interface PortfolioViewProps {
 
 const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
   const { profile } = usePortfolio();
-  const stocks = useMarketData();
+  const { stocks } = useMarketData();
+  const currency = profile.preferredCurrency!;
 
   const holdingsWithData = profile.holdings.map(holding => {
     const stock = stocks.find(s => s.symbol === holding.symbol);
@@ -24,8 +25,13 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
     const profit = (currentPrice - holding.averagePrice) * holding.shares;
     const profitPercent = ((currentPrice / holding.averagePrice) - 1) * 100;
     const value = currentPrice * holding.shares;
-    
-    return { ...holding, stock, currentPrice, profit, profitPercent, value };
+
+    // Convert value to preferred currency
+    const valueInPreferred = stock?.currency === currency.symbol 
+      ? value 
+      : (stock?.currency === '$' ? value * currency.rate : value / 83.2 * currency.rate);
+
+    return { ...holding, stock, currentPrice, profit, profitPercent, value, valueInPreferred };
   });
 
   if (profile.holdings.length === 0) {
@@ -95,21 +101,25 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
 
             <div className="flex items-center justify-between">
               <div className="flex flex-col">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Total Position Value</p>
-                <p className="text-2xl font-mono font-black text-indigo-600 tracking-tighter italic">{pos.stock?.currency || '$'}{pos.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Position Value ({pos.stock?.currency})</p>
+                <p className="text-xl font-mono font-black text-indigo-600 tracking-tighter italic">{pos.stock?.currency || '$'}{pos.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
               </div>
-              <div className="flex flex-col items-end gap-3">
+              <div className="flex flex-col text-right">
+                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Global Market Value ({currency.code})</p>
+                <p className="text-xl font-mono font-black text-indigo-950 tracking-tighter italic">{currency.symbol}{pos.valueInPreferred.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-slate-50">
                 <div className={`text-[10px] px-3 py-1.5 rounded-xl font-black uppercase tracking-wider inline-flex items-center gap-1.5 ${pos.profitPercent >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
                    {pos.profitPercent >= 0 ? '+' : ''}{pos.profitPercent.toFixed(2)}% ROI
                 </div>
                 <button 
                   onClick={() => pos.stock && onTrade(pos.stock)}
-                  className="text-[10px] font-black text-indigo-400 hover:text-indigo-600 uppercase tracking-widest transition-colors flex items-center gap-2 group/btn"
+                  className="px-4 py-2 bg-slate-50 text-indigo-600 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm"
                 >
-                  Adjust Position
-                  <TrendingUp size={12} className="group-hover/btn:translate-x-1 transition-transform" />
+                  Manage Position
                 </button>
-              </div>
             </div>
           </div>
         ))}

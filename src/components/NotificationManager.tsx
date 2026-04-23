@@ -17,7 +17,7 @@ interface Notification {
 
 const NotificationManager: React.FC = () => {
   const { profile, markAlertTriggered } = usePortfolio();
-  const stocks = useMarketData();
+  const { stocks } = useMarketData();
   const [activeNotifications, setActiveNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {

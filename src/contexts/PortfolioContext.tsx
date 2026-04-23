@@ -4,7 +4,7 @@
  */
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { UserProfile, Holding, Transaction, Stock } from '../types.ts';
+import { UserProfile, Holding, Transaction, Stock, Currency } from '../types.ts';
 import { INITIAL_BALANCES } from '../constants.ts';
 
 interface PortfolioContextType {
@@ -17,7 +17,10 @@ interface PortfolioContextType {
   removePriceAlert: (id: string) => void;
   markAlertTriggered: (id: string) => void;
   addHistoryPoint: (value: number) => void;
+  setPreferredCurrency: (currency: Currency) => void;
 }
+
+const DEFAULT_CURRENCY: Currency = { code: 'USD', symbol: '$', rate: 1 };
 
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
 
@@ -183,9 +186,16 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }));
   };
 
+  const setPreferredCurrency = (currency: Currency) => {
+    setProfile(prev => ({ ...prev, preferredCurrency: currency }));
+  };
+
   return (
     <PortfolioContext.Provider value={{ 
-      profile, 
+      profile: {
+        ...profile,
+        preferredCurrency: profile.preferredCurrency || DEFAULT_CURRENCY
+      }, 
       buyStock, 
       sellStock, 
       isWatchlisted, 
@@ -193,7 +203,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       addPriceAlert,
       removePriceAlert,
       markAlertTriggered,
-      addHistoryPoint
+      addHistoryPoint,
+      setPreferredCurrency
     }}>
       {children}
     </PortfolioContext.Provider>

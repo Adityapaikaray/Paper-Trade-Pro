@@ -15,7 +15,7 @@ interface MarketViewProps {
 }
 
 const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
-  const stocks = useMarketData();
+  const { stocks } = useMarketData();
   const { toggleWatchlist, isWatchlisted } = usePortfolio();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedCountry, setSelectedCountry] = React.useState('All');

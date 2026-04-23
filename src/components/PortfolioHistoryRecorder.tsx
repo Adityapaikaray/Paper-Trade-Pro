@@ -9,7 +9,7 @@ import { useMarketData } from '../hooks/useMarketData.ts';
 
 const PortfolioHistoryRecorder: React.FC = () => {
   const { profile, addHistoryPoint } = usePortfolio();
-  const stocks = useMarketData();
+  const { stocks } = useMarketData();
   const lastRecordTime = useRef(0);
 
   useEffect(() => {

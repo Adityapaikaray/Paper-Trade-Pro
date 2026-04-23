@@ -18,9 +18,9 @@ interface DashboardViewProps {
 }
 
 const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
-  const { profile, removePriceAlert } = usePortfolio();
-  const stocks = useMarketData();
-  const [currency, setCurrency] = React.useState({ code: 'USD', symbol: '$', rate: 1 });
+  const { profile, removePriceAlert, setPreferredCurrency } = usePortfolio();
+  const { stocks, isLive } = useMarketData();
+  const currency = profile.preferredCurrency!;
 
   const currencies = [
     { code: 'USD', symbol: '$', rate: 1 },
@@ -71,7 +71,16 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
       <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <h2 className="text-4xl font-black text-indigo-950 tracking-tighter italic">Portfolio Pulse</h2>
-          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Live Simulation Performance Network</p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Live Simulation Performance Network</p>
+            <div className={`px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${
+              isLive 
+                ? 'bg-emerald-50 text-emerald-600 border-emerald-100 animate-pulse' 
+                : 'bg-amber-50 text-amber-600 border-amber-100'
+            }`}>
+              {isLive ? 'Network Connected: Real-Time' : 'Standalone: Simulated'}
+            </div>
+          </div>
         </div>
         <div className="bg-white p-1.5 rounded-2xl border-2 border-slate-100 flex items-center gap-1">
           <div className="px-3 text-slate-300">
@@ -80,7 +89,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
           {currencies.map(c => (
             <button
               key={c.code}
-              onClick={() => setCurrency(c)}
+              onClick={() => setPreferredCurrency(c)}
               className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 currency.code === c.code 
                   ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
@@ -140,6 +149,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
              <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
              <span className="text-[10px] font-black text-indigo-950 uppercase tracking-widest">Recording Market Sync</span>
           </div>
+        </div>
+        <div className="mb-4">
+           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">User Protocol: Use the slider below to zoom & pan history</p>
         </div>
         <PortfolioGraph 
           history={profile.history} 

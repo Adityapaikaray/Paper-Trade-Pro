@@ -45,6 +45,12 @@ export interface HistoryPoint {
   value: number;
 }
 
+export interface Currency {
+  code: string;
+  symbol: string;
+  rate: number;
+}
+
 export interface UserProfile {
   balances: { [currency: string]: number };
   holdings: Holding[];
@@ -52,4 +58,5 @@ export interface UserProfile {
   watchlist: string[];
   alerts: PriceAlert[];
   history: HistoryPoint[];
+  preferredCurrency?: Currency;
 }

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   AreaChart,
   Area,
@@ -12,6 +12,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Brush,
 } from 'recharts';
 import { HistoryPoint } from '../types.ts';
 import { motion } from 'framer-motion';
@@ -43,13 +44,13 @@ const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, 
 
     if (data.length === 0) return [];
     
-    const now = Date.now();
+    const currentTime = Date.now();
     let cutoff = 0;
     
     switch (timeRange) {
-      case '1m': cutoff = now - 60 * 1000; break;
-      case '5m': cutoff = now - 5 * 60 * 1000; break;
-      case '15m': cutoff = now - 15 * 60 * 1000; break;
+      case '1m': cutoff = currentTime - 60 * 1000; break;
+      case '5m': cutoff = currentTime - 5 * 60 * 1000; break;
+      case '15m': cutoff = currentTime - 15 * 60 * 1000; break;
       case 'ALL': cutoff = 0; break;
     }
     
@@ -107,9 +108,9 @@ const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, 
         </div>
       </div>
 
-      <div className="h-72 w-full">
+      <div className="h-80 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={filteredData}>
+          <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
             <defs>
               <linearGradient id="colorPortfolio" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor={strokeColor} stopOpacity={0.3} />
@@ -119,7 +120,11 @@ const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, 
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
             <XAxis 
               dataKey="time" 
-              hide={true}
+              fontSize={10}
+              tickMargin={10}
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: '#94A3B8', fontWeight: 'bold' }}
             />
             <YAxis 
               domain={['auto', 'auto']} 
@@ -148,6 +153,14 @@ const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, 
               fill="url(#colorPortfolio)"
               animationDuration={300}
               isAnimationActive={true}
+            />
+            <Brush 
+              dataKey="time" 
+              height={30} 
+              stroke="#6366f1" 
+              fill="#f8fafc"
+              travellerWidth={10}
+              gap={1}
             />
           </AreaChart>
         </ResponsiveContainer>
