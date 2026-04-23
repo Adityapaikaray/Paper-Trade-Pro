@@ -25,13 +25,20 @@ interface PortfolioGraphProps {
 
 const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, currencySymbol = '$', currencyRate = 1 }) => {
   const [timeRange, setTimeRange] = useState<'1m' | '5m' | '15m' | 'ALL'>('ALL');
+  const [now, setNow] = useState(Date.now());
+
+  // Force a re-render every second to keep the "live" point moving on the x-axis
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const filteredData = useMemo(() => {
     let data = [...history];
     
     // Add real-time point if provided
     if (currentValue !== undefined) {
-      data.push({ timestamp: Date.now(), value: currentValue });
+      data.push({ timestamp: now, value: currentValue });
     }
 
     if (data.length === 0) return [];
@@ -86,7 +93,17 @@ const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, 
           ))}
         </div>
         <div className="text-right">
-          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Performance Protocol</p>
+          <div className="flex items-center justify-end gap-3">
+             <div className="text-right">
+                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Real-Time Valuation</p>
+                <div className="flex items-center gap-1.5 justify-end">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />
+                  <p className="text-lg font-mono font-black italic text-indigo-950">
+                    {currencySymbol}{(currentValue ? currentValue * currencyRate : 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+             </div>
+          </div>
         </div>
       </div>
 
@@ -129,7 +146,8 @@ const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, 
               strokeWidth={4}
               fillOpacity={1}
               fill="url(#colorPortfolio)"
-              animationDuration={1000}
+              animationDuration={300}
+              isAnimationActive={true}
             />
           </AreaChart>
         </ResponsiveContainer>
