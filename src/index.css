@@ -1,0 +1,49 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-brand-primary: #4f46e5; /* Indigo 600 */
+  --color-brand-secondary: #0ea5e9;
+  --color-brand-accent: #fbbf24; /* Amber 400 */
+  
+  --color-ui-bg: #f8fafc; /* Slate 50 */
+  --color-ui-surface: #ffffff;
+  --color-ui-border: #e0e7ff; /* Indigo 100 */
+  
+  --color-text-main: #1e293b; /* Slate 800 */
+  --color-text-dark: #312e81; /* Indigo 900 */
+  --color-text-muted: #94a3b8; /* Slate 400 */
+}
+
+@layer base {
+  body {
+    @apply bg-ui-bg text-text-main font-sans antialiased;
+  }
+}
+
+@layer components {
+  .vibrant-card {
+    @apply bg-ui-surface rounded-3xl border border-ui-border shadow-sm;
+  }
+  
+  .vibrant-heading {
+    @apply font-black text-text-dark tracking-tighter italic uppercase;
+  }
+  
+  .data-cell {
+    @apply font-mono tabular-nums font-bold;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-indigo-200 rounded-full;
+  }
+}
