@@ -1,4 +1,6 @@
-/**
+const fs = require('fs');
+
+const code = `/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -19,22 +21,14 @@ interface DashboardViewProps {
 const TABS = ['Active Positions', 'Watchlist', 'Orders', 'Performance', 'Allocation', 'History'];
 const FILTERS = ['1D', '1W', '1M', '3M', '6M', '1Y', 'ALL'];
 
-const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
+export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
   const [activeTab, setActiveTab] = useState(TABS[0]);
   const [activeFilter, setActiveFilter] = useState('1M');
   const [viewMode, setViewMode] = useState<'grid'|'list'>('list');
   const [sortOpen, setSortOpen] = useState(false);
   const [sortMode, setSortMode] = useState('Value (High → Low)');
-
   
-  const { profile, marketContext } = usePortfolio();
-  const isIndia = marketContext === 'IN';
-  const currencySymbol = isIndia ? '₹' : '$';
-  const portfolioValue = isIndia ? 2469011.47 : 1024850.00;
-  const todayReturn = isIndia ? 14250.80 : 12450.50;
-  const todayReturnPct = isIndia ? 0.58 : 1.2;
-  const unrealizedReturn = isIndia ? 245000.00 : 45000.00;
-  const unrealizedReturnPct = isIndia ? 11.2 : 4.5;
+  const { profile } = usePortfolio();
   const { stocks } = useMarketData();
   const { openModal, addToast, setIsCopilotOpen } = useUI();
 
@@ -60,7 +54,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
         <div className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
           <div className="relative z-10">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Total Portfolio Value</p>
-            <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">{currencySymbol}{portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+            <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">₹2,469,011.47</p>
             <p className="text-xs font-bold text-positive mt-2 flex items-center gap-1">
               <TrendingUp size={14} />
               +₹2,457,354.21 (+21080.03%)
@@ -120,9 +114,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                   <button 
                     key={f}
                     onClick={() => setActiveFilter(f)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
+                    className={\`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors \${
                       activeFilter === f ? 'bg-ui-surface text-primary-dark shadow-sm' : 'text-text-muted hover:text-text-main'
-                    }`}
+                    }\`}
                   >
                     {f}
                   </button>
@@ -131,9 +125,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
             </div>
             <div className="h-[300px] w-full">
                <PortfolioGraph 
-                  history={profile.history || []} 
+                  historicalData={profile.history || []} 
                   currentValue={12500} 
                   baseline={10000} 
+                  height={300}
                />
             </div>
           </div>
@@ -146,9 +141,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                   <button 
                     key={tab} 
                     onClick={() => setActiveTab(tab)}
-                    className={`pb-4 text-sm font-semibold transition-all whitespace-nowrap relative ${
+                    className={\`pb-4 text-sm font-semibold transition-all whitespace-nowrap relative \${
                       activeTab === tab ? 'text-text-main' : 'text-text-muted hover:text-text-main'
-                    }`}
+                    }\`}
                   >
                     {tab === 'Active Positions' ? 'Active Positions (2)' : tab}
                     {activeTab === tab && (
@@ -160,13 +155,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
               <div className="flex items-center gap-3 pb-4">
                 <button 
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-ui-surface text-text-main' : 'text-text-muted hover:text-text-main'}`}
+                  className={\`p-1.5 rounded-lg transition-colors \${viewMode === 'list' ? 'bg-ui-surface text-text-main' : 'text-text-muted hover:text-text-main'}\`}
                 >
                   <List size={16} />
                 </button>
                 <button 
                   onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-ui-surface text-text-main' : 'text-text-muted hover:text-text-main'}`}
+                  className={\`p-1.5 rounded-lg transition-colors \${viewMode === 'grid' ? 'bg-ui-surface text-text-main' : 'text-text-muted hover:text-text-main'}\`}
                 >
                   <Grid size={16} />
                 </button>
@@ -443,7 +438,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                  { type: 'BUY', symbol: 'AAPL', desc: '5 shares @ $168.20', color: 'text-positive' },
                ].map((act, i) => (
                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-ui-bg transition-colors cursor-pointer group">
-                    <div className={`w-10 h-10 rounded-full bg-ui-surface border border-ui-border flex items-center justify-center text-[10px] font-bold ${act.color}`}>
+                    <div className={\`w-10 h-10 rounded-full bg-ui-surface border border-ui-border flex items-center justify-center text-[10px] font-bold \${act.color}\`}>
                        {act.type}
                     </div>
                     <div>
@@ -489,6 +484,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
       </div>
     </div>
   );
-
 };
-export default DashboardView;
+`
+fs.writeFileSync('src/components/DashboardView.tsx', code);
+console.log("Rewrote dashboard successfully.");

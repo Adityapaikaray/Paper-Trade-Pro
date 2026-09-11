@@ -21,14 +21,31 @@ import PortfolioHistoryRecorder from './components/PortfolioHistoryRecorder.tsx'
 import CommandPalette from './components/CommandPalette.tsx';
 import { UIProvider } from './contexts/UIContext.tsx';
 import { UIManager } from './components/UIManager.tsx';
-import { PortfolioProvider } from './contexts/PortfolioContext.tsx';
+import AICopilot from './components/AICopilot.tsx';
+import { PortfolioProvider, usePortfolio } from './contexts/PortfolioContext.tsx';
 import { ThemeProvider } from './contexts/ThemeContext.tsx';
 import { MarketProvider } from './contexts/MarketContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SplashScreen from './components/SplashScreen.tsx';
+import MarketSelection from './components/MarketSelection.tsx';
 import { Stock } from './types.ts';
 
-export default function App() {
+export default function AppWrapper() {
+  return (
+    <UIProvider>
+      <ThemeProvider>
+        <MarketProvider>
+          <PortfolioProvider>
+            <AppContent />
+          </PortfolioProvider>
+        </MarketProvider>
+      </ThemeProvider>
+    </UIProvider>
+  );
+}
+
+function AppContent() {
+  const { marketContext } = usePortfolio();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
@@ -70,11 +87,10 @@ export default function App() {
   };
 
   return (
-    <UIProvider>
-    <ThemeProvider>
-      <MarketProvider>
-        <PortfolioProvider>
+    <>
           {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
+          {!showSplash && marketContext === null && <MarketSelection onComplete={() => {}} />}
+          {(!showSplash && marketContext !== null) && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -156,10 +172,9 @@ export default function App() {
             <UIManager />
             <NotificationManager />
             <PortfolioHistoryRecorder />
+            <AICopilot />
           </motion.div>
-        </PortfolioProvider>
-      </MarketProvider>
-    </ThemeProvider>
-    </UIProvider>
+          )}
+    </>
   );
 }

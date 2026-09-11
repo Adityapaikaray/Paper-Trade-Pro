@@ -3,38 +3,39 @@
 
 @layer base {
   :root {
-    --color-primary: #D4AF37; /* Champagne Gold */
-    --color-primary-light: #F3E5AB;
-    --color-primary-dark: #AA8C2C; 
+    --color-primary: #C9A23A; /* Champagne Gold */
+    --color-primary-light: #E4C96B; /* Soft Gold */
+    --color-primary-dark: #A6822B;
     
     /* Premium Dark Mode */
-    --ui-bg: #07090E; /* Deep midnight near-black */
-    --ui-surface: #11151C; /* Dark charcoal/navy */
-    --ui-surface-hover: #1A1F29; 
+    --ui-bg: #070D14; /* Deepest Navy/Midnight */
+    --ui-surface: #0B1624; /* Deep Navy */
+    --ui-surface-hover: #13253A; 
     --ui-border: rgba(255, 255, 255, 0.06);
-    --text-main: #E2E8F0; 
+    --text-main: #F8F6F0; /* Warm white */
     --text-dark: #FFFFFF; 
-    --text-muted: #64748B; 
-    --color-positive: #10B981; 
-    --color-negative: #EF4444; 
+    --text-muted: #64748B; /* Slate */
+    --color-positive: #00A878; /* Emerald */
+    --color-negative: #D94B5B; /* Muted Red */
     --glass-opacity: 0.02;
     --shadow-color: rgba(0, 0, 0, 0.6);
   }
 
   .light {
     /* Premium Light Mode */
-    --ui-bg: #FBFBF9; /* Warm ivory / off-white */
+    --ui-bg: #F8F6F0; /* Warm Ivory */
     --ui-surface: #FFFFFF; /* Pure white cards */
     --ui-surface-hover: #F3F4F6; 
-    --ui-border: rgba(0, 0, 0, 0.06); /* Thin warm-gray */
-    --text-main: #1E293B; /* Deep navy / charcoal */
-    --text-dark: #0F172A; 
+    --ui-border: rgba(11, 22, 36, 0.08);
+    --text-main: #0B1624; /* Deep Navy */
+    --text-dark: #000000; 
     --text-muted: #64748B; /* Slate gray */
-    --color-positive: #059669; /* Emerald green */
-    --color-negative: #9F1239; /* Muted burgundy */
+    --color-positive: #00A878; /* Emerald */
+    --color-negative: #D94B5B; /* Muted Red */
     --glass-opacity: 0.05;
-    --shadow-color: rgba(0, 0, 0, 0.04); 
+    --shadow-color: rgba(11, 22, 36, 0.04); 
   }
+
 
   body {
     @apply bg-[var(--ui-bg)] text-[var(--text-main)] font-sans antialiased selection:bg-primary/30 selection:text-primary-light transition-colors duration-500;

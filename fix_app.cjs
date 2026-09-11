@@ -1,16 +1,15 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/App.tsx', 'utf8');
 
-// Insert imports
 code = code.replace(
-  "import NewsView from './components/NewsView.tsx';",
-  "import NewsView from './components/NewsView.tsx';\nimport SettingsView from './components/SettingsView.tsx';\nimport HelpSupportView from './components/HelpSupportView.tsx';"
+  "  return (\n          {showSplash",
+  "  return (\n    <>\n          {showSplash"
 );
 
-// Insert into renderView
 code = code.replace(
-  "case 'news':\n        return <NewsView />;",
-  "case 'news':\n        return <NewsView />;\n      case 'settings':\n        return <SettingsView />;\n      case 'help':\n        return <HelpSupportView />;"
+  "          )}\n  );",
+  "          )}\n    </>\n  );"
 );
 
 fs.writeFileSync('src/App.tsx', code);
+console.log("Fixed App.tsx fragment.");

@@ -100,3 +100,5 @@ export interface NewsArticle {
   };
   relatedTickers?: string[];
 }
+
+export type MarketRegion = 'IN' | 'US';

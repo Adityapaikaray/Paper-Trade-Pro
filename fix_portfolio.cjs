@@ -1,4 +1,6 @@
-/**
+const fs = require('fs');
+
+const code = `/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -244,3 +246,6 @@ export const usePortfolio = () => {
   if (!context) throw new Error('usePortfolio must be used within a PortfolioProvider');
   return context;
 };
+`;
+fs.writeFileSync('src/contexts/PortfolioContext.tsx', code);
+console.log("Rewrote PortfolioContext completely.");

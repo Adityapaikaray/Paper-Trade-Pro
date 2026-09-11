@@ -267,7 +267,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div className="p-5 bg-ui-bg rounded-2xl border border-ui-border">
-                      <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.3em] mb-1.5">Available Balance</p>
+                      <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.3em] mb-1.5">Available Virtual Cash</p>
                       <div className="flex items-center gap-2">
                         <p className="text-text-main font-black font-mono italic text-base leading-none">
                           {liveStock.currency}{(profile.balances[liveStock.currency] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
@@ -334,7 +334,8 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                       : 'bg-ui-bg text-text-main border-ui-border shadow-lg hover:border-rose-400/50 hover:text-rose-400'
                   }`}
                 >
-                  EXECUTE {type} ORDER • {liveStock.currency}{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  CONFIRM VIRTUAL {type} • {liveStock.currency}{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  {type === 'BUY' ? <div className="text-[8px] font-sans font-medium text-ui-bg/70 tracking-wider mt-1.5 normal-case tracking-normal">Virtual order — no real money involved</div> : <div className="text-[8px] font-sans font-medium text-text-muted tracking-wider mt-1.5 normal-case tracking-normal">Virtual order — no real money involved</div>}
                 </button>
               </div>
             </motion.div>

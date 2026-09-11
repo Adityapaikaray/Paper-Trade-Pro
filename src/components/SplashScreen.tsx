@@ -21,7 +21,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     const timer = setTimeout(() => {
       setIsVisible(false);
       setTimeout(onComplete, 800); // Wait for exit animation to finish
-    }, 2000);
+    }, 1500);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -89,7 +89,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ duration: 0.8, delay: 0.8, ease: "easeOut" }}
+              transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
               className="flex items-center gap-1.5 text-[11px] md:text-xs font-sans font-medium text-text-muted/80 tracking-wide"
             >
               Made with <span className="text-rose-500/80 text-[10px] md:text-[11px] mx-0.5">❤️</span> in India

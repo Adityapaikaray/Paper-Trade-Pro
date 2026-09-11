@@ -56,7 +56,7 @@ interface CachedQuote {
 }
 
 const quoteCache = new Map<string, { data: CachedQuote; expiresAt: number }>();
-const CACHE_TTL_MS = 1000; // 5 seconds
+const CACHE_TTL_MS = 30000; // 5 seconds
 
 // Map internal / TwelveData symbols to Yahoo Finance tickers
 function mapToYahooTicker(rawSymbol: string): string {
@@ -185,16 +185,58 @@ app.get("/api/market-data", async (req, res) => {
   const results: Record<string, CachedQuote> = {};
   try {
     const yahooTickers = symbolList.map(mapToYahooTicker);
-    let quotes = [];
-    // Break into chunks of 10 or fetch individually to avoid INKApi Error which happens on bad bulk tickers
-    for (const t of yahooTickers) {
-      try {
-        const q = await yahooFinance.quote(t);
-        if (q) quotes.push(q);
-      } catch(e) { console.warn(`Failed to fetch quote for ${t}:`, e.message); }
-    }
-    const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
     const now = Date.now();
+    let quotes = [];
+    let tickersToFetch = [];
+    
+    // Check cache first
+    for (const t of yahooTickers) {
+      const cached = quoteCache.get(t);
+      if (cached && cached.expiresAt > now) {
+        // Re-construct a mock quote object that matches the expected format below
+        quotes.push({
+          symbol: t,
+          regularMarketPrice: cached.data.price,
+          regularMarketPreviousClose: cached.data.close,
+          regularMarketChange: cached.data.change,
+          regularMarketChangePercent: cached.data.percent_change,
+          regularMarketDayHigh: cached.data.day_high,
+          regularMarketDayLow: cached.data.day_low,
+          fiftyTwoWeekHigh: cached.data.fifty_two_week_high,
+          fiftyTwoWeekLow: cached.data.fifty_two_week_low,
+          regularMarketVolume: cached.data.volume !== "N/A" ? cached.data.volume : undefined,
+          currency: cached.data.currency,
+          regularMarketTime: new Date(cached.data.timestamp)
+        });
+      } else {
+        tickersToFetch.push(t);
+      }
+    }
+    
+    // Fetch missing tickers in chunks to avoid Too Many Requests and INKApi errors
+    const CHUNK_SIZE = 5;
+    for (let i = 0; i < tickersToFetch.length; i += CHUNK_SIZE) {
+      const chunk = tickersToFetch.slice(i, i + CHUNK_SIZE);
+      try {
+        const chunkQuotes = await yahooFinance.quote(chunk);
+        const chunkArray = Array.isArray(chunkQuotes) ? chunkQuotes : [chunkQuotes];
+        quotes.push(...chunkArray);
+      } catch(e) { 
+        console.warn(`Failed bulk fetch for chunk, falling back to individual:`, e.message);
+        // Fallback to individual with delay
+        for (const t of chunk) {
+          try {
+            const q = await yahooFinance.quote(t);
+            if (q) quotes.push(q);
+            await new Promise(resolve => setTimeout(resolve, 200)); // Rate limit delay
+          } catch(err) {
+            console.warn(`Failed individual fetch for ${t}:`, err.message);
+          }
+        }
+      }
+    }
+    
+    const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
     
     quoteArray.forEach((q: any) => {
       if (!q) return;
@@ -220,6 +262,7 @@ app.get("/api/market-data", async (req, res) => {
       };
       
       results[q.symbol] = quoteData;
+      quoteCache.set(q.symbol, { data: quoteData, expiresAt: now + CACHE_TTL_MS });
     });
     
     // Map back to requested keys
@@ -490,6 +533,57 @@ Keep tone objective, sharp, authoritative, and financial.`;
       error: err?.message || "Failed to generate market intelligence",
       analysis: "AI analysis is momentarily experiencing high network demand. Core technical momentum remains within standard deviation boundaries."
     });
+  }
+});
+
+// Copilot API Route
+app.post("/api/copilot", express.json(), async (req, res) => {
+  const { prompt, context } = req.body;
+  const ai = getGenAI();
+  
+  if (!ai) {
+    return res.status(500).json({ error: "Gemini API key is not configured.", text: "Sorry, the AI Copilot is currently offline due to missing configuration." });
+  }
+
+  try {
+    const systemInstruction = `You are TRADEPRO's AI Copilot, a sophisticated financial assistant for a premium private banking and institutional asset management platform.
+Your job is to provide world-class insights into the user's portfolio.
+Do not just list numbers; explain *why* things are happening. Be concise, trustworthy, and extremely readable.
+Use an elegant, professional tone (like a premium wealth manager). Focus on risk, diversification, and performance drivers.
+Do not output markdown headers unless necessary for structure, but prefer concise paragraphs.
+Here is the user's current portfolio and market context:
+${JSON.stringify(context, null, 2)}
+`;
+
+    let response;
+    try {
+      response = await ai.models.generateContent({
+        model: "gemini-3.8-flash",
+        contents: prompt,
+        config: {
+          systemInstruction,
+        },
+      });
+    } catch (primaryErr: any) {
+      if (primaryErr?.status === 503 || primaryErr?.status === "UNAVAILABLE" || primaryErr?.message?.includes("503") || primaryErr?.message?.includes("UNAVAILABLE")) {
+        // Fallback to a lighter model if 3.8-flash is overloaded
+        response = await ai.models.generateContent({
+          model: "gemini-3.1-flash-lite",
+          contents: prompt,
+          config: {
+            systemInstruction,
+          },
+        });
+      } else {
+        throw primaryErr;
+      }
+    }
+
+    res.json({ text: response.text });
+  } catch (err: any) {
+    // Only log as warning to prevent triggering crash reports for external API errors
+    console.warn("Copilot API Warning:", err?.message || err);
+    res.status(500).json({ error: "Failed to generate copilot response", text: "I'm sorry, I encountered an issue analyzing your portfolio. Please try again." });
   }
 });
 
