@@ -27,13 +27,13 @@ const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, onOpenMe
           key={item.id}
           onClick={() => setActiveTab(item.id)}
           className={`flex flex-col items-center justify-center w-16 h-full gap-1 transition-colors ${
-            activeTab === item.id ? 'text-gold-dark' : 'text-text-muted hover:text-text-main'
+            activeTab === item.id ? 'text-primary-dark' : 'text-text-muted hover:text-text-main'
           }`}
         >
           <div className="relative">
             <item.icon size={22} strokeWidth={activeTab === item.id ? 2.5 : 1.5} />
             {activeTab === item.id && (
-              <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-gold rounded-full" />
+              <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-primary rounded-full" />
             )}
           </div>
           <span className="text-[9px] font-bold tracking-wide">{item.label}</span>

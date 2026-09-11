@@ -146,7 +146,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
             className="fixed top-1/4 left-1/2 -translate-x-1/2 w-full max-w-2xl bg-ui-surface border border-ui-border rounded-3xl shadow-2xl z-[101] overflow-hidden"
           >
             <div className="relative p-6 border-b border-ui-border">
-              <Search className="absolute left-10 top-1/2 -translate-y-1/2 text-gold" size={20} />
+              <Search className="absolute left-10 top-1/2 -translate-y-1/2 text-primary" size={20} />
               <input 
                 ref={inputRef}
                 type="text" 
@@ -154,7 +154,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full bg-ui-bg/50 border border-ui-border rounded-2xl py-4 pl-16 pr-12 focus:outline-none focus:border-gold/30 text-text-main font-bold placeholder:text-text-muted"
+                className="w-full bg-ui-bg/50 border border-ui-border rounded-2xl py-4 pl-16 pr-12 focus:outline-none focus:border-primary/30 text-text-main font-bold placeholder:text-text-muted"
               />
               <div className="absolute right-10 top-1/2 -translate-y-1/2 flex items-center gap-2">
                 <span className="px-2 py-1 bg-ui-bg border border-ui-border rounded text-[10px] text-text-muted font-black uppercase">ESC</span>
@@ -171,18 +171,18 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                       onClick={() => executeAction(item)}
                       className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${
                         index === selectedIndex 
-                          ? 'bg-gold/10 border border-gold/20 shadow-lg' 
+                          ? 'bg-primary/10 border border-primary/20 shadow-lg' 
                           : 'border border-transparent hover:bg-ui-bg'
                       }`}
                     >
                       <div className="flex items-center gap-4">
                         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                          index === selectedIndex ? 'bg-gold text-ui-bg' : 'bg-ui-bg text-text-muted'
+                          index === selectedIndex ? 'bg-primary text-ui-bg' : 'bg-ui-bg text-text-muted'
                         }`}>
                           <item.icon size={20} />
                         </div>
                         <div className="text-left">
-                          <p className={`font-bold transition-colors ${index === selectedIndex ? 'text-gold-light' : 'text-text-main'}`}>
+                          <p className={`font-bold transition-colors ${index === selectedIndex ? 'text-primary-light' : 'text-text-main'}`}>
                             {item.label}
                           </p>
                           <p className="text-[10px] text-text-muted font-black uppercase tracking-widest">
@@ -212,7 +212,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                           </div>
                         )}
                         {index === selectedIndex && (
-                          <ArrowRight size={16} className="text-gold animate-in slide-in-from-left-2 duration-300" />
+                          <ArrowRight size={16} className="text-primary animate-in slide-in-from-left-2 duration-300" />
                         )}
                       </div>
                     </button>

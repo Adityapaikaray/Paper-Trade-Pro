@@ -33,14 +33,14 @@ const HelpSupportView: React.FC = () => {
   return (
     <div className="flex flex-col gap-8 max-w-4xl mx-auto py-8">
       {/* Header */}
-      <div className="text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-6 bg-[#F6F4EB] dark:bg-gold/10 p-8 rounded-3xl border border-[#E9E4D4] dark:border-gold/20">
+      <div className="text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-6 bg-[#EEF2FF] dark:bg-primary/10 p-8 rounded-3xl border border-[#E0E7FF] dark:border-primary/20">
         <div>
           <h2 className="text-3xl font-serif font-black text-gray-900 dark:text-text-main italic mb-2 tracking-tight">Help & Support</h2>
           <p className="text-sm text-gray-600 dark:text-text-muted font-medium tracking-wide max-w-lg">
             Find answers to common questions or reach out to our team for dedicated support.
           </p>
         </div>
-        <div className="w-16 h-16 rounded-full bg-white dark:bg-gold/20 flex shrink-0 items-center justify-center text-gold-dark shadow-sm">
+        <div className="w-16 h-16 rounded-full bg-white dark:bg-primary/20 flex shrink-0 items-center justify-center text-primary-dark shadow-sm">
           <HelpCircle size={32} strokeWidth={2} />
         </div>
       </div>
@@ -55,11 +55,11 @@ const HelpSupportView: React.FC = () => {
               placeholder="Search knowledge base..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-ui-surface border border-[#E9E4D4] dark:border-ui-border text-sm text-gray-900 dark:text-text-main placeholder:text-gray-400 focus:outline-none focus:border-[#B7873D] dark:focus:border-gold transition-colors shadow-sm"
+              className="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-ui-surface border border-[#E0E7FF] dark:border-ui-border text-sm text-gray-900 dark:text-text-main placeholder:text-gray-400 focus:outline-none focus:border-[#6366F1] dark:focus:border-primary transition-colors shadow-sm"
             />
           </div>
 
-          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E9E4D4] dark:border-ui-border p-6 shadow-sm">
+          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E0E7FF] dark:border-ui-border p-6 shadow-sm">
             <h3 className="text-lg font-bold text-gray-900 dark:text-text-main mb-6">Frequently Asked Questions</h3>
             
             <div className="space-y-3">
@@ -100,18 +100,18 @@ const HelpSupportView: React.FC = () => {
 
         {/* Contact Cards */}
         <div className="space-y-4">
-          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E9E4D4] dark:border-ui-border p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all">
+          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E0E7FF] dark:border-ui-border p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all">
             <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center text-blue-600 dark:text-blue-400 mb-4">
               <Mail size={20} />
             </div>
             <h4 className="text-sm font-bold text-gray-900 dark:text-text-main mb-1">Email Support</h4>
             <p className="text-xs text-gray-500 dark:text-text-muted mb-4">Get in touch with our team directly. We usually respond within 24 hours.</p>
-            <button className="flex items-center gap-2 text-xs font-bold text-[#B7873D] dark:text-gold hover:opacity-80 transition-opacity">
+            <button className="flex items-center gap-2 text-xs font-bold text-[#6366F1] dark:text-primary hover:opacity-80 transition-opacity">
               support@tradepro.com <ExternalLink size={14} />
             </button>
           </div>
 
-          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E9E4D4] dark:border-ui-border p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all">
+          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E0E7FF] dark:border-ui-border p-6 shadow-sm hover:-translate-y-1 hover:shadow-md transition-all">
             <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-4">
               <MessageSquare size={20} />
             </div>

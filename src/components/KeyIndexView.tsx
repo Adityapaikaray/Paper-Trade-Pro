@@ -76,7 +76,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
       <header className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-ui-border">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold shadow-lg shadow-gold/5">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-lg shadow-primary/5">
               <BarChart3 size={20} />
             </div>
             <div>
@@ -121,9 +121,9 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
             id="key-index-refresh-btn"
             onClick={() => refresh()}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-ui-surface border border-ui-border hover:border-gold/30 text-text-main text-xs font-bold tracking-wide transition-all shadow-sm hover:shadow-md disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-ui-surface border border-ui-border hover:border-primary/30 text-text-main text-xs font-bold tracking-wide transition-all shadow-sm hover:shadow-md disabled:opacity-50"
           >
-            <RefreshCw size={14} className={isLoading ? 'animate-spin text-gold' : 'text-gold'} />
+            <RefreshCw size={14} className={isLoading ? 'animate-spin text-primary' : 'text-primary'} />
             <span>{isLoading ? 'Updating Feed...' : 'Sync Quotes'}</span>
           </button>
         </div>
@@ -150,8 +150,8 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                   onClick={() => setSelectedKey(idx.key)}
                   className={`px-3.5 py-1.5 rounded-xl text-xs font-serif italic tracking-wide transition-all shrink-0 flex items-center gap-2 ${
                     selectedKey === idx.key
-                      ? 'bg-gold text-ui-bg font-black shadow-md scale-105'
-                      : 'bg-ui-bg border border-ui-border text-text-muted hover:text-text-main hover:border-gold/30'
+                      ? 'bg-primary text-ui-bg font-black shadow-md scale-105'
+                      : 'bg-ui-bg border border-ui-border text-text-muted hover:text-text-main hover:border-primary/30'
                   }`}
                 >
                   <span>{idx.displaySymbol}</span>
@@ -186,7 +186,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                   </span>
                 </div>
                 <p className="text-xs font-mono text-text-muted mt-1">
-                  Exchange Ticker: <span className="text-gold font-bold">{selectedIndex.symbol}</span>
+                  Exchange Ticker: <span className="text-primary font-bold">{selectedIndex.symbol}</span>
                 </p>
               </div>
 
@@ -223,7 +223,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                 </div>
                 <div className="w-full h-2 bg-ui-surface rounded-full overflow-hidden relative border border-ui-border">
                   <div
-                    className="h-full bg-linear-to-r from-rose-400 via-gold to-emerald-400 rounded-full transition-all duration-500"
+                    className="h-full bg-linear-to-r from-rose-400 via-primary to-emerald-400 rounded-full transition-all duration-500"
                     style={{ width: `${rangePercent}%` }}
                   />
                 </div>
@@ -270,8 +270,8 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
             <div className="pt-6 border-t border-ui-border mt-2 relative z-10">
               <div className="flex items-center justify-between gap-4 mb-3">
                 <div className="flex items-center gap-2">
-                  <Sparkles size={13} className="text-gold animate-pulse" />
-                  <span className="text-[10px] font-mono font-black uppercase text-gold tracking-wider">
+                  <Sparkles size={13} className="text-primary animate-pulse" />
+                  <span className="text-[10px] font-mono font-black uppercase text-primary tracking-wider">
                     Live Index Contributors ({selectedIndex.displaySymbol})
                   </span>
                 </div>
@@ -284,13 +284,13 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                   <button
                     key={stock.symbol}
                     onClick={() => onTrade(stock)}
-                    className="p-3 bg-ui-bg hover:bg-gold/5 border border-ui-border hover:border-gold/40 rounded-xl transition-all text-left flex flex-col justify-between group shadow-xs hover:shadow-md"
+                    className="p-3 bg-ui-bg hover:bg-primary/5 border border-ui-border hover:border-primary/40 rounded-xl transition-all text-left flex flex-col justify-between group shadow-xs hover:shadow-md"
                   >
                     <div className="flex items-center justify-between w-full">
-                      <span className="text-xs font-serif italic font-black text-text-main group-hover:text-gold transition-colors truncate">
+                      <span className="text-xs font-serif italic font-black text-text-main group-hover:text-primary transition-colors truncate">
                         {stock.symbol.replace(':NSE', '')}
                       </span>
-                      <ArrowUpRight size={12} className="text-text-muted group-hover:text-gold transition-colors shrink-0" />
+                      <ArrowUpRight size={12} className="text-text-muted group-hover:text-primary transition-colors shrink-0" />
                     </div>
                     <div className="mt-2">
                       <p className="text-[11px] font-mono font-black text-text-main">
@@ -313,7 +313,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <Globe size={18} className="text-gold" />
+              <Globe size={18} className="text-primary" />
               <h3 className="text-2xl font-serif italic font-black text-text-main tracking-tight">
                 All Key Indices ({filteredIndices.length})
               </h3>
@@ -337,7 +337,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                 onClick={() => setRegionFilter(tab.id)}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold tracking-wide transition-all ${
                   regionFilter === tab.id
-                    ? 'bg-gold text-ui-bg font-black shadow-xs'
+                    ? 'bg-primary text-ui-bg font-black shadow-xs'
                     : 'text-text-muted hover:text-text-main'
                 }`}
               >
@@ -362,19 +362,19 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                 id={`all-index-card-${idx.key}`}
                 className={`bg-ui-surface rounded-3xl border p-6 flex flex-col justify-between transition-all duration-300 relative group overflow-hidden ${
                   isHighlighted
-                    ? 'border-gold shadow-xl shadow-gold/5 ring-1 ring-gold/40'
+                    ? 'border-primary shadow-xl shadow-primary/5 ring-1 ring-primary/40'
                     : tick === 'up'
                     ? 'border-emerald-500/50 bg-emerald-500/5'
                     : tick === 'down'
                     ? 'border-rose-500/50 bg-rose-500/5'
-                    : 'border-ui-border hover:border-gold/40 hover:shadow-lg'
+                    : 'border-ui-border hover:border-primary/40 hover:shadow-lg'
                 }`}
               >
                 {/* Header row */}
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">
-                      <span className="font-serif italic font-black text-lg text-text-main tracking-tight group-hover:text-gold transition-colors">
+                      <span className="font-serif italic font-black text-lg text-text-main tracking-tight group-hover:text-primary transition-colors">
                         {idx.displaySymbol}
                       </span>
                       <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-ui-bg border border-ui-border text-text-muted uppercase">
@@ -388,7 +388,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                         setSelectedKey(idx.key);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                       }}
-                      className="px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold bg-ui-bg hover:bg-gold hover:text-ui-bg border border-ui-border transition-all flex items-center gap-1 text-text-muted hover:border-gold"
+                      className="px-2.5 py-1 rounded-xl text-[10px] font-mono font-bold bg-ui-bg hover:bg-primary hover:text-ui-bg border border-ui-border transition-all flex items-center gap-1 text-text-muted hover:border-primary"
                     >
                       <span>Hero Chart</span>
                       <ChevronRight size={12} />
@@ -442,7 +442,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                   </div>
                   <div className="w-full h-1.5 bg-ui-bg rounded-full overflow-hidden border border-ui-border/50">
                     <div
-                      className="h-full bg-linear-to-r from-rose-400 via-gold to-emerald-400 rounded-full"
+                      className="h-full bg-linear-to-r from-rose-400 via-primary to-emerald-400 rounded-full"
                       style={{
                         width: `${Math.min(Math.max(((idx.price - idxLow) / Math.max(idxHigh - idxLow, 1)) * 100, 0), 100)}%`
                       }}
@@ -459,7 +459,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
       <section id="benchmark-matrix-section" className="bg-ui-surface border border-ui-border rounded-3xl p-8 shadow-xl backdrop-blur-xl">
         <div className="flex items-center justify-between gap-4 pb-6 border-b border-ui-border">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
               <Layers size={16} />
             </div>
             <div>
@@ -502,11 +502,11 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
                     className={`cursor-pointer transition-colors group ${
-                      selectedKey === idx.key ? 'bg-gold/5' : 'hover:bg-ui-bg/60'
+                      selectedKey === idx.key ? 'bg-primary/5' : 'hover:bg-ui-bg/60'
                     }`}
                   >
                     <td className="py-4">
-                      <span className="font-serif italic font-black text-sm text-text-main group-hover:text-gold transition-colors">
+                      <span className="font-serif italic font-black text-sm text-text-main group-hover:text-primary transition-colors">
                         {idx.displaySymbol}
                       </span>
                     </td>
@@ -538,7 +538,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                     </td>
                     <td className="py-4 text-right">
                       <button
-                        className="px-3 py-1.5 rounded-xl bg-ui-bg group-hover:bg-gold group-hover:text-ui-bg text-text-muted text-[10px] font-mono font-bold border border-ui-border group-hover:border-gold transition-all"
+                        className="px-3 py-1.5 rounded-xl bg-ui-bg group-hover:bg-primary group-hover:text-ui-bg text-text-muted text-[10px] font-mono font-bold border border-ui-border group-hover:border-primary transition-all"
                       >
                         Feature Chart
                       </button>

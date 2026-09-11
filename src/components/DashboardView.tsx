@@ -60,7 +60,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
       <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-6 pb-6 border-b border-ui-border">
         <div className="shrink-0">
           <h2 className="text-3xl md:text-[40px] leading-tight font-serif text-text-main">
-            Portfolio <span className="text-gold italic font-bold">Overview</span>
+            Portfolio <span className="text-primary italic font-bold">Overview</span>
           </h2>
           <p className="text-sm font-semibold tracking-wide text-text-muted mt-2 hidden md:block">
             Track. Analyze. Grow.
@@ -94,7 +94,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
             </div>
           </div>
 
-          <button onClick={() => openModal('add-position')} className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-gold text-ui-bg font-bold hover:shadow-lg hover:shadow-gold/20 transition-all shadow-sm hover:scale-[0.98] active:scale-95 duration-200">
+          <button onClick={() => openModal('add-position')} className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-primary text-ui-bg font-bold hover:shadow-lg hover:shadow-primary/20 transition-all shadow-sm hover:scale-[0.98] active:scale-95 duration-200">
             <Plus size={18} strokeWidth={2.5} />
             Add Position
           </button>
@@ -116,14 +116,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
             >
               {tab}
               {activeTab === tab && (
-                <motion.div layoutId="dashboardTab" className="absolute bottom-0 left-0 w-full h-[3px] bg-[#B7873D] dark:bg-gold rounded-t-full" />
+                <motion.div layoutId="dashboardTab" className="absolute bottom-0 left-0 w-full h-[3px] bg-[#6366F1] dark:bg-primary rounded-t-full" />
               )}
             </button>
           ))}
         </div>
         <div className="flex items-center gap-4 pb-4">
           <div className="relative">
-            <button onClick={() => setSortOpen(!sortOpen)} className="flex items-center gap-2 px-4 py-2 border border-[#E9E4D4] dark:border-ui-border rounded-lg text-xs font-bold text-gray-700 dark:text-text-main hover:bg-gray-50 dark:hover:bg-ui-surface-hover transition-colors shadow-sm bg-white dark:bg-ui-surface">\n              Sort by: <span>{sortMode}</span> <ChevronDown size={14} />\n            </button>
+            <button onClick={() => setSortOpen(!sortOpen)} className="flex items-center gap-2 px-4 py-2 border border-[#E0E7FF] dark:border-ui-border rounded-lg text-xs font-bold text-gray-700 dark:text-text-main hover:bg-gray-50 dark:hover:bg-ui-surface-hover transition-colors shadow-sm bg-white dark:bg-ui-surface">\n              Sort by: <span>{sortMode}</span> <ChevronDown size={14} />\n            </button>
             <AnimatePresence>
               {sortOpen && (
                 <motion.div 
@@ -145,7 +145,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
               )}
             </AnimatePresence>
           </div>
-          <div className="flex items-center gap-2">\n            <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-colors border ${viewMode === 'list' ? 'border-[#B7873D] bg-[#F6F4EB] text-[#B7873D] dark:border-gold dark:bg-gold/10 dark:text-gold' : 'border-[#E9E4D4] bg-white text-gray-500 hover:bg-gray-50 dark:border-ui-border dark:bg-ui-surface dark:text-text-muted dark:hover:bg-ui-surface-hover'}`}><List size={16} /></button>\n            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-colors border ${viewMode === 'grid' ? 'border-[#B7873D] bg-[#F6F4EB] text-[#B7873D] dark:border-gold dark:bg-gold/10 dark:text-gold' : 'border-[#E9E4D4] bg-white text-gray-500 hover:bg-gray-50 dark:border-ui-border dark:bg-ui-surface dark:text-text-muted dark:hover:bg-ui-surface-hover'}`}><Grid size={16} /></button>\n          </div>
+          <div className="flex items-center gap-2">\n            <button onClick={() => setViewMode('list')} className={`p-2 rounded-lg transition-colors border ${viewMode === 'list' ? 'border-[#6366F1] bg-[#EEF2FF] text-[#6366F1] dark:border-primary dark:bg-primary/10 dark:text-primary' : 'border-[#E0E7FF] bg-white text-gray-500 hover:bg-gray-50 dark:border-ui-border dark:bg-ui-surface dark:text-text-muted dark:hover:bg-ui-surface-hover'}`}><List size={16} /></button>\n            <button onClick={() => setViewMode('grid')} className={`p-2 rounded-lg transition-colors border ${viewMode === 'grid' ? 'border-[#6366F1] bg-[#EEF2FF] text-[#6366F1] dark:border-primary dark:bg-primary/10 dark:text-primary' : 'border-[#E0E7FF] bg-white text-gray-500 hover:bg-gray-50 dark:border-ui-border dark:bg-ui-surface dark:text-text-muted dark:hover:bg-ui-surface-hover'}`}><Grid size={16} /></button>\n          </div>
         </div>
       </div>
 
@@ -178,7 +178,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                   <p className="text-text-muted font-mono mb-4">No active positions found.</p>
                   <button 
                     onClick={() => openModal('add-position')}
-                    className="px-5 py-2.5 rounded-xl bg-gold text-ui-bg font-bold hover:opacity-90 transition-opacity"
+                    className="px-5 py-2.5 rounded-xl bg-primary text-ui-bg font-bold hover:opacity-90 transition-opacity"
                   >
                     Explore Markets
                   </button>
@@ -216,7 +216,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
             const todaysChangeVal = stock.change * holding.shares;
 
             return (
-              <div key={holding.symbol} className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E9E4D4] dark:border-ui-border p-5 md:p-8 shadow-sm hover:border-[#B7873D]/30 dark:hover:border-gold/30 hover:-translate-y-1 hover:shadow-xl transition-all duration-500 group">
+              <div key={holding.symbol} className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E0E7FF] dark:border-ui-border p-5 md:p-8 shadow-sm hover:border-[#6366F1]/30 dark:hover:border-primary/30 hover:-translate-y-1 hover:shadow-xl transition-all duration-500 group">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3 md:gap-4">
                     <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-gray-900 dark:bg-black border border-gray-800 flex items-center justify-center text-white font-serif italic text-xs md:text-sm font-bold shadow-md">
@@ -278,7 +278,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                           <p className="text-[9px] md:text-[10px] font-bold text-gray-500 dark:text-text-muted uppercase tracking-wider mb-1 text-center">Allocation</p>
                           <p className="text-xs md:text-sm font-bold text-gray-900 dark:text-text-main text-center">{allocation.toFixed(1)}%</p>
                        </div>
-                       <div className="w-8 h-8 rounded-full border-4 border-[#E9E4D4] dark:border-ui-border relative shrink-0">
+                       <div className="w-8 h-8 rounded-full border-4 border-[#E0E7FF] dark:border-ui-border relative shrink-0">
                           <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90 absolute top-0 left-0 text-[#10B981] dark:text-emerald-500">
                             <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray={allocationDasharray} />
                           </svg>
@@ -290,7 +290,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                     </div>
                   </div>
                   <div className="flex gap-2 w-full">
-                    <button onClick={() => openModal('asset-details', { stock, holding })} className="flex-1 py-2.5 text-xs font-bold rounded-lg border border-[#E9E4D4] dark:border-ui-border text-gray-700 dark:text-text-main hover:bg-gray-50 dark:hover:bg-ui-surface-hover transition-colors flex items-center justify-center gap-2">
+                    <button onClick={() => openModal('asset-details', { stock, holding })} className="flex-1 py-2.5 text-xs font-bold rounded-lg border border-[#E0E7FF] dark:border-ui-border text-gray-700 dark:text-text-main hover:bg-gray-50 dark:hover:bg-ui-surface-hover transition-colors flex items-center justify-center gap-2">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                         View Details
                       </button>
@@ -328,7 +328,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                        const offset = -currentOffset;
                        currentOffset += pct;
                        
-                       const colors = ["text-text-main", "text-gold", "text-emerald-500"];
+                       const colors = ["text-text-main", "text-primary", "text-emerald-500"];
                        
                        return (
                          <path key={h.symbol} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="6" strokeDasharray={dasharray} strokeDashoffset={offset} className={colors[i % colors.length]} />
@@ -349,7 +349,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                const s = stocks.find(st => st.symbol === h.symbol);
                const val = s ? s.price * h.shares : 0;
                const pct = totalValue > 0 ? (val / totalValue) * 100 : 0;
-               const colors = ["bg-text-main", "bg-gold", "bg-emerald-500"];
+               const colors = ["bg-text-main", "bg-primary", "bg-emerald-500"];
                return (
                  <div key={h.symbol} className="flex justify-between items-center text-sm font-semibold">
                    <div className="flex items-center gap-2">
@@ -417,7 +417,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
         <div className="bg-ui-surface rounded-3xl border border-ui-border p-5 md:p-8 shadow-md lg:col-span-3 xl:col-span-1 flex flex-col h-full">
           <div className="flex justify-between items-center mb-6">
             <h4 className="text-sm font-bold text-text-main">Recent Activity</h4>
-            <button onClick={() => { setActiveTab('History'); window.scrollTo(0, 0); }} className="text-[10px] font-bold text-text-muted hover:text-gold uppercase tracking-wider transition-colors">View All</button>
+            <button onClick={() => { setActiveTab('History'); window.scrollTo(0, 0); }} className="text-[10px] font-bold text-text-muted hover:text-primary uppercase tracking-wider transition-colors">View All</button>
           </div>
           
           <div className="space-y-4 flex-1 overflow-y-auto no-scrollbar pr-2 min-h-[300px]">

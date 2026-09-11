@@ -101,7 +101,7 @@ const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, 
               onClick={() => setTimeRange(range)}
               className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 timeRange === range 
-                  ? 'bg-gold text-ui-bg shadow-lg shadow-gold/20 scale-105' 
+                  ? 'bg-primary text-ui-bg shadow-lg shadow-primary/20 scale-105' 
                   : 'text-text-muted hover:bg-ui-surface'
               }`}
             >
@@ -181,7 +181,7 @@ const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, 
             <Brush 
               dataKey="time" 
               height={30} 
-              stroke="var(--gold)" 
+              stroke="var(--primary)" 
               fill="var(--ui-bg)"
               travellerWidth={10}
               gap={1}

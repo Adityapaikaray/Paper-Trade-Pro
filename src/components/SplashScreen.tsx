@@ -43,7 +43,7 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
         >
           {/* Subtle Ambient Glow */}
           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-            <div className="w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full bg-gold/5 blur-[80px] md:blur-[120px]" />
+            <div className="w-[300px] h-[300px] md:w-[500px] md:h-[500px] rounded-full bg-primary/5 blur-[80px] md:blur-[120px]" />
           </div>
 
           <div className="flex-1" />
@@ -62,8 +62,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
               className="w-20 h-20 md:w-28 md:h-28 lg:w-32 lg:h-32 xl:w-36 xl:h-36 rounded-2xl md:rounded-[2rem] flex items-center justify-center mb-6 md:mb-8 shadow-2xl relative overflow-hidden shrink-0 border border-ui-border"
             >
               {/* Subtle inner gradient/texture */}
-              <div className="absolute inset-0 bg-gradient-to-br from-gold/10 to-transparent pointer-events-none" />
-              <ArrowUpRight className="w-10 h-10 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-18 xl:h-18 text-gold" strokeWidth={2.5} />
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent pointer-events-none" />
+              <ArrowUpRight className="w-10 h-10 md:w-14 md:h-14 lg:w-16 lg:h-16 xl:w-18 xl:h-18 text-primary" strokeWidth={2.5} />
             </motion.div>
 
             <motion.h1

@@ -54,7 +54,7 @@ const NewsView = () => {
           <div>
             <div className="flex items-center gap-3">
               <h2 className="text-3xl md:text-5xl vibrant-heading text-text-main flex items-center gap-3">
-                <Newspaper className="text-gold hidden md:block" size={36} />
+                <Newspaper className="text-primary hidden md:block" size={36} />
                 In the News
               </h2>
             </div>
@@ -67,7 +67,7 @@ const NewsView = () => {
             disabled={loading}
             className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-ui-border bg-ui-surface hover:bg-ui-surface-hover text-xs font-bold text-text-main transition-all disabled:opacity-50"
           >
-            <RefreshCw size={14} className={loading ? 'animate-spin text-gold' : 'text-gold'} />
+            <RefreshCw size={14} className={loading ? 'animate-spin text-primary' : 'text-primary'} />
             {loading ? 'Updating...' : 'Refresh Feed'}
           </button>
         </div>
@@ -123,14 +123,14 @@ const NewsView = () => {
               href={article.link}
               target="_blank"
               rel="noopener noreferrer"
-              className={`group flex flex-col-reverse sm:flex-row gap-4 sm:gap-6 p-5 sm:p-6 rounded-2xl border border-ui-border bg-ui-surface hover:border-gold/30 hover:bg-ui-surface-hover transition-all duration-300 shadow-sm hover:shadow-md ${
+              className={`group flex flex-col-reverse sm:flex-row gap-4 sm:gap-6 p-5 sm:p-6 rounded-2xl border border-ui-border bg-ui-surface hover:border-primary/30 hover:bg-ui-surface-hover transition-all duration-300 shadow-sm hover:shadow-md ${
                 idx === 0 ? 'sm:flex-col-reverse md:flex-row md:items-center' : ''
               }`}
             >
               <div className="flex-1 flex flex-col justify-between space-y-3">
                 <div>
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-gold-dark bg-gold/10 px-2 py-0.5 rounded-sm">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-primary-dark bg-primary/10 px-2 py-0.5 rounded-sm">
                       {article.publisher}
                     </span>
                     <span className="text-[10px] text-text-muted flex items-center gap-1 font-mono">
@@ -138,7 +138,7 @@ const NewsView = () => {
                       {formatTime(article.providerPublishTime)}
                     </span>
                   </div>
-                  <h3 className={`font-serif font-black text-text-main group-hover:text-gold transition-colors leading-snug ${
+                  <h3 className={`font-serif font-black text-text-main group-hover:text-primary transition-colors leading-snug ${
                     idx === 0 ? 'text-xl sm:text-2xl lg:text-3xl' : 'text-lg sm:text-xl'
                   }`}>
                     {article.title}

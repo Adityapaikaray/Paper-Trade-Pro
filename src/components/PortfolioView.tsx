@@ -46,13 +46,13 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
     return (
       <div className="flex flex-col items-center justify-center py-40 space-y-8 ">
         <div className="w-28 h-28 rounded-[40px] bg-ui-surface border border-ui-border flex items-center justify-center text-text-muted shadow-2xl relative">
-          <div className="absolute inset-0 bg-gold/5 blur-3xl rounded-full" />
+          <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full" />
           <Briefcase size={56} strokeWidth={1} className="relative z-10" />
         </div>
         <div className="text-center max-w-sm">
           <h3 className="text-3xl font-serif italic text-text-dark tracking-tight">Dormant Vault</h3>
           <p className="text-text-muted font-bold mt-4 text-[10px] uppercase tracking-[0.3em] leading-relaxed italic">Your capital reserves are currently unallocated. Secure high-fidelity assets in the exchange to begin building your institutional legacy.</p>
-          <button onClick={() => openModal('add-position')} className="glass-button mt-8 shadow-gold/20 hover:scale-[0.98] active:scale-95 duration-200">Initiate Acquisition</button>
+          <button onClick={() => openModal('add-position')} className="glass-button mt-8 shadow-primary/20 hover:scale-[0.98] active:scale-95 duration-200">Initiate Acquisition</button>
         </div>
       </div>
     );
@@ -61,7 +61,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
   return (
     <div className="space-y-12 ">
       <header>
-        <h2 className="text-5xl vibrant-heading gold-gradient-text italic">Active Positions</h2>
+        <h2 className="text-5xl vibrant-heading primary-gradient-text italic">Active Positions</h2>
         <p className="text-text-muted font-bold uppercase text-[9px] tracking-[0.3em] mt-2">Institutional Ledger of Asset Allocations</p>
       </header>
 
@@ -76,7 +76,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
           >
             <div className="flex justify-between items-start">
               <div className="flex items-center gap-6">
-                <div className="w-16 h-16 rounded-3xl bg-ui-bg border border-ui-border flex items-center justify-center text-gold text-2xl font-serif italic shadow-2xl group-hover:border-gold/30 transition-all">
+                <div className="w-16 h-16 rounded-3xl bg-ui-bg border border-ui-border flex items-center justify-center text-primary text-2xl font-serif italic shadow-2xl group-hover:border-primary/30 transition-all">
                   {pos.symbol.slice(0, 1)}
                 </div>
                 <div>
@@ -98,7 +98,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
               </div>
               <div>
                 <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.3em] mb-2">Live Valuation</p>
-                <p className="text-lg font-mono font-black text-gold-light italic tracking-tighter">{pos.stock?.currency || '$'}{pos.currentPrice.toLocaleString()}</p>
+                <p className="text-lg font-mono font-black text-primary-light italic tracking-tighter">{pos.stock?.currency || '$'}{pos.currentPrice.toLocaleString()}</p>
               </div>
               <div className="text-right">
                 <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.3em] mb-2">Dynamic P/L</p>
@@ -113,9 +113,9 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
                 <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.3em] mb-2">Position Market Cap ({pos.stock?.currency})</p>
                 <p className="text-2xl font-mono font-black text-text-main tracking-tighter italic">{pos.stock?.currency || '$'}{pos.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
               </div>
-              <div className="p-6 bg-gold/5 rounded-2xl border border-gold/10">
-                <p className="text-[8px] font-black text-gold/50 uppercase tracking-[0.3em] mb-2">Global Valuation ({currency.code})</p>
-                <p className="text-2xl font-mono font-black text-gold-light tracking-tighter italic">{currency.symbol}{pos.valueInPreferred.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+              <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10">
+                <p className="text-[8px] font-black text-primary/50 uppercase tracking-[0.3em] mb-2">Global Valuation ({currency.code})</p>
+                <p className="text-2xl font-mono font-black text-primary-light tracking-tighter italic">{currency.symbol}{pos.valueInPreferred.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
 

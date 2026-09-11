@@ -52,13 +52,13 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
       {/* Search Input */}
       <div className="w-full sm:w-64 lg:w-72 shrink max-w-md lg:shrink-0 transition-all">
         <div className="relative group">
-          <Search className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-gold transition-colors" size={15} />
+          <Search className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors" size={15} />
           <input 
             type="text" 
             placeholder="Search... (⌘K)" 
             onFocus={onSearchFocus}
             readOnly
-            className="w-full bg-ui-bg border border-ui-border rounded-xl py-2 pl-9 lg:pl-11 pr-3 lg:pr-4 focus:outline-none focus:border-gold/50 focus:bg-ui-surface transition-all text-xs text-text-main font-bold placeholder:text-text-muted tracking-wide cursor-pointer shadow-inner"
+            className="w-full bg-ui-bg border border-ui-border rounded-xl py-2 pl-9 lg:pl-11 pr-3 lg:pr-4 focus:outline-none focus:border-primary/50 focus:bg-ui-surface transition-all text-xs text-text-main font-bold placeholder:text-text-muted tracking-wide cursor-pointer shadow-inner"
           />
         </div>
       </div>
@@ -70,7 +70,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
             onClick={() => setRibbonMode('indices')}
             className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider transition-all ${
               ribbonMode === 'indices'
-                ? 'bg-gold text-ui-bg shadow-xs'
+                ? 'bg-primary text-ui-bg shadow-xs'
                 : 'text-text-muted hover:text-text-main'
             }`}
           >
@@ -80,7 +80,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
             onClick={() => setRibbonMode('equities')}
             className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider transition-all ${
               ribbonMode === 'equities'
-                ? 'bg-gold text-ui-bg shadow-xs'
+                ? 'bg-primary text-ui-bg shadow-xs'
                 : 'text-text-muted hover:text-text-main'
             }`}
           >
@@ -102,7 +102,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
                 key={idx.key}
                 id={`ribbon-index-${idx.key}`}
                 onClick={() => onNavigate?.('key-index')}
-                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-ui-border transition-all duration-300 shrink-0 cursor-pointer hover:border-gold/50 ${
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl border border-ui-border transition-all duration-300 shrink-0 cursor-pointer hover:border-primary/50 ${
                   tick === 'up' 
                     ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-400' 
                     : tick === 'down' 
@@ -150,12 +150,12 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
 
       <div className="flex items-center gap-6 shrink-0">
         <div className="hidden lg:flex items-center gap-3 px-5 py-2 bg-ui-bg border border-ui-border rounded-xl shadow-md">
-          <div className="w-7 h-7 bg-gold/10 border border-gold/20 rounded-lg flex items-center justify-center text-gold shadow-sm">
+          <div className="w-7 h-7 bg-primary/10 border border-primary/20 rounded-lg flex items-center justify-center text-primary shadow-sm">
             <Wallet size={14} />
           </div>
           <div className="flex flex-col">
-            <span className="text-[7px] font-black text-gold-dark uppercase tracking-[0.2em] leading-none mb-1 opacity-70 font-serif italic">Liquid Balance</span>
-            <span className="text-base font-mono font-black text-gold tracking-tight leading-none italic">
+            <span className="text-[7px] font-black text-primary-dark uppercase tracking-[0.2em] leading-none mb-1 opacity-70 font-serif italic">Liquid Balance</span>
+            <span className="text-base font-mono font-black text-primary tracking-tight leading-none italic">
               ${profile.balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </span>
           </div>
@@ -164,7 +164,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
         <div className="flex items-center gap-3">
           <button 
             onClick={toggleTheme}
-            className="w-9 h-9 rounded-xl bg-ui-bg text-text-muted hover:text-gold hover:bg-white/5 border border-ui-border flex items-center justify-center transition-all shadow-sm"
+            className="w-9 h-9 rounded-xl bg-ui-bg text-text-muted hover:text-primary hover:bg-white/5 border border-ui-border flex items-center justify-center transition-all shadow-sm"
             title="Toggle Light / Dark Mode"
           >
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
@@ -175,7 +175,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
               addToast('No new notifications', 'info');
               // This could open a notification modal later
             }}
-            className="w-9 h-9 rounded-xl bg-ui-bg text-text-muted hover:text-gold hover:bg-ui-surface-hover border border-ui-border flex items-center justify-center transition-all relative shadow-sm hover:scale-[0.98] active:scale-95 duration-200"
+            className="w-9 h-9 rounded-xl bg-ui-bg text-text-muted hover:text-primary hover:bg-ui-surface-hover border border-ui-border flex items-center justify-center transition-all relative shadow-sm hover:scale-[0.98] active:scale-95 duration-200"
             title="Notifications"
           >
             <Bell size={16} />
@@ -187,12 +187,12 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
               onClick={() => setProfileOpen(!profileOpen)}
               className="flex items-center gap-3 pl-3 border-l border-ui-border cursor-pointer group"
             >
-              <div className="w-10 h-10 rounded-full bg-linear-to-tr from-gold-dark to-gold-light p-[1.5px] shadow-sm transition-transform hover:scale-105 duration-300">
-                <div className="w-full h-full bg-[#B7873D] rounded-full flex items-center justify-center text-white font-black uppercase text-sm">\n                  JD\n                </div>
+              <div className="w-10 h-10 rounded-full bg-linear-to-tr from-primary-dark to-primary-light p-[1.5px] shadow-sm transition-transform hover:scale-105 duration-300">
+                <div className="w-full h-full bg-[#6366F1] rounded-full flex items-center justify-center text-white font-black uppercase text-sm">\n                  JD\n                </div>
               </div>
               <div className="hidden sm:flex flex-col items-start mr-1">
-                <p className="text-xs font-bold text-gray-900 dark:text-text-main leading-tight group-hover:text-gold transition-colors">James Doe</p>
-                <p className="text-[9px] font-black text-gold-dark uppercase tracking-widest leading-none">ELITE TIER</p>
+                <p className="text-xs font-bold text-gray-900 dark:text-text-main leading-tight group-hover:text-primary transition-colors">James Doe</p>
+                <p className="text-[9px] font-black text-primary-dark uppercase tracking-widest leading-none">ELITE TIER</p>
               </div>
               <motion.svg animate={{ rotate: profileOpen ? 180 : 0 }} transition={{ duration: 0.2 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted group-hover:text-text-main transition-colors hidden sm:block">
                 <path d="m6 9 6 6 6-6"/>

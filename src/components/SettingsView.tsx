@@ -30,7 +30,7 @@ const SettingsView: React.FC = () => {
         {/* Navigation Sidebar */}
         <div className="flex flex-col gap-2">
           <button className="flex items-center gap-3 p-3 rounded-xl bg-ui-surface-hover text-text-main font-bold border border-ui-border transition-colors">
-            <User size={18} className="text-[#B7873D] dark:text-gold" />
+            <User size={18} className="text-[#6366F1] dark:text-primary" />
             General
           </button>
           <button className="flex items-center gap-3 p-3 rounded-xl bg-transparent text-text-muted hover:text-text-main hover:bg-ui-surface-hover font-semibold transition-colors border border-transparent">
@@ -47,12 +47,12 @@ const SettingsView: React.FC = () => {
         <div className="md:col-span-2 space-y-6">
           
           {/* Profile Settings */}
-          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E9E4D4] dark:border-ui-border p-6 shadow-sm">
+          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E0E7FF] dark:border-ui-border p-6 shadow-sm">
             <h3 className="text-lg font-bold text-gray-900 dark:text-text-main mb-4 flex items-center gap-2">
               <User size={18} className="text-gray-400" /> Account Profile
             </h3>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full bg-[#B7873D] flex items-center justify-center text-white font-black uppercase text-xl shadow-md">
+              <div className="w-16 h-16 rounded-full bg-[#6366F1] flex items-center justify-center text-white font-black uppercase text-xl shadow-md">
                 JD
               </div>
               <div>
@@ -66,7 +66,7 @@ const SettingsView: React.FC = () => {
           </div>
 
           {/* Preferences */}
-          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E9E4D4] dark:border-ui-border p-6 shadow-sm">
+          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E0E7FF] dark:border-ui-border p-6 shadow-sm">
             <h3 className="text-lg font-bold text-gray-900 dark:text-text-main mb-6 flex items-center gap-2">
               <Settings size={18} className="text-gray-400" /> Preferences
             </h3>

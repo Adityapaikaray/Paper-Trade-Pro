@@ -32,7 +32,7 @@ export const KeyIndicesBar: React.FC<KeyIndicesBarProps> = ({ className = '' }) 
       {/* Header bar */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-ui-border">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold">
+          <div className="w-8 h-8 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
             <Activity size={16} />
           </div>
           <div>
@@ -62,7 +62,7 @@ export const KeyIndicesBar: React.FC<KeyIndicesBarProps> = ({ className = '' }) 
                   onClick={() => setSelectedRegion(r.id)}
                   className={`px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide transition-all whitespace-nowrap shrink-0 ${
                     selectedRegion === r.id
-                      ? 'bg-gold text-ui-bg shadow-sm font-black'
+                      ? 'bg-primary text-ui-bg shadow-sm font-black'
                       : 'text-text-muted hover:text-text-main'
                   }`}
                 >
@@ -75,10 +75,10 @@ export const KeyIndicesBar: React.FC<KeyIndicesBarProps> = ({ className = '' }) 
               id="refresh-indices-btn"
               onClick={() => refresh()}
               disabled={isLoading}
-              className="w-8 h-8 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-gold hover:border-gold/30 transition-all disabled:opacity-50 shrink-0"
+              className="w-8 h-8 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-primary hover:border-primary/30 transition-all disabled:opacity-50 shrink-0"
               title="Refresh Index Quotes"
             >
-              <RefreshCw size={13} className={isLoading ? 'animate-spin text-gold' : ''} />
+              <RefreshCw size={13} className={isLoading ? 'animate-spin text-primary' : ''} />
             </button>
           </div>
         </div>
@@ -99,7 +99,7 @@ export const KeyIndicesBar: React.FC<KeyIndicesBarProps> = ({ className = '' }) 
                   ? 'bg-emerald-500/10 border-emerald-500/50 ring-1 ring-emerald-500/30'
                   : tick === 'down'
                   ? 'bg-rose-500/10 border-rose-500/50 ring-1 ring-rose-500/30'
-                  : 'bg-ui-bg border-ui-border hover:border-gold/30 hover:shadow-md'
+                  : 'bg-ui-bg border-ui-border hover:border-primary/30 hover:shadow-md'
               }`}
             >
               {/* Header: Tag + Region */}

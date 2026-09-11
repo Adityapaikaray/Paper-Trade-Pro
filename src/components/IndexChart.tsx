@@ -132,7 +132,7 @@ export const IndexChart: React.FC<IndexChartProps> = ({
                   onClick={() => handleRangeChange(rng)}
                   className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
                     selectedRange === rng
-                      ? 'bg-gold text-ui-bg font-black shadow-xs'
+                      ? 'bg-primary text-ui-bg font-black shadow-xs'
                       : 'text-text-muted hover:text-text-main'
                   }`}
                 >
@@ -142,8 +142,8 @@ export const IndexChart: React.FC<IndexChartProps> = ({
             </div>
           </div>
           {isLoadingRange && (
-            <span className="text-[9px] font-mono text-gold animate-pulse flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
+            <span className="text-[9px] font-mono text-primary animate-pulse flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-ping" />
               Fetching {selectedRange.toUpperCase()} points...
             </span>
           )}

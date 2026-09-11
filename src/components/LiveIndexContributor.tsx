@@ -41,8 +41,8 @@ export const LiveIndexContributor: React.FC<LiveIndexContributorProps> = ({ onTr
     <div className="pt-6 pb-6 relative z-10 w-full ">
       <div className="flex items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-2">
-          <Sparkles size={13} className="text-gold animate-pulse" />
-          <span className="text-[10px] md:text-xs font-mono font-black uppercase text-gold tracking-wider">
+          <Sparkles size={13} className="text-primary animate-pulse" />
+          <span className="text-[10px] md:text-xs font-mono font-black uppercase text-primary tracking-wider">
             Live Index Contributors ({selectedIndex.displaySymbol})
           </span>
         </div>
@@ -55,13 +55,13 @@ export const LiveIndexContributor: React.FC<LiveIndexContributorProps> = ({ onTr
           <button
             key={stock.symbol}
             onClick={() => onTrade && onTrade(stock)}
-            className="min-w-[120px] p-3 bg-ui-bg hover:bg-gold/5 border border-ui-border hover:border-gold/40 rounded-xl transition-all text-left flex flex-col justify-between group shadow-xs hover:shadow-md shrink-0"
+            className="min-w-[120px] p-3 bg-ui-bg hover:bg-primary/5 border border-ui-border hover:border-primary/40 rounded-xl transition-all text-left flex flex-col justify-between group shadow-xs hover:shadow-md shrink-0"
           >
             <div className="flex items-center justify-between w-full">
-              <span className="text-xs font-serif italic font-black text-text-main group-hover:text-gold transition-colors truncate pr-2">
+              <span className="text-xs font-serif italic font-black text-text-main group-hover:text-primary transition-colors truncate pr-2">
                 {stock.symbol.replace(':NSE', '')}
               </span>
-              <ArrowUpRight size={12} className="text-text-muted group-hover:text-gold transition-colors shrink-0" />
+              <ArrowUpRight size={12} className="text-text-muted group-hover:text-primary transition-colors shrink-0" />
             </div>
             <div className="mt-2">
               <p className="text-[11px] font-mono font-black text-text-main">

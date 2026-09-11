@@ -154,7 +154,7 @@ export const StockChart: React.FC<StockChartProps> = ({
                   onClick={() => handleRangeChange(rng)}
                   className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
                     selectedRange === rng
-                      ? 'bg-gold text-ui-bg font-black shadow-xs'
+                      ? 'bg-primary text-ui-bg font-black shadow-xs'
                       : 'text-text-muted hover:text-text-main'
                   }`}
                 >
@@ -164,7 +164,7 @@ export const StockChart: React.FC<StockChartProps> = ({
             </div>
           </div>
           {isLoadingRange && (
-            <span className="text-[9px] font-mono text-gold animate-pulse">
+            <span className="text-[9px] font-mono text-primary animate-pulse">
               Streaming candles...
             </span>
           )}

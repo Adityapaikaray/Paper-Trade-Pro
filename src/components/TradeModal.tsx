@@ -95,7 +95,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', damping: 10, stiffness: 100, delay: 0.2 }}
-                className="w-24 h-24 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center text-gold shadow-[0_0_40px_rgba(197,160,89,0.2)]"
+                className="w-24 h-24 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-primary shadow-[0_0_40px_rgba(197,160,89,0.2)]"
               >
                 <CheckCircle size={48} strokeWidth={1} />
               </motion.div>
@@ -119,7 +119,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                     className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-text-muted"
                   >
                     <span>{row.label}</span>
-                    <span className={`text-text-main ${row.type === 'mono' ? 'font-mono italic text-gold' : 'font-bold'}`}>{row.value}</span>
+                    <span className={`text-text-main ${row.type === 'mono' ? 'font-mono italic text-primary' : 'font-bold'}`}>{row.value}</span>
                   </motion.div>
                 ))}
                 
@@ -130,7 +130,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                   className="flex justify-between text-[10px] font-black uppercase tracking-[0.3em] text-text-muted pt-5 border-t border-ui-border"
                 >
                   <span>Aggregate {type === 'BUY' ? 'Obligation' : 'Proceeds'}</span>
-                  <span className="text-xl text-gold font-mono italic relative">
+                  <span className="text-xl text-primary font-mono italic relative">
                     {liveStock.currency}{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </motion.div>
@@ -144,11 +144,11 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
               <div className="p-10 border-b border-ui-border flex justify-between items-center bg-ui-bg/50">
                 <div className="flex items-center gap-4">
                   {onBack && (
-                    <button onClick={onBack} className="w-10 h-10 shrink-0 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-gold transition-all shadow-sm mr-2">
+                    <button onClick={onBack} className="w-10 h-10 shrink-0 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-primary transition-all shadow-sm mr-2">
                       <ArrowLeft size={18} />
                     </button>
                   )}
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-gold text-2xl font-serif italic shadow-2xl border border-gold/20 ${liveStock.change >= 0 ? 'bg-gold/5' : 'bg-ui-bg'}`}>
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-primary text-2xl font-serif italic shadow-2xl border border-primary/20 ${liveStock.change >= 0 ? 'bg-primary/5' : 'bg-ui-bg'}`}>
                     {liveStock.symbol.slice(0, 1)}
                   </div>
                   <div>
@@ -162,7 +162,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                     <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mt-1 italic">{liveStock.symbol} • {liveStock.country} • {liveStock.sector}</p>
                   </div>
                 </div>
-                <button onClick={onClose} className="w-10 h-10 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-gold transition-all shadow-sm">
+                <button onClick={onClose} className="w-10 h-10 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-primary transition-all shadow-sm">
                   <X size={18} />
                 </button>
               </div>
@@ -172,7 +172,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                 <div className="flex bg-ui-bg p-1 rounded-2xl border border-ui-border">
                   <button 
                     onClick={() => setType('BUY')}
-                    className={`flex-1 py-3.5 rounded-xl font-black text-[10px] tracking-[0.2em] transition-all duration-300 ${type === 'BUY' ? 'bg-gold text-ui-bg shadow-lg shadow-gold/20 scale-[1.02]' : 'text-text-muted hover:text-text-main'}`}
+                    className={`flex-1 py-3.5 rounded-xl font-black text-[10px] tracking-[0.2em] transition-all duration-300 ${type === 'BUY' ? 'bg-primary text-ui-bg shadow-lg shadow-primary/20 scale-[1.02]' : 'text-text-muted hover:text-text-main'}`}
                   >
                     LONG ACQUISITION
                   </button>
@@ -223,7 +223,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                     </div>
                     <div className="w-full h-1.5 bg-ui-surface rounded-full overflow-hidden relative">
                       <div 
-                        className="h-full bg-linear-to-r from-rose-400 via-gold to-emerald-400 rounded-full transition-all duration-500"
+                        className="h-full bg-linear-to-r from-rose-400 via-primary to-emerald-400 rounded-full transition-all duration-500"
                         style={{ width: `${rangePercent}%` }}
                       />
                     </div>
@@ -247,7 +247,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-8 items-end border-b border-ui-border pb-6">
                     <div className="space-y-2">
-                      <label className="text-[9px] font-black text-gold uppercase tracking-[0.3em] ml-1">Shares to Order</label>
+                      <label className="text-[9px] font-black text-primary uppercase tracking-[0.3em] ml-1">Shares to Order</label>
                       <input 
                         type="number"
                         min="1"
@@ -259,7 +259,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                     </div>
                     <div className="text-right space-y-1">
                       <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.3em]">Estimated Total</label>
-                      <p className="text-2xl font-mono font-black italic tabular-nums text-gold">
+                      <p className="text-2xl font-mono font-black italic tabular-nums text-primary">
                         {liveStock.currency}{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </p>
                     </div>
@@ -272,7 +272,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                         <p className="text-text-main font-black font-mono italic text-base leading-none">
                           {liveStock.currency}{(profile.balances[liveStock.currency] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
-                        <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+                        <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                       </div>
                     </div>
                     <div className="p-5 bg-ui-bg rounded-2xl border border-ui-border">
@@ -300,27 +300,27 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                   {!analysis && !isAnalyzing ? (
                     <button 
                       onClick={handleAnalyze}
-                      className="w-full py-3.5 bg-ui-bg border border-ui-border text-text-muted rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] hover:bg-ui-surface hover:border-gold/30 hover:text-gold transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-sm"
+                      className="w-full py-3.5 bg-ui-bg border border-ui-border text-text-muted rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] hover:bg-ui-surface hover:border-primary/30 hover:text-primary transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-sm"
                     >
                       <Sparkles size={15} />
                       Request AI Market Intelligence
                     </button>
                   ) : isAnalyzing ? (
                     <div className="p-6 bg-ui-bg rounded-2xl border border-ui-border flex items-center justify-center gap-3 italic">
-                      <Loader2 size={20} className="animate-spin text-gold" />
+                      <Loader2 size={20} className="animate-spin text-primary" />
                       <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.4em]">Synthesizing Real-Time Pulse...</span>
                     </div>
                   ) : (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-6 bg-gold/5 border border-gold/20 rounded-2xl text-text-main shadow-xl relative"
+                      className="p-6 bg-primary/5 border border-primary/20 rounded-2xl text-text-main shadow-xl relative"
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <Sparkles size={14} className="text-gold" />
-                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gold">Institutional Sentiment Synthesis</span>
+                        <Sparkles size={14} className="text-primary" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">Institutional Sentiment Synthesis</span>
                       </div>
-                      <p className="text-xs font-bold leading-relaxed italic opacity-90 pr-2 border-l-2 border-gold/30 pl-3">"{analysis}"</p>
+                      <p className="text-xs font-bold leading-relaxed italic opacity-90 pr-2 border-l-2 border-primary/30 pl-3">"{analysis}"</p>
                     </motion.div>
                   )}
                 </div>
@@ -330,7 +330,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                   onClick={handleAction}
                   className={`w-full py-5 rounded-2xl font-black tracking-[0.3em] text-xs uppercase transition-all duration-300 transform active:scale-95 shadow-2xl border disabled:opacity-20 disabled:grayscale ${
                     type === 'BUY' 
-                      ? 'bg-gold text-ui-bg border-gold/50 shadow-gold/20 hover:brightness-110' 
+                      ? 'bg-primary text-ui-bg border-primary/50 shadow-primary/20 hover:brightness-110' 
                       : 'bg-ui-bg text-text-main border-ui-border shadow-lg hover:border-rose-400/50 hover:text-rose-400'
                   }`}
                 >

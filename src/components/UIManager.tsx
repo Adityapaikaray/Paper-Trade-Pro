@@ -35,7 +35,7 @@ const ToastContainer = () => {
               {isSuccess && <CheckCircle size={18} />}
               {isError && <AlertCircle size={18} />}
               {isWarning && <AlertTriangle size={18} />}
-              {toast.type === 'info' && <Info size={18} className="text-gold" />}
+              {toast.type === 'info' && <Info size={18} className="text-primary" />}
               
               <p className="text-sm font-semibold flex-1">{toast.message}</p>
               
@@ -73,14 +73,14 @@ const UpgradeModal = () => {
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
         transition={{ duration: 0.25, ease: "easeOut" }}
-        className="relative w-full max-w-2xl bg-ui-surface border border-gold/30 rounded-2xl shadow-2xl shadow-gold/10 overflow-hidden flex flex-col"
+        className="relative w-full max-w-2xl bg-ui-surface border border-primary/30 rounded-2xl shadow-2xl shadow-primary/10 overflow-hidden flex flex-col"
       >
         <button onClick={closeModal} className="absolute top-4 right-4 text-text-muted hover:text-text-main z-10 transition-colors">
           <X size={20} />
         </button>
         
-        <div className="p-8 text-center border-b border-ui-border bg-gold/5">
-          <div className="w-16 h-16 rounded-2xl bg-gold/20 flex items-center justify-center text-gold mx-auto mb-4">
+        <div className="p-8 text-center border-b border-ui-border bg-primary/5">
+          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary mx-auto mb-4">
             <Crown size={32} />
           </div>
           <h2 className="text-2xl font-serif font-black text-text-main italic mb-2">Upgrade to Pro</h2>
@@ -101,22 +101,22 @@ const UpgradeModal = () => {
             </button>
           </div>
           
-          <div className="p-6 rounded-xl border border-gold/40 bg-gold/5 flex flex-col relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-gold text-ui-bg text-[9px] font-black uppercase px-3 py-1 rounded-bl-lg">Recommended</div>
-            <h3 className="text-lg font-bold text-gold mb-1">Pro Tier</h3>
+          <div className="p-6 rounded-xl border border-primary/40 bg-primary/5 flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 right-0 bg-primary text-ui-bg text-[9px] font-black uppercase px-3 py-1 rounded-bl-lg">Recommended</div>
+            <h3 className="text-lg font-bold text-primary mb-1">Pro Tier</h3>
             <p className="text-2xl font-mono text-text-main mb-4">$49 <span className="text-xs text-text-muted">/mo</span></p>
             <ul className="text-sm text-text-main space-y-2 mb-6 flex-1">
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-gold" /> Real-time level 2 data</li>
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-gold" /> Advanced AI Analytics</li>
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-gold" /> Options & Futures trading</li>
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-gold" /> Priority API access</li>
+              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-primary" /> Real-time level 2 data</li>
+              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-primary" /> Advanced AI Analytics</li>
+              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-primary" /> Options & Futures trading</li>
+              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-primary" /> Priority API access</li>
             </ul>
             <button 
               onClick={() => {
                 closeModal();
                 addToast('Upgraded to Pro successfully!', 'success');
               }}
-              className="w-full py-2.5 rounded-lg bg-gold text-ui-bg hover:bg-gold-light transition-colors shadow-lg shadow-gold/20 text-sm font-bold"
+              className="w-full py-2.5 rounded-lg bg-primary text-ui-bg hover:bg-primary-light transition-colors shadow-lg shadow-primary/20 text-sm font-bold"
             >
               Upgrade Now
             </button>
@@ -164,23 +164,23 @@ const AddPositionModal = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-text-muted tracking-wider">Asset Ticker</label>
-            <input required type="text" placeholder="e.g. AAPL" className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-gold outline-none uppercase transition-colors" />
+            <input required type="text" placeholder="e.g. AAPL" className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-primary outline-none uppercase transition-colors" />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-text-muted tracking-wider">Quantity</label>
-              <input required type="number" min="0" step="any" placeholder="0.00" className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-gold outline-none transition-colors" />
+              <input required type="number" min="0" step="any" placeholder="0.00" className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-primary outline-none transition-colors" />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-text-muted tracking-wider">Avg Price</label>
-              <input required type="number" min="0" step="any" placeholder="0.00" className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-gold outline-none transition-colors" />
+              <input required type="number" min="0" step="any" placeholder="0.00" className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-primary outline-none transition-colors" />
             </div>
           </div>
           <div className="pt-4 flex gap-3">
             <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-ui-border text-text-main hover:bg-ui-surface-hover transition-colors text-sm font-bold">
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg bg-gold text-ui-bg hover:bg-gold-light transition-colors text-sm font-bold flex items-center justify-center">
+            <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg bg-primary text-ui-bg hover:bg-primary-light transition-colors text-sm font-bold flex items-center justify-center">
               {loading ? (
                 <span className="w-4 h-4 rounded-full border-2 border-ui-bg border-t-transparent animate-spin" />
               ) : (
@@ -266,7 +266,7 @@ const AssetDetailsDrawer = () => {
           {holding && (
             <div className="bg-ui-bg rounded-2xl border border-ui-border p-5 space-y-4">
               <h4 className="text-xs font-bold text-text-main flex items-center gap-2">
-                <Briefcase size={14} className="text-gold" /> Your Position
+                <Briefcase size={14} className="text-primary" /> Your Position
               </h4>
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -324,7 +324,7 @@ const AssetDetailsDrawer = () => {
              // Open Trade modal logic could go here via context/event
              // For now, we simulate success
              setTimeout(() => openModal('add-position'), 300);
-           }} className="py-3 rounded-xl bg-gold text-ui-bg font-bold hover:bg-gold-light transition-colors shadow-lg shadow-gold/20 text-sm hover:scale-[0.98] active:scale-95 duration-200">Trade {stock.symbol}</button>
+           }} className="py-3 rounded-xl bg-primary text-ui-bg font-bold hover:bg-primary-light transition-colors shadow-lg shadow-primary/20 text-sm hover:scale-[0.98] active:scale-95 duration-200">Trade {stock.symbol}</button>
         </div>
       </motion.div>
     </div>
@@ -385,7 +385,7 @@ const ModifyAllocationModal = () => {
           <div className="flex justify-center mb-4">
              <div className="w-32 h-32 rounded-full border-[12px] border-ui-border relative flex items-center justify-center">
                <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90 absolute top-0 left-0 drop-shadow-2xl">
-                 <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray={`${allocation}, 100`} className="text-gold transition-all duration-300" />
+                 <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="4" strokeDasharray={`${allocation}, 100`} className="text-primary transition-all duration-300" />
                </svg>
                <div className="text-center">
                  <span className="text-2xl font-mono font-black italic text-text-main">{allocation}%</span>
@@ -396,7 +396,7 @@ const ModifyAllocationModal = () => {
           <div className="space-y-4">
             <div className="flex justify-between text-xs font-bold text-text-muted uppercase tracking-wider">
               <span>0%</span>
-              <span className="text-gold">{allocation}% Target</span>
+              <span className="text-primary">{allocation}% Target</span>
               <span>100%</span>
             </div>
             <input 
@@ -405,7 +405,7 @@ const ModifyAllocationModal = () => {
               max="100" 
               value={allocation}
               onChange={(e) => setAllocation(Number(e.target.value))}
-              className="w-full h-2 bg-ui-border rounded-lg appearance-none cursor-pointer accent-gold"
+              className="w-full h-2 bg-ui-border rounded-lg appearance-none cursor-pointer accent-primary"
             />
           </div>
           
@@ -414,9 +414,9 @@ const ModifyAllocationModal = () => {
                <p className="text-[10px] font-black uppercase text-text-muted tracking-wider mb-1">Current</p>
                <p className="text-lg font-mono font-bold text-text-main">{currentAllocation}%</p>
             </div>
-            <div className="p-4 rounded-xl border border-gold/30 bg-gold/5">
-               <p className="text-[10px] font-black uppercase text-gold/80 tracking-wider mb-1">Target</p>
-               <p className="text-lg font-mono font-bold text-gold">{allocation}%</p>
+            <div className="p-4 rounded-xl border border-primary/30 bg-primary/5">
+               <p className="text-[10px] font-black uppercase text-primary/80 tracking-wider mb-1">Target</p>
+               <p className="text-lg font-mono font-bold text-primary">{allocation}%</p>
             </div>
           </div>
 
@@ -424,7 +424,7 @@ const ModifyAllocationModal = () => {
             <button type="button" onClick={() => { setAllocation(currentAllocation); }} className="px-6 py-3 rounded-xl border border-ui-border text-text-main hover:bg-ui-surface-hover transition-colors text-sm font-bold">
               Reset
             </button>
-            <button type="submit" disabled={loading} className="flex-1 py-3 rounded-xl bg-gold text-ui-bg hover:bg-gold-light hover:shadow-lg hover:shadow-gold/20 transition-all text-sm font-bold flex items-center justify-center hover:scale-[0.98] active:scale-95 duration-200">
+            <button type="submit" disabled={loading} className="flex-1 py-3 rounded-xl bg-primary text-ui-bg hover:bg-primary-light hover:shadow-lg hover:shadow-primary/20 transition-all text-sm font-bold flex items-center justify-center hover:scale-[0.98] active:scale-95 duration-200">
               {loading ? (
                 <span className="w-4 h-4 rounded-full border-2 border-ui-bg border-t-transparent animate-spin" />
               ) : (

@@ -65,20 +65,20 @@ const NotificationManager: React.FC = () => {
             className="pointer-events-auto"
           >
             <div className="bg-obsidian text-slate-200 p-6 rounded-[2rem] shadow-2xl flex items-start gap-5 border border-ui-border min-w-[350px] max-w-[450px] shimmer">
-              <div className="w-12 h-12 bg-gold/10 border border-gold/20 rounded-xl flex items-center justify-center text-gold shrink-0 shadow-2xl">
+              <div className="w-12 h-12 bg-primary/10 border border-primary/20 rounded-xl flex items-center justify-center text-primary shrink-0 shadow-2xl">
                 <Bell size={20} />
               </div>
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gold/60">Sentinel Signal Acquisition</span>
+                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-primary/60">Sentinel Signal Acquisition</span>
                   <button 
                     onClick={() => removeNotification(notif.id)}
-                    className="text-slate-600 hover:text-gold transition-colors"
+                    className="text-slate-600 hover:text-primary transition-colors"
                   >
                     <X size={14} />
                   </button>
                 </div>
-                <p className="text-sm font-bold leading-relaxed italic pr-4 border-l border-gold/20 pl-4">{notif.message}</p>
+                <p className="text-sm font-bold leading-relaxed italic pr-4 border-l border-primary/20 pl-4">{notif.message}</p>
               </div>
             </div>
           </motion.div>

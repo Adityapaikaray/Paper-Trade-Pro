@@ -48,7 +48,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
         <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h2 className="text-3xl md:text-5xl vibrant-heading gold-gradient-text italic">Live Exchange</h2>
+              <h2 className="text-3xl md:text-5xl vibrant-heading primary-gradient-text italic">Live Exchange</h2>
               <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase tracking-wider shrink-0 mt-2 md:mt-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
                 Real-Time Quotes
@@ -78,9 +78,9 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
             <button
               onClick={() => refresh()}
               disabled={isLoading}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-ui-surface hover:bg-ui-bg border border-ui-border text-text-muted hover:text-gold transition-all text-[9px] font-black uppercase tracking-wider shadow-sm w-full md:w-auto mt-2 md:mt-0"
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-ui-surface hover:bg-ui-bg border border-ui-border text-text-muted hover:text-primary transition-all text-[9px] font-black uppercase tracking-wider shadow-sm w-full md:w-auto mt-2 md:mt-0"
             >
-              <RefreshCw size={13} className={isLoading ? 'animate-spin text-gold' : ''} />
+              <RefreshCw size={13} className={isLoading ? 'animate-spin text-primary' : ''} />
               <span>{formattedTime}</span>
             </button>
           </div>
@@ -101,8 +101,8 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                     onClick={() => setSelectedCountry(country)}
                     className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
                       selectedCountry === country 
-                        ? 'bg-gold text-ui-bg shadow-lg shadow-gold/10' 
-                        : 'text-text-muted hover:text-gold hover:bg-ui-surface'
+                        ? 'bg-primary text-ui-bg shadow-lg shadow-primary/10' 
+                        : 'text-text-muted hover:text-primary hover:bg-ui-surface'
                     }`}
                   >
                     {country}
@@ -120,8 +120,8 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                     onClick={() => setSelectedSector(sector)}
                     className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
                       selectedSector === sector 
-                        ? 'bg-gold text-ui-bg shadow-lg shadow-gold/10' 
-                        : 'text-text-muted hover:text-gold hover:bg-ui-surface'
+                        ? 'bg-primary text-ui-bg shadow-lg shadow-primary/10' 
+                        : 'text-text-muted hover:text-primary hover:bg-ui-surface'
                     }`}
                   >
                     {sector}
@@ -132,13 +132,13 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
           </div>
 
           <div className="relative group w-full xl:w-80">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-gold transition-colors" size={16} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-primary transition-colors" size={16} />
             <input 
               type="text" 
               placeholder="Search ticker or name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-ui-surface border border-ui-border rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-gold/50 transition-all text-xs font-black tracking-wide text-text-main placeholder:text-text-muted shadow-md"
+              className="w-full bg-ui-surface border border-ui-border rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-primary/50 transition-all text-xs font-black tracking-wide text-text-main placeholder:text-text-muted shadow-md"
             />
           </div>
         </div>
@@ -179,17 +179,17 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                               e.stopPropagation();
                               toggleWatchlist(stock.symbol);
                             }}
-                            className={`transition-all hover:scale-125 hidden md:block ${isWatchlisted(stock.symbol) ? 'text-gold' : 'text-text-muted/30 hover:text-gold/50'}`}
+                            className={`transition-all hover:scale-125 hidden md:block ${isWatchlisted(stock.symbol) ? 'text-primary' : 'text-text-muted/30 hover:text-primary/50'}`}
                           >
                             <Star size={18} fill={isWatchlisted(stock.symbol) ? 'currentColor' : 'none'} />
                           </button>
-                          <div className="w-10 h-10 md:w-12 md:h-12 bg-ui-bg border border-ui-border rounded-2xl flex items-center justify-center text-gold font-serif text-lg italic shadow-md group-hover:border-gold/30 transition-all shrink-0">
+                          <div className="w-10 h-10 md:w-12 md:h-12 bg-ui-bg border border-ui-border rounded-2xl flex items-center justify-center text-primary font-serif text-lg italic shadow-md group-hover:border-primary/30 transition-all shrink-0">
                             {stock.symbol.slice(0, 1)}
                           </div>
                           <div className="min-w-0">
                             <div className="flex items-center gap-2">
                               <p className="font-serif italic text-text-main text-base md:text-lg tracking-tight">{stock.symbol}</p>
-                              {expandedSymbol === stock.symbol ? <ChevronUp size={14} className="text-gold hidden md:block" /> : <ChevronDown size={14} className="text-text-muted hidden md:block" />}
+                              {expandedSymbol === stock.symbol ? <ChevronUp size={14} className="text-primary hidden md:block" /> : <ChevronDown size={14} className="text-text-muted hidden md:block" />}
                             </div>
                             <p className="text-[8px] md:text-[9px] font-bold text-text-muted uppercase tracking-[0.2em] truncate max-w-[100px] md:max-w-none">{stock.name}</p>
                           </div>
@@ -232,7 +232,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                               e.stopPropagation();
                               setAlertStock(stock);
                             }}
-                            className="p-2 md:p-3 bg-ui-bg text-text-muted hover:text-gold hover:bg-ui-surface rounded-xl transition-all border border-ui-border shadow-sm hidden sm:block"
+                            className="p-2 md:p-3 bg-ui-bg text-text-muted hover:text-primary hover:bg-ui-surface rounded-xl transition-all border border-ui-border shadow-sm hidden sm:block"
                             title="Set Price Alert"
                           >
                             <Bell size={16} />
@@ -242,7 +242,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                               e.stopPropagation();
                               onTrade(stock);
                             }}
-                            className="glass-button shadow-gold/5 text-[10px] md:text-xs px-3 md:px-6"
+                            className="glass-button shadow-primary/5 text-[10px] md:text-xs px-3 md:px-6"
                           >
                             Trade
                           </button>
@@ -255,7 +255,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                           <div className="space-y-6">
                             <div className="flex items-center justify-between">
-                              <h5 className="text-[10px] font-black text-gold uppercase tracking-[0.4em]">Real-Time Market Depth</h5>
+                              <h5 className="text-[10px] font-black text-primary uppercase tracking-[0.4em]">Real-Time Market Depth</h5>
                               <span className="flex items-center gap-2 text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-black">
                                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
                                 Real-Time Feed Active
@@ -271,13 +271,13 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                               </div>
                               <div className="w-full h-2 bg-ui-bg rounded-full overflow-hidden relative border border-ui-border">
                                 <div 
-                                  className="h-full bg-linear-to-r from-rose-400 via-gold to-emerald-400 rounded-full transition-all duration-500"
+                                  className="h-full bg-linear-to-r from-rose-400 via-primary to-emerald-400 rounded-full transition-all duration-500"
                                   style={{ width: `${rangePercent}%` }}
                                 />
                               </div>
                             </div>
 
-                            <p className="text-text-muted text-sm font-bold leading-relaxed border-l-2 border-gold/30 pl-4 italic">
+                            <p className="text-text-muted text-sm font-bold leading-relaxed border-l-2 border-primary/30 pl-4 italic">
                               {stock.description || 'This asset is traded continuously with real-time liquidity on major exchanges.'}
                             </p>
 

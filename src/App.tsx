@@ -116,7 +116,7 @@ export default function App() {
                   </div>
                   
                   <div className="flex flex-col items-center lg:items-end gap-1.5">
-                    <span className="text-gold-dark italic font-serif text-sm">
+                    <span className="text-primary-dark italic font-serif text-sm">
                       Trade smarter. A brighter tomorrow.
                     </span>
                     <span className="text-[9px] text-text-muted font-sans font-bold uppercase tracking-[0.15em]">

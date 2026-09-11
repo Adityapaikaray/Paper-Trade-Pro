@@ -15,14 +15,14 @@ const HistoryView: React.FC = () => {
   return (
     <div className="space-y-12 ">
       <header>
-        <h2 className="text-5xl vibrant-heading gold-gradient-text italic">Audit Ledger</h2>
+        <h2 className="text-5xl vibrant-heading primary-gradient-text italic">Audit Ledger</h2>
         <p className="text-text-muted font-bold uppercase text-[9px] tracking-[0.3em] mt-2">Immutable Transaction Metadata Surveillance</p>
       </header>
 
       <div className="vibrant-card overflow-hidden">
         {transactions.length === 0 ? (
           <div className="py-48 text-center flex flex-col items-center opacity-10">
-            <HistoryIcon size={80} className="text-gold mb-6" />
+            <HistoryIcon size={80} className="text-primary mb-6" />
             <p className="text-[10px] font-black uppercase tracking-[0.4em]">Historical Void Registered</p>
           </div>
         ) : (
@@ -41,7 +41,7 @@ const HistoryView: React.FC = () => {
               {transactions.map((tx) => (
                 <tr key={tx.id} className="group hover:bg-ui-surface transition-all cursor-default">
                   <td className="px-10 py-8">
-                    <div className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center shadow-2xl ${tx.type === 'BUY' ? 'bg-gold/10 text-gold-light border border-gold/30' : 'bg-ui-surface text-text-muted border border-ui-border'}`}>
+                    <div className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center shadow-2xl ${tx.type === 'BUY' ? 'bg-primary/10 text-primary-light border border-primary/30' : 'bg-ui-surface text-text-muted border border-ui-border'}`}>
                       {tx.type === 'BUY' ? <ArrowUpRight size={24} /> : <ArrowDownLeft size={24} />}
                     </div>
                   </td>
@@ -52,7 +52,7 @@ const HistoryView: React.FC = () => {
                   <td className="px-10 py-8 text-center font-mono font-black italic tracking-tighter text-text-main text-xl">{tx.shares}</td>
                   <td className="px-10 py-8 font-mono font-black italic tracking-tighter text-text-main text-xl">${tx.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                   <td className="px-10 py-8">
-                    <p className="font-mono font-black italic tracking-tighter text-gold-light text-xl">
+                    <p className="font-mono font-black italic tracking-tighter text-primary-light text-xl">
                       ${(tx.shares * tx.price).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
                   </td>
