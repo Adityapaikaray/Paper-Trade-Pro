@@ -1,6 +1,8 @@
 {
-  "name": "PaperTrade Pro",
-  "description": "A high-performance virtual stock trading simulator for mastering the markets without risk.",
+  "name": "TRADEPRO",
+  "description": "Institutional trading and investment portfolio dashboard.",
   "requestFramePermissions": [],
-  "majorCapabilities": []
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }

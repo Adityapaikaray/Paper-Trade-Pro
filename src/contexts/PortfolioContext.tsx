@@ -18,6 +18,7 @@ interface PortfolioContextType {
   markAlertTriggered: (id: string) => void;
   addHistoryPoint: (value: number) => void;
   setPreferredCurrency: (currency: Currency) => void;
+  resetAccount: () => void;
 }
 
 const DEFAULT_CURRENCY: Currency = { code: 'USD', symbol: '$', rate: 1 };
@@ -29,10 +30,17 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const saved = localStorage.getItem('papertrade_profile');
     if (saved) {
       const parsed = JSON.parse(saved);
+      
+      // Auto-upgrade legacy users from 100k to 1m if they haven't made trades yet
+      let balances = parsed.balances || INITIAL_BALANCES;
+      if (balances['$'] === 100000 && (!parsed.transactions || parsed.transactions.length === 0)) {
+        balances = INITIAL_BALANCES;
+      }
+
       return {
         ...parsed,
         alerts: parsed.alerts || [],
-        balances: parsed.balances || INITIAL_BALANCES,
+        balances: balances,
         history: parsed.history || []
       };
     }
@@ -190,6 +198,18 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setProfile(prev => ({ ...prev, preferredCurrency: currency }));
   };
 
+  const resetAccount = () => {
+    setProfile({
+      balances: INITIAL_BALANCES,
+      holdings: [],
+      transactions: [],
+      watchlist: [],
+      alerts: [],
+      history: []
+    });
+    localStorage.removeItem('papertrade_profile');
+  };
+
   return (
     <PortfolioContext.Provider value={{ 
       profile: {
@@ -204,7 +224,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       removePriceAlert,
       markAlertTriggered,
       addHistoryPoint,
-      setPreferredCurrency
+      setPreferredCurrency,
+      resetAccount
     }}>
       {children}
     </PortfolioContext.Provider>

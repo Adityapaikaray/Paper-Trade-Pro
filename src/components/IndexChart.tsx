@@ -5,104 +5,102 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  AreaChart,
-  Area,
   ReferenceLine,
 } from 'recharts';
-import { Stock } from '../types.ts';
+import { IndexQuote } from '../types.ts';
 import axios from 'axios';
 
-interface StockChartProps {
-  stock: Stock;
+interface IndexChartProps {
+  index: IndexQuote;
   height?: number;
-  showDetails?: boolean;
+  hero?: boolean;
   showTimeframes?: boolean;
 }
 
-interface ChartPoint {
+interface IndexPoint {
   time: string;
   price: number;
   timestamp: number;
 }
 
-export const StockChart: React.FC<StockChartProps> = ({
-  stock,
-  height = 220,
-  showDetails = true,
+export const IndexChart: React.FC<IndexChartProps> = ({
+  index,
+  height = 200,
+  hero = false,
   showTimeframes = false
 }) => {
   const [selectedRange, setSelectedRange] = useState<'1d' | '5d' | '1mo' | '1y'>('1d');
-  const [history, setHistory] = useState<ChartPoint[]>([]);
+  const [points, setPoints] = useState<IndexPoint[]>([]);
   const [isLoadingRange, setIsLoadingRange] = useState(false);
-  const lastPrice = useRef(stock.price);
+  const lastPriceRef = useRef(index.price);
 
-  // Initialize data from stock.history or generate sensible points
+  // Initialize or update 1D points
   useEffect(() => {
     if (selectedRange === '1d') {
-      if (Array.isArray(stock.history) && stock.history.length > 0) {
-        const points = stock.history.map((pt, i) => ({
+      if (Array.isArray(index.history) && index.history.length > 0) {
+        const mapped = index.history.map((pt, i) => ({
           time: pt.time,
           price: pt.price,
-          timestamp: Date.now() - (stock.history!.length - i) * 60000
+          timestamp: Date.now() - (index.history!.length - i) * 60000
         }));
-        setHistory(points);
+        setPoints(mapped);
       } else {
-        // Fallback: 30 point walk anchored to prevClose / price
-        const points = 30;
-        const initial: ChartPoint[] = [];
-        const base = stock.prevClose || stock.price;
-        const delta = stock.price - base;
-        
-        for (let i = points; i >= 0; i--) {
+        // Synthesize realistic baseline points if history is temporarily buffering
+        const count = 35;
+        const pts: IndexPoint[] = [];
+        const base = index.prevClose || (index.price - index.change);
+        const totalDelta = index.change;
+
+        for (let i = count; i >= 0; i--) {
           const t = new Date(Date.now() - i * 60000);
-          const ratio = (points - i) / points;
-          const noise = (Math.random() - 0.48) * (stock.price * 0.003);
-          const p = Number((base + delta * ratio + noise).toFixed(2));
-          initial.push({
+          const progress = (count - i) / count;
+          const noise = (Math.random() - 0.48) * (index.price * 0.001);
+          const p = Number((base + totalDelta * progress + noise).toFixed(2));
+          pts.push({
             time: t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            price: i === 0 ? stock.price : p,
+            price: i === 0 ? index.price : p,
             timestamp: t.getTime()
           });
         }
-        setHistory(initial);
+        setPoints(pts);
       }
     }
-  }, [stock.symbol, stock.history, selectedRange]);
+  }, [index.key, index.symbol, index.history, selectedRange]);
 
-  // Append new real-time price updates dynamically
+  // Handle incoming live ticks
   useEffect(() => {
-    if (selectedRange === '1d' && stock.price !== lastPrice.current) {
-      lastPrice.current = stock.price;
+    if (selectedRange === '1d' && index.price !== lastPriceRef.current) {
+      lastPriceRef.current = index.price;
       const now = new Date();
-      const newPoint: ChartPoint = {
+      const newPt: IndexPoint = {
         time: now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        price: stock.price,
+        price: index.price,
         timestamp: now.getTime()
       };
-      setHistory(prev => {
-        const next = [...prev, newPoint];
+      setPoints(prev => {
+        const next = [...prev, newPt];
         return next.slice(-100);
       });
     }
-  }, [stock.price, selectedRange]);
+  }, [index.price, selectedRange]);
 
-  // Fetch higher timeframes on demand
+  // Fetch higher timeframes
   const handleRangeChange = async (range: '1d' | '5d' | '1mo' | '1y') => {
     setSelectedRange(range);
-    if (range === '1d') return; // Handled by standard live feed
+    if (range === '1d') return;
 
     setIsLoadingRange(true);
     try {
-      const res = await axios.get(`/api/chart/${encodeURIComponent(stock.symbol)}?range=${range}`);
+      const res = await axios.get(`/api/chart/${encodeURIComponent(index.symbol)}?range=${range}`);
       if (res.data?.points && Array.isArray(res.data.points)) {
-        setHistory(res.data.points);
+        setPoints(res.data.points);
       }
     } catch {
       // Fallback
@@ -111,33 +109,13 @@ export const StockChart: React.FC<StockChartProps> = ({
     }
   };
 
-  const isPositive = stock.change >= 0;
-  const strokeColor = isPositive ? '#34d399' : '#f87171'; // emerald-400 : rose-400
-  const gradientId = `stockGradient-${stock.symbol.replace(/[^a-zA-Z0-9]/g, '_')}`;
+  const isPositive = index.change >= 0;
+  const strokeColor = isPositive ? '#34d399' : '#f87171';
+  const gradientId = `indexGrad-${index.key}-${hero ? 'hero' : 'card'}`;
 
-  if (!showDetails) {
-    // Ultra-lightweight sparkline
-    return (
-      <div style={{ width: '100%', height: '40px' }}>
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={history}>
-            <Line
-              type="monotone"
-              dataKey="price"
-              stroke={strokeColor}
-              strokeWidth={2.5}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-    );
-  }
-
-  const prices = history.map(h => h.price).filter(p => typeof p === 'number' && !isNaN(p));
-  const minPrice = prices.length > 0 ? Math.min(...prices) * 0.998 : 'auto';
-  const maxPrice = prices.length > 0 ? Math.max(...prices) * 1.002 : 'auto';
+  const prices = points.map(p => p.price).filter(p => typeof p === 'number' && !isNaN(p));
+  const minPrice = prices.length > 0 ? Math.min(...prices) * 0.999 : 'auto';
+  const maxPrice = prices.length > 0 ? Math.max(...prices) * 1.001 : 'auto';
 
   return (
     <div className="w-full flex flex-col justify-between" style={{ height }}>
@@ -145,14 +123,14 @@ export const StockChart: React.FC<StockChartProps> = ({
         <div className="flex items-center justify-between pb-3 mb-2 border-b border-ui-border">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono font-black text-text-muted uppercase tracking-wider">
-              Timeframe:
+              Range:
             </span>
             <div className="flex items-center gap-1 bg-ui-bg p-1 rounded-xl border border-ui-border">
               {(['1d', '5d', '1mo', '1y'] as const).map(rng => (
                 <button
                   key={rng}
                   onClick={() => handleRangeChange(rng)}
-                  className={`px-2.5 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
+                  className={`px-3 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all ${
                     selectedRange === rng
                       ? 'bg-gold text-ui-bg font-black shadow-xs'
                       : 'text-text-muted hover:text-text-main'
@@ -164,8 +142,9 @@ export const StockChart: React.FC<StockChartProps> = ({
             </div>
           </div>
           {isLoadingRange && (
-            <span className="text-[9px] font-mono text-gold animate-pulse">
-              Streaming candles...
+            <span className="text-[9px] font-mono text-gold animate-pulse flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-gold animate-ping" />
+              Fetching {selectedRange.toUpperCase()} points...
             </span>
           )}
         </div>
@@ -173,66 +152,71 @@ export const StockChart: React.FC<StockChartProps> = ({
 
       <div className="flex-1 w-full min-h-0">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={history} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+          <AreaChart data={points} margin={{ top: 10, right: hero ? 15 : 5, left: hero ? 15 : 5, bottom: 5 }}>
             <defs>
               <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={strokeColor} stopOpacity={0.25} />
+                <stop offset="5%" stopColor={strokeColor} stopOpacity={hero ? 0.35 : 0.22} />
                 <stop offset="95%" stopColor={strokeColor} stopOpacity={0.0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ui-border)" opacity={0.5} />
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ui-border)" opacity={hero ? 0.6 : 0.3} />
             <XAxis
               dataKey="time"
-              hide={history.length < 15}
+              hide={!hero && points.length < 15}
               stroke="var(--text-muted)"
-              fontSize={9}
+              fontSize={hero ? 10 : 8}
               tickLine={false}
               axisLine={false}
               interval="preserveStartEnd"
-              minTickGap={40}
+              minTickGap={hero ? 50 : 35}
             />
             <YAxis
               domain={[minPrice, maxPrice]}
-              hide={false}
+              hide={!hero}
               orientation="right"
               stroke="var(--text-muted)"
-              fontSize={9}
+              fontSize={hero ? 10 : 8}
               tickLine={false}
               axisLine={false}
-              tickFormatter={(v: number) => `${stock.currency}${v.toFixed(1)}`}
-              width={50}
+              tickFormatter={(v: number) => `${index.currency}${v >= 1000 ? v.toLocaleString(undefined, { maximumFractionDigits: 0 }) : v.toFixed(1)}`}
+              width={hero ? 65 : 45}
             />
             <Tooltip
               contentStyle={{
                 backgroundColor: 'var(--ui-bg)',
-                border: '1px solid rgba(197, 160, 89, 0.25)',
+                border: '1px solid rgba(197, 160, 89, 0.3)',
                 borderRadius: '12px',
                 color: 'var(--text-main)',
                 fontSize: '11px',
                 fontFamily: 'JetBrains Mono',
                 fontWeight: '800',
-                boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+                boxShadow: '0 15px 35px rgba(0,0,0,0.35)',
                 padding: '8px 12px'
               }}
               formatter={(value: number) => [
-                `${stock.currency}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
-                'Price'
+                `${index.currency}${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                index.displaySymbol
               ]}
-              labelFormatter={(label) => `Time: ${label}`}
+              labelFormatter={(label) => `Timestamp: ${label}`}
             />
-            {stock.prevClose && (
+            {index.prevClose && hero && (
               <ReferenceLine
-                y={stock.prevClose}
+                y={index.prevClose}
                 stroke="var(--text-muted)"
-                strokeDasharray="3 3"
-                opacity={0.4}
+                strokeDasharray="4 4"
+                label={{
+                  value: `Prev Close ${index.prevClose.toFixed(1)}`,
+                  fill: 'var(--text-muted)',
+                  fontSize: 9,
+                  position: 'insideBottomRight'
+                }}
               />
             )}
             <Area
               type="monotone"
               dataKey="price"
               stroke={strokeColor}
-              strokeWidth={2.5}
+              strokeWidth={hero ? 2.8 : 2}
               fillOpacity={1}
               fill={`url(#${gradientId})`}
               animationDuration={500}
@@ -245,4 +229,4 @@ export const StockChart: React.FC<StockChartProps> = ({
   );
 };
 
-export default StockChart;
+export default IndexChart;

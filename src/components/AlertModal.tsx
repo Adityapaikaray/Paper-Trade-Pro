@@ -3,9 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, X, ArrowUp, ArrowDown } from 'lucide-react';
+import React from 'react';
+import { X, Bell, TrendingUp, TrendingDown } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { Stock } from '../types.ts';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 
@@ -15,98 +15,102 @@ interface AlertModalProps {
 }
 
 const AlertModal: React.FC<AlertModalProps> = ({ stock, onClose }) => {
-  const { addPriceAlert } = usePortfolio();
-  const [threshold, setThreshold] = useState('');
-  const [type, setType] = useState<'above' | 'below'>('above');
+  const { addAlert } = usePortfolio();
+  const [thresholdStr, setThresholdStr] = React.useState('');
+  const [type, setType] = React.useState<'above' | 'below'>('above');
 
   if (!stock) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const val = parseFloat(threshold);
-    if (!isNaN(val)) {
-      addPriceAlert(stock.symbol, val, type);
+  const handleSetAlert = () => {
+    const threshold = parseFloat(thresholdStr);
+    if (!isNaN(threshold)) {
+      addAlert({
+        symbol: stock.symbol,
+        threshold,
+        type,
+        active: true
+      });
       onClose();
     }
   };
 
   return (
-    <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-indigo-950/40 backdrop-blur-sm">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className="w-full max-w-sm vibrant-card bg-white p-8 relative shadow-2xl overflow-hidden"
-        >
-          {/* Accent Background */}
-          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-[100px] -mr-8 -mt-8 -z-10" />
-
-          <button onClick={onClose} className="absolute top-6 right-6 text-slate-300 hover:text-indigo-600 transition-colors">
-            <X size={24} />
-          </button>
-
-          <div className="flex items-center gap-4 mb-8">
-            <div className="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-indigo-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-obsidian/80 backdrop-blur-xl">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 40 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-obsidian w-full max-w-md rounded-[3rem] overflow-hidden shadow-2xl border border-ui-border relative shimmer"
+      >
+        <div className="p-10 border-b border-ui-border bg-midnight/30 flex justify-between items-center">
+          <div className="flex items-center gap-5">
+            <div className="w-14 h-14 rounded-2xl bg-gold/10 border border-gold/20 flex items-center justify-center text-gold shadow-2xl">
               <Bell size={24} />
             </div>
             <div>
-              <h3 className="text-xl font-black text-indigo-950 tracking-tighter italic">Price Alert</h3>
-              <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stock.symbol} • {stock.name}</p>
+              <h2 className="text-2xl font-serif italic text-text-dark tracking-tight">Sentinel Protocol</h2>
+              <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.3em] mt-1">Price Trigger Surveillance</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-10 h-10 rounded-xl bg-white/[0.03] border border-ui-border flex items-center justify-center text-slate-600 hover:text-gold transition-all shadow-sm">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="p-10 space-y-8">
+          <div className="p-6 bg-midnight rounded-[2rem] border border-ui-border flex items-center gap-6">
+             <div className="w-12 h-12 bg-white/[0.02] border border-ui-border rounded-xl flex items-center justify-center font-serif italic text-gold text-xl">
+               {stock.symbol.slice(0, 1)}
+             </div>
+             <div>
+                <p className="text-[9px] font-black text-slate-600 uppercase tracking-[0.2em] mb-1">Asset Designation</p>
+                <p className="text-xl font-bold text-slate-200 tracking-tight">{stock.name} ({stock.symbol})</p>
+             </div>
+          </div>
+
+          <div className="space-y-4">
+            <label className="text-[9px] font-black text-gold/40 uppercase tracking-[0.3em] ml-4">Trigger Direction</label>
+            <div className="flex bg-midnight p-1 rounded-2xl border border-ui-border">
+              <button 
+                onClick={() => setType('above')}
+                className={`flex-1 py-3.5 rounded-xl font-black text-[9px] tracking-[0.2em] transition-all duration-500 flex items-center justify-center gap-3 ${type === 'above' ? 'bg-gold text-midnight shadow-lg' : 'text-slate-500 hover:text-gold'}`}
+              >
+                <TrendingUp size={14} /> ABOVE
+              </button>
+              <button 
+                onClick={() => setType('below')}
+                className={`flex-1 py-3.5 rounded-xl font-black text-[9px] tracking-[0.2em] transition-all duration-500 flex items-center justify-center gap-3 ${type === 'below' ? 'bg-white/10 text-slate-200 shadow-md' : 'text-slate-500 hover:text-gold'}`}
+              >
+                <TrendingDown size={14} /> BELOW
+              </button>
             </div>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setType('above')}
-                className={`flex-1 py-4 px-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
-                  type === 'above' 
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-600' 
-                    : 'border-slate-100 text-slate-400 hover:border-slate-200'
-                }`}
-              >
-                <ArrowUp size={24} className={type === 'above' ? 'animate-bounce' : ''} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Price Goes Above</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setType('below')}
-                className={`flex-1 py-4 px-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-2 ${
-                  type === 'below' 
-                    ? 'border-indigo-600 bg-indigo-50 text-indigo-600' 
-                    : 'border-slate-100 text-slate-400 hover:border-slate-200'
-                }`}
-              >
-                <ArrowDown size={24} className={type === 'below' ? 'animate-bounce' : ''} />
-                <span className="text-[10px] font-black uppercase tracking-widest">Price Goes Below</span>
-              </button>
+          <div className="space-y-4">
+            <div className="flex justify-between items-end ml-4">
+              <label className="text-[9px] font-black text-gold/40 uppercase tracking-[0.3em]">Threshold Signal</label>
+              <p className="text-[9px] font-bold text-slate-600 uppercase tracking-widest italic leading-none">Current: {stock.currency}{stock.price.toLocaleString()}</p>
             </div>
-
-            <div className="space-y-2">
-              <label className="text-[10px] font-black text-indigo-400 uppercase tracking-widest px-2">Target Price ($)</label>
-              <input
+            <div className="relative group">
+              <span className="absolute left-6 top-1/2 -translate-y-1/2 text-4xl font-mono font-black italic text-gold/30">{stock.currency}</span>
+              <input 
                 type="number"
-                step="0.01"
-                required
-                value={threshold}
-                onChange={(e) => setThreshold(e.target.value)}
-                placeholder={stock.price.toFixed(2)}
-                className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl py-4 px-6 focus:outline-none focus:border-indigo-600 focus:bg-white transition-all text-xl font-mono font-black placeholder:text-slate-200"
+                value={thresholdStr}
+                onChange={(e) => setThresholdStr(e.target.value)}
+                className="w-full bg-midnight/50 border border-ui-border rounded-3xl py-6 pl-14 pr-6 text-5xl font-mono font-black italic text-text-dark focus:outline-none focus:border-gold/50 transition-all tracking-tighter"
+                autoFocus
               />
             </div>
+          </div>
 
-            <button
-              type="submit"
-              className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black uppercase tracking-widest shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all hover:scale-[1.02] active:scale-95"
-            >
-              Set Digital Sentinel
-            </button>
-          </form>
-        </motion.div>
-      </div>
-    </AnimatePresence>
+          <button 
+            onClick={handleSetAlert}
+            className="w-full py-6 bg-gold text-midnight rounded-[2.5rem] font-bold tracking-[0.4em] text-xs uppercase shadow-2xl transition-all duration-500 transform active:scale-95 border border-gold/50 shadow-gold/20"
+          >
+            Deploy Sentinel
+          </button>
+        </div>
+      </motion.div>
+    </div>
   );
 };
 

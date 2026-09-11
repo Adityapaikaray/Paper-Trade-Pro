@@ -6,7 +6,7 @@
 import { Stock } from './types.ts';
 
 export const INITIAL_BALANCES = {
-  '$': 100000,
+  '$': 1000000,
   '₹': 1000000
 };
 
@@ -43,6 +43,18 @@ export const MOCK_STOCKS: Stock[] = [
   { symbol: 'PYPL', name: 'PayPal Holdings', price: 62.15, change: -0.45, changePercent: -0.72, volume: '15.2M', marketCap: '68.4B', description: 'Digital payments.', sector: 'Financial Services', country: 'USA', currency: '$' },
   { symbol: 'SBUX', name: 'Starbucks Corp.', price: 95.32, change: 0.25, changePercent: 0.26, volume: '6.4M', marketCap: '108.4B', description: 'Coffee chain.', sector: 'Consumer Cyclical', country: 'USA', currency: '$' },
 
+  // US Energy Sector
+  { symbol: 'XOM', name: 'Exxon Mobil Corp.', price: 105.12, change: 1.25, changePercent: 1.20, volume: '18.4M', marketCap: '432.1B', description: 'Oil & Gas giant.', sector: 'Energy', country: 'USA', currency: '$' },
+  { symbol: 'CVX', name: 'Chevron Corp.', price: 152.45, change: 2.34, changePercent: 1.56, volume: '8.2M', marketCap: '286.4B', description: 'Energy major.', sector: 'Energy', country: 'USA', currency: '$' },
+  { symbol: 'COP', name: 'ConocoPhillips', price: 112.30, change: -0.85, changePercent: -0.75, volume: '5.4M', marketCap: '132.1B', description: 'Hydrocarbon discovery.', sector: 'Energy', country: 'USA', currency: '$' },
+
+  // ETFs
+  { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', price: 512.08, change: 4.09, changePercent: 0.80, volume: '45.2M', marketCap: '498.2B', description: 'S&P 500 Index ETF.', sector: 'ETF', country: 'USA', currency: '$' },
+
+  // Commodities
+  { symbol: 'GOLD', name: 'Gold Spot', price: 2150.40, change: 15.40, changePercent: 0.72, volume: 'N/A', marketCap: 'N/A', description: 'Safe haven metal.', sector: 'Commodities', country: 'Global', currency: '$' },
+  { symbol: 'SILVER', name: 'Silver Spot', price: 24.12, change: 0.45, changePercent: 1.90, volume: 'N/A', marketCap: 'N/A', description: 'Precious metal.', sector: 'Commodities', country: 'Global', currency: '$' },
+
   // NIFTY 50 Components (Selection)
   { symbol: 'RELIANCE', name: 'Reliance Industries', price: 2950.50, change: 12.30, changePercent: 0.42, volume: '8.2M', marketCap: '20.1T', description: 'Energy & Retail.', sector: 'Energy', country: 'India', currency: '₹' },
   { symbol: 'TCS', name: 'Tata Consultancy Services', price: 4120.80, change: -45.20, changePercent: -1.08, volume: '1.5M', marketCap: '14.8T', description: 'IT Services.', sector: 'Technology', country: 'India', currency: '₹' },
@@ -71,6 +83,12 @@ export const MOCK_STOCKS: Stock[] = [
   { symbol: 'POWERGRID', name: 'Power Grid Corp.', price: 285.12, change: 4.12, changePercent: 1.47, volume: '12.4M', marketCap: '2.1T', description: 'Power transmission.', sector: 'Utilities', country: 'India', currency: '₹' },
   { symbol: 'NTPC', name: 'NTPC Ltd.', price: 345.12, change: 5.20, changePercent: 1.53, volume: '15.4M', marketCap: '3.3T', description: 'Power generation.', sector: 'Utilities', country: 'India', currency: '₹' },
   { symbol: 'ONGC', name: 'ONGC Ltd.', price: 275.45, change: 3.12, changePercent: 1.15, volume: '18.4M', marketCap: '3.4T', description: 'Oil & Gas.', sector: 'Energy', country: 'India', currency: '₹' },
+
+  // Indian Energy Expansion
+  { symbol: 'BPCL', name: 'Bharat Petroleum', price: 620.45, change: 5.20, changePercent: 0.84, volume: '4.2M', marketCap: '1.3T', description: 'Refinery giant.', sector: 'Energy', country: 'India', currency: '₹' },
+  { symbol: 'IOC', name: 'Indian Oil Corp.', price: 170.20, change: 2.15, changePercent: 1.28, volume: '10.4M', marketCap: '2.4T', description: 'Energy major.', sector: 'Energy', country: 'India', currency: '₹' },
+  { symbol: 'GAIL', name: 'GAIL (India) Ltd.', price: 185.32, change: 3.45, changePercent: 1.90, volume: '8.2M', marketCap: '1.2T', description: 'Natural gas leader.', sector: 'Energy', country: 'India', currency: '₹' },
+
   { symbol: 'M&M', name: 'Mahindra & Mahindra', price: 1950.45, change: 45.20, changePercent: 2.37, volume: '2.1M', marketCap: '2.4T', description: 'Automobiles.', sector: 'Consumer Cyclical', country: 'India', currency: '₹' },
   { symbol: 'COALINDIA', name: 'Coal India Ltd.', price: 450.12, change: 8.45, changePercent: 1.91, volume: '10.4M', marketCap: '2.8T', description: 'Mining.', sector: 'Energy', country: 'India', currency: '₹' },
   { symbol: 'TATAMOTORS', name: 'Tata Motors Ltd.', price: 985.45, change: 25.45, changePercent: 2.65, volume: '12.1M', marketCap: '3.2T', description: 'Automobiles.', sector: 'Consumer Cyclical', country: 'India', currency: '₹' },

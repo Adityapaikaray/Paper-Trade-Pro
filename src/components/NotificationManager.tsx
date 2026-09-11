@@ -64,21 +64,21 @@ const NotificationManager: React.FC = () => {
             exit={{ opacity: 0, scale: 0.9, transition: { duration: 0.2 } }}
             className="pointer-events-auto"
           >
-            <div className="bg-indigo-900 text-white p-5 rounded-2xl shadow-2xl flex items-start gap-4 border border-indigo-700 min-w-[320px] max-w-[400px]">
-              <div className="w-10 h-10 bg-amber-400 rounded-xl flex items-center justify-center text-amber-900 shrink-0 shadow-lg">
-                <Bell size={20} fill="currentColor" />
+            <div className="bg-obsidian text-slate-200 p-6 rounded-[2rem] shadow-2xl flex items-start gap-5 border border-ui-border min-w-[350px] max-w-[450px] shimmer">
+              <div className="w-12 h-12 bg-gold/10 border border-gold/20 rounded-xl flex items-center justify-center text-gold shrink-0 shadow-2xl">
+                <Bell size={20} />
               </div>
               <div className="flex-1">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-indigo-300">Price Alert Triggered</span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[9px] font-black uppercase tracking-[0.3em] text-gold/60">Sentinel Signal Acquisition</span>
                   <button 
                     onClick={() => removeNotification(notif.id)}
-                    className="text-indigo-400 hover:text-white transition-colors"
+                    className="text-slate-600 hover:text-gold transition-colors"
                   >
                     <X size={14} />
                   </button>
                 </div>
-                <p className="text-sm font-bold leading-tight">{notif.message}</p>
+                <p className="text-sm font-bold leading-relaxed italic pr-4 border-l border-gold/20 pl-4">{notif.message}</p>
               </div>
             </div>
           </motion.div>

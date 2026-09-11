@@ -4,19 +4,25 @@
  */
 
 import React from 'react';
-import { X, TrendingUp, TrendingDown, Info, Sparkles, Loader2, CheckCircle } from 'lucide-react';
+import { X, Info, Sparkles, Loader2, CheckCircle, Activity, TrendingUp, TrendingDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Stock } from '../types.ts';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { useMarketData } from '../hooks/useMarketData.ts';
 import { getStockAnalysis } from '../services/geminiService.ts';
+import StockChart from './StockChart.tsx';
 
 interface TradeModalProps {
   stock: Stock | null;
   onClose: () => void;
+  onBack?: () => void;
 }
 
-const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose }) => {
+import { ArrowLeft } from "lucide-react";
+
+const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
   const { profile, buyStock, sellStock } = usePortfolio();
+  const { stocks, priceTicks, isLive } = useMarketData();
   const [type, setType] = React.useState<'BUY' | 'SELL'>('BUY');
   const [sharesStr, setSharesStr] = React.useState('1');
   const [message, setMessage] = React.useState<{ text: string; type: 'success' | 'error' } | null>(null);
@@ -26,16 +32,20 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose }) => {
 
   if (!stock) return null;
 
+  // Always use the latest live stock data if available
+  const liveStock = stocks.find(s => s.symbol === stock.symbol) || stock;
+  const tick = priceTicks[liveStock.symbol];
+
   const handleAnalyze = async () => {
     setIsAnalyzing(true);
-    const result = await getStockAnalysis(stock);
+    const result = await getStockAnalysis(liveStock);
     setAnalysis(result);
     setIsAnalyzing(false);
   };
 
   const shares = parseInt(sharesStr) || 0;
-  const total = stock.price * shares;
-  const holding = profile.holdings.find(h => h.symbol === stock.symbol);
+  const total = liveStock.price * shares;
+  const holding = profile.holdings.find(h => h.symbol === liveStock.symbol);
   const currentShares = holding?.shares || 0;
 
   const handleAction = () => {
@@ -46,10 +56,10 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose }) => {
 
     let success = false;
     if (type === 'BUY') {
-      success = buyStock(stock, shares);
+      success = buyStock(liveStock, shares);
       if (!success) setMessage({ text: 'Insufficient balance to complete the trade.', type: 'error' });
     } else {
-      success = sellStock(stock, shares);
+      success = sellStock(liveStock, shares);
       if (!success) setMessage({ text: 'Insufficient shares to complete the trade.', type: 'error' });
     }
 
@@ -59,12 +69,18 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose }) => {
     }
   };
 
+  // Calculate day range progress
+  const dayLow = liveStock.dayLow ?? (liveStock.price * 0.985);
+  const dayHigh = liveStock.dayHigh ?? (liveStock.price * 1.015);
+  const rangeSpan = dayHigh - dayLow;
+  const rangePercent = rangeSpan > 0 ? Math.min(100, Math.max(0, ((liveStock.price - dayLow) / rangeSpan) * 100)) : 50;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-indigo-900/40 backdrop-blur-md">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xl">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 40 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        className="bg-white w-full max-w-lg rounded-[40px] overflow-hidden shadow-2xl border-4 border-white relative"
+        className="bg-ui-surface w-full max-w-lg rounded-[40px] overflow-hidden shadow-2xl border border-ui-border relative"
       >
         <AnimatePresence mode="wait">
           {isSuccess ? (
@@ -73,37 +89,37 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose }) => {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 1.1 }}
-              className="p-12 flex flex-col items-center justify-center text-center space-y-6 min-h-[400px]"
+              className="p-12 flex flex-col items-center justify-center text-center space-y-8 min-h-[450px]"
             >
               <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
                 transition={{ type: 'spring', damping: 10, stiffness: 100, delay: 0.2 }}
-                className="w-24 h-24 rounded-full bg-emerald-500 flex items-center justify-center text-white shadow-xl shadow-emerald-100"
+                className="w-24 h-24 rounded-full bg-gold/10 border border-gold/30 flex items-center justify-center text-gold shadow-[0_0_40px_rgba(197,160,89,0.2)]"
               >
-                <CheckCircle size={48} strokeWidth={3} />
+                <CheckCircle size={48} strokeWidth={1} />
               </motion.div>
               <div>
-                <h2 className="text-3xl font-black text-indigo-950 tracking-tighter italic">Trade Confirmed</h2>
-                <p className="text-sm font-bold text-slate-400 mt-2 uppercase tracking-widest">
-                  Successfully {type === 'BUY' ? 'purchased' : 'sold'} {shares} shares
+                <h2 className="text-4xl font-serif italic text-text-main tracking-tight leading-none">Acquisition Validated</h2>
+                <p className="text-[10px] font-black text-text-muted mt-4 uppercase tracking-[0.3em] italic">
+                  Successfully logged {shares} units of {liveStock.symbol} at live market quote
                 </p>
               </div>
-              <div className="bg-slate-50 w-full p-6 rounded-3xl border border-slate-100 space-y-3 relative overflow-hidden">
+              <div className="bg-ui-bg w-full p-8 rounded-[2.5rem] border border-ui-border space-y-4 relative overflow-hidden text-left">
                 {[
-                  { label: 'Symbol', value: stock.symbol, type: 'text' },
-                  { label: 'Quantity', value: `${shares} Units`, type: 'text' },
-                  { label: 'Execution Price', value: `${stock.currency}${stock.price.toLocaleString()}`, type: 'mono' },
+                  { label: 'Asset Protocol', value: liveStock.symbol, type: 'text' },
+                  { label: 'Volume Allocated', value: `${shares} Priority Units`, type: 'text' },
+                  { label: 'Executed Quote', value: `${liveStock.currency}${liveStock.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}`, type: 'mono' },
                 ].map((row, i) => (
                   <motion.div 
                     key={row.label}
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: 0.5 + (i * 0.1) }}
-                    className="flex justify-between text-[10px] font-black uppercase tracking-widest text-slate-400"
+                    className="flex justify-between text-[10px] font-black uppercase tracking-[0.2em] text-text-muted"
                   >
                     <span>{row.label}</span>
-                    <span className={`text-indigo-900 ${row.type === 'mono' ? 'font-mono italic' : ''}`}>{row.value}</span>
+                    <span className={`text-text-main ${row.type === 'mono' ? 'font-mono italic text-gold' : 'font-bold'}`}>{row.value}</span>
                   </motion.div>
                 ))}
                 
@@ -111,93 +127,157 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose }) => {
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.9, type: 'spring' }}
-                  className="flex justify-between text-sm font-black uppercase tracking-widest text-slate-500 pt-3 border-t border-slate-200"
+                  className="flex justify-between text-[10px] font-black uppercase tracking-[0.3em] text-text-muted pt-5 border-t border-ui-border"
                 >
-                  <span>Total {type === 'BUY' ? 'Cost' : 'Credit'}</span>
-                  <span className="text-indigo-600 font-mono italic relative">
-                    {stock.currency}{total.toLocaleString()}
-                    <motion.div 
-                      initial={{ opacity: 0, scale: 0 }}
-                      animate={{ opacity: [0, 0.3, 0], scale: [1, 1.8, 1] }}
-                      transition={{ duration: 2, delay: 1, repeat: Infinity }}
-                      className="absolute inset-0 bg-indigo-400 blur-xl rounded-full -z-10"
-                    />
+                  <span>Aggregate {type === 'BUY' ? 'Obligation' : 'Proceeds'}</span>
+                  <span className="text-xl text-gold font-mono italic relative">
+                    {liveStock.currency}{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                   </span>
                 </motion.div>
               </div>
-              <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest animate-pulse">
-                Transaction logged in blockchain simulation
+              <p className="text-[9px] font-black text-emerald-400 uppercase tracking-[0.4em] animate-pulse">
+                Order Inscribed in Private Ledger • Real-Time Fill
               </p>
             </motion.div>
           ) : (
             <motion.div key="form" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-              <div className="p-8 border-b border-indigo-50 flex justify-between items-center bg-slate-50/50">
-                <div className="flex items-center gap-5">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl font-black italic shadow-lg ${stock.change >= 0 ? 'bg-indigo-600 shadow-indigo-100' : 'bg-slate-900 shadow-slate-200'}`}>
-                    {stock.symbol.slice(0, 1)}
+              <div className="p-10 border-b border-ui-border flex justify-between items-center bg-ui-bg/50">
+                <div className="flex items-center gap-4">
+                  {onBack && (
+                    <button onClick={onBack} className="w-10 h-10 shrink-0 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-gold transition-all shadow-sm mr-2">
+                      <ArrowLeft size={18} />
+                    </button>
+                  )}
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-gold text-2xl font-serif italic shadow-2xl border border-gold/20 ${liveStock.change >= 0 ? 'bg-gold/5' : 'bg-ui-bg'}`}>
+                    {liveStock.symbol.slice(0, 1)}
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-indigo-950 tracking-tighter italic">{stock.name}</h2>
-                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{stock.symbol} • Global Exchange</p>
+                    <div className="flex items-center gap-3">
+                      <h2 className="text-3xl font-serif italic text-text-main tracking-tight">{liveStock.name}</h2>
+                      <span className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[9px] font-black uppercase tracking-wider">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                        Live Quote
+                      </span>
+                    </div>
+                    <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mt-1 italic">{liveStock.symbol} • {liveStock.country} • {liveStock.sector}</p>
                   </div>
                 </div>
-                <button onClick={onClose} className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-400 hover:text-indigo-600 transition-all shadow-sm">
-                  <X size={20} />
+                <button onClick={onClose} className="w-10 h-10 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-gold transition-all shadow-sm">
+                  <X size={18} />
                 </button>
               </div>
 
-              <div className="p-8 space-y-8">
-                <div className="flex bg-slate-100 p-1.5 rounded-2xl">
+              <div className="p-10 space-y-8">
+                {/* Long / Short Switch */}
+                <div className="flex bg-ui-bg p-1 rounded-2xl border border-ui-border">
                   <button 
                     onClick={() => setType('BUY')}
-                    className={`flex-1 py-3 rounded-xl font-black text-sm transition-all ${type === 'BUY' ? 'bg-white text-indigo-600 shadow-md scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`flex-1 py-3.5 rounded-xl font-black text-[10px] tracking-[0.2em] transition-all duration-300 ${type === 'BUY' ? 'bg-gold text-ui-bg shadow-lg shadow-gold/20 scale-[1.02]' : 'text-text-muted hover:text-text-main'}`}
                   >
-                    LONG (BUY)
+                    LONG ACQUISITION
                   </button>
                   <button 
                     onClick={() => setType('SELL')}
-                    className={`flex-1 py-3 rounded-xl font-black text-sm transition-all ${type === 'SELL' ? 'bg-white text-rose-500 shadow-md scale-[1.02]' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`flex-1 py-3.5 rounded-xl font-black text-[10px] tracking-[0.2em] transition-all duration-300 ${type === 'SELL' ? 'bg-ui-surface text-text-main border border-ui-border shadow-md scale-[1.02]' : 'text-text-muted hover:text-text-main'}`}
                   >
-                    SHORT (SELL)
+                    SHORT DISPOSAL
                   </button>
                 </div>
 
+                {/* Real-Time Price & Day Range Section */}
+                <div className="p-6 bg-ui-bg rounded-3xl border border-ui-border space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.25em]">Live Real-Time Price</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    </div>
+                    <div className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-mono font-black ${liveStock.change >= 0 ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'}`}>
+                      {liveStock.change >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                      <span>{liveStock.change >= 0 ? '+' : ''}{liveStock.change.toFixed(2)} ({liveStock.changePercent}%)</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-baseline justify-between">
+                    <div className={`text-4xl font-mono font-black italic tracking-tighter tabular-nums transition-all duration-300 ${
+                      tick === 'up' 
+                        ? 'text-emerald-400 scale-105' 
+                        : tick === 'down' 
+                        ? 'text-rose-400 scale-105' 
+                        : 'text-text-main'
+                    }`}>
+                      {liveStock.currency}{liveStock.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </div>
+                    {liveStock.prevClose && (
+                      <span className="text-[9px] font-mono text-text-muted uppercase tracking-wider">
+                        Prev Close: {liveStock.currency}{liveStock.prevClose.toFixed(2)}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Day Range Bar */}
+                  <div className="pt-2 border-t border-ui-border/60">
+                    <div className="flex justify-between text-[8px] font-mono text-text-muted uppercase tracking-wider mb-1">
+                      <span>Day Low: {liveStock.currency}{dayLow.toFixed(2)}</span>
+                      <span className="font-bold text-text-main">Day Range</span>
+                      <span>Day High: {liveStock.currency}{dayHigh.toFixed(2)}</span>
+                    </div>
+                    <div className="w-full h-1.5 bg-ui-surface rounded-full overflow-hidden relative">
+                      <div 
+                        className="h-full bg-linear-to-r from-rose-400 via-gold to-emerald-400 rounded-full transition-all duration-500"
+                        style={{ width: `${rangePercent}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Real-time stock chart */}
+                  <div className="pt-3 border-t border-ui-border/50">
+                    <div className="flex items-center justify-between text-[8px] font-mono text-text-muted mb-1.5">
+                      <span className="uppercase tracking-wider font-bold">Real-Time Stock Chart</span>
+                      <span className="text-emerald-400 font-bold flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                        Live Feed
+                      </span>
+                    </div>
+                    <div className="h-28 w-full bg-ui-surface/80 rounded-xl p-2 border border-ui-border/50">
+                      <StockChart stock={liveStock} height={95} showDetails={true} showTimeframes={false} />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-6">
-                  <div className="grid grid-cols-2 gap-8 items-end border-b-2 border-slate-50 pb-6">
+                  <div className="grid grid-cols-2 gap-8 items-end border-b border-ui-border pb-6">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Quantity</label>
+                      <label className="text-[9px] font-black text-gold uppercase tracking-[0.3em] ml-1">Shares to Order</label>
                       <input 
                         type="number"
+                        min="1"
                         value={sharesStr}
                         onChange={(e) => setSharesStr(e.target.value)}
-                        className="bg-transparent text-5xl font-mono font-black italic text-indigo-950 block w-full focus:outline-none"
+                        className="bg-transparent text-5xl font-mono font-black italic text-text-main block w-full focus:outline-none tracking-tighter"
                         autoFocus
                       />
                     </div>
                     <div className="text-right space-y-1">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Market Price</label>
-                      <p className="text-3xl font-mono font-black italic tabular-nums text-slate-900">{stock.currency}{stock.price.toLocaleString()}</p>
+                      <label className="text-[9px] font-black text-text-muted uppercase tracking-[0.3em]">Estimated Total</label>
+                      <p className="text-2xl font-mono font-black italic tabular-nums text-gold">
+                        {liveStock.currency}{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      </p>
                     </div>
-                  </div>
-
-                  <div className="flex justify-between items-center px-6 py-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
-                    <span className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Estimated Total</span>
-                    <span className="text-2xl font-black font-mono italic text-indigo-600">{stock.currency}{total.toLocaleString()}</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 ring-2 ring-indigo-50 ring-offset-2">
-                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">
-                        {stock.currency === '$' ? 'US Dollar Balance' : 'Indian Rupee Balance'}
-                      </p>
+                    <div className="p-5 bg-ui-bg rounded-2xl border border-ui-border">
+                      <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.3em] mb-1.5">Available Balance</p>
                       <div className="flex items-center gap-2">
-                        <p className="text-indigo-950 font-black font-mono italic leading-none">{stock.currency}{(profile.balances[stock.currency] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <p className="text-text-main font-black font-mono italic text-base leading-none">
+                          {liveStock.currency}{(profile.balances[liveStock.currency] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        </p>
+                        <div className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
                       </div>
                     </div>
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                      <p className="text-[9px] font-black text-slate-400 uppercase mb-1">Current Ownership</p>
-                      <p className="text-indigo-950 font-black font-mono italic leading-none">{currentShares} Shares</p>
+                    <div className="p-5 bg-ui-bg rounded-2xl border border-ui-border">
+                      <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.3em] mb-1.5">Current Position</p>
+                      <p className="text-text-main font-black font-mono italic text-base leading-none">{currentShares} Shares Held</p>
                     </div>
                   </div>
                 </div>
@@ -208,11 +288,9 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose }) => {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className={`p-4 rounded-2xl text-xs font-bold flex items-center gap-3 border shadow-sm ${message.type === 'success' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-rose-50 text-rose-600 border-rose-100'}`}
+                      className={`p-5 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] flex items-center gap-3 border shadow-xl ${message.type === 'success' ? 'bg-emerald-400/10 text-emerald-400 border-emerald-400/20' : 'bg-rose-400/10 text-rose-400 border-rose-400/20'}`}
                     >
-                      <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 ${message.type === 'success' ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
-                        <Info size={14} />
-                      </div>
+                      <Info size={16} className="shrink-0" />
                       {message.text}
                     </motion.div>
                   )}
@@ -222,39 +300,41 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose }) => {
                   {!analysis && !isAnalyzing ? (
                     <button 
                       onClick={handleAnalyze}
-                      className="w-full py-3 bg-white border-2 border-indigo-100 text-indigo-600 rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] hover:bg-indigo-50 transition-all flex items-center justify-center gap-3 active:scale-95 shadow-sm"
+                      className="w-full py-3.5 bg-ui-bg border border-ui-border text-text-muted rounded-2xl text-[9px] font-black uppercase tracking-[0.3em] hover:bg-ui-surface hover:border-gold/30 hover:text-gold transition-all duration-300 flex items-center justify-center gap-3 active:scale-95 shadow-sm"
                     >
-                      <Sparkles size={16} />
-                      Get AI Insight
+                      <Sparkles size={15} />
+                      Request AI Market Intelligence
                     </button>
                   ) : isAnalyzing ? (
-                    <div className="p-6 bg-slate-50 rounded-3xl border border-slate-100 flex items-center justify-center gap-3 italic">
-                      <Loader2 size={24} className="animate-spin text-indigo-600" />
-                      <span className="text-xs font-black text-slate-400 uppercase tracking-widest">Scanning Markets...</span>
+                    <div className="p-6 bg-ui-bg rounded-2xl border border-ui-border flex items-center justify-center gap-3 italic">
+                      <Loader2 size={20} className="animate-spin text-gold" />
+                      <span className="text-[10px] font-black text-text-muted uppercase tracking-[0.4em]">Synthesizing Real-Time Pulse...</span>
                     </div>
                   ) : (
                     <motion.div 
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="p-6 bg-indigo-900 rounded-3xl text-white shadow-xl shadow-indigo-100 relative"
+                      className="p-6 bg-gold/5 border border-gold/20 rounded-2xl text-text-main shadow-xl relative"
                     >
                       <div className="flex items-center gap-2 mb-3">
-                        <Sparkles size={14} className="text-amber-400" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-indigo-200">AI Sentiment</span>
+                        <Sparkles size={14} className="text-gold" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.3em] text-gold">Institutional Sentiment Synthesis</span>
                       </div>
-                      <p className="text-xs font-medium leading-relaxed italic opacity-90">"{analysis}"</p>
+                      <p className="text-xs font-bold leading-relaxed italic opacity-90 pr-2 border-l-2 border-gold/30 pl-3">"{analysis}"</p>
                     </motion.div>
                   )}
                 </div>
 
                 <button 
-                  disabled={type === 'BUY' ? (profile.balances[stock.currency] || 0) < total : currentShares < shares}
+                  disabled={type === 'BUY' ? (profile.balances[liveStock.currency] || 0) < total : currentShares < shares}
                   onClick={handleAction}
-                  className={`w-full py-6 rounded-[32px] font-black tracking-widest text-sm uppercase transition-all transform active:scale-95 shadow-xl disabled:opacity-30 disabled:grayscale ${
-                    type === 'BUY' ? 'bg-indigo-600 text-white shadow-indigo-100' : 'bg-rose-500 text-white shadow-rose-100'
+                  className={`w-full py-5 rounded-2xl font-black tracking-[0.3em] text-xs uppercase transition-all duration-300 transform active:scale-95 shadow-2xl border disabled:opacity-20 disabled:grayscale ${
+                    type === 'BUY' 
+                      ? 'bg-gold text-ui-bg border-gold/50 shadow-gold/20 hover:brightness-110' 
+                      : 'bg-ui-bg text-text-main border-ui-border shadow-lg hover:border-rose-400/50 hover:text-rose-400'
                   }`}
                 >
-                  CONFIRM {type} TICKET
+                  EXECUTE {type} ORDER • {liveStock.currency}{total.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </button>
               </div>
             </motion.div>

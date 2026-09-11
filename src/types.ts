@@ -15,6 +15,14 @@ export interface Stock {
   sector: string;
   country: string;
   currency: string;
+  dayHigh?: number;
+  dayLow?: number;
+  prevClose?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
+  lastUpdated?: number;
+  isRealtime?: boolean;
+  history?: { time: string; price: number }[];
 }
 
 export interface Holding {
@@ -51,6 +59,26 @@ export interface Currency {
   rate: number;
 }
 
+export interface IndexQuote {
+  key: string;
+  name: string;
+  symbol: string;
+  displaySymbol: string;
+  region: string;
+  currency: string;
+  price: number;
+  change: number;
+  percentChange: number;
+  dayHigh?: number;
+  dayLow?: number;
+  prevClose?: number;
+  fiftyTwoWeekHigh?: number;
+  fiftyTwoWeekLow?: number;
+  isLive: boolean;
+  lastUpdated: number;
+  history?: { time: string; price: number }[];
+}
+
 export interface UserProfile {
   balances: { [currency: string]: number };
   holdings: Holding[];
@@ -59,4 +87,16 @@ export interface UserProfile {
   alerts: PriceAlert[];
   history: HistoryPoint[];
   preferredCurrency?: Currency;
+}
+export interface NewsArticle {
+  uuid: string;
+  title: string;
+  publisher: string;
+  link: string;
+  providerPublishTime: number;
+  type: string;
+  thumbnail?: {
+    resolutions: Array<{ url: string; width: number; height: number; tag: string }>;
+  };
+  relatedTickers?: string[];
 }

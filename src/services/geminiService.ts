@@ -3,28 +3,36 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Stock } from "../types.ts";
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 export async function getStockAnalysis(stock: Stock): Promise<string> {
   try {
-    const prompt = `Analyze the current state of ${stock.name} (${stock.symbol}). 
-    Current Price: $${stock.price}
-    Change: ${stock.change} (${stock.changePercent}%)
-    Sector: ${stock.sector}
-    
-    Provide a professional, concise market sentiment analysis in 3-4 sentences. 
-    Focus on potential outlook based on this virtual data. 
-    Note: This is for a paper trading simulation.`;
+    const res = await fetch("/api/ai/analyze-stock", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        symbol: stock.symbol,
+        name: stock.name,
+        price: stock.price,
+        change: stock.change,
+        changePercent: stock.changePercent,
+        sector: stock.sector,
+        currency: stock.currency,
+      }),
+    });
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text() || "Unable to generate analysis at this time.";
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      return errData.analysis || "AI analysis unavailable. Please check market indicators.";
+    }
+
+    const data = await res.json();
+    return data.analysis || "Market sentiment analysis completed with neutral bias.";
   } catch (error) {
     console.error("Gemini Analysis Error:", error);
     return "AI analysis unavailable. Please check your market indicators.";
   }
 }
+

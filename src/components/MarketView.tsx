@@ -3,180 +3,325 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { Search, Star, TrendingUp, TrendingDown, PlusCircle, Bell, ChevronDown, ChevronUp } from 'lucide-react';
+import React from 'react';
+import { Search, Star, TrendingUp, TrendingDown, PlusCircle, Bell, ChevronDown, ChevronUp, RefreshCw, Radio } from 'lucide-react';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { Stock } from '../types.ts';
 import AlertModal from './AlertModal.tsx';
 import StockChart from './StockChart.tsx';
+import KeyIndicesBar from './KeyIndicesBar.tsx';
 
 interface MarketViewProps {
   onTrade: (stock: Stock) => void;
 }
 
 const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
-  const { stocks } = useMarketData();
+  const { stocks, isLive, lastUpdated, priceTicks, refresh, isLoading, marketStatus } = useMarketData();
   const { toggleWatchlist, isWatchlisted } = usePortfolio();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedCountry, setSelectedCountry] = React.useState('All');
+  const [selectedSector, setSelectedSector] = React.useState('All');
   const [alertStock, setAlertStock] = React.useState<Stock | null>(null);
   const [expandedSymbol, setExpandedSymbol] = React.useState<string | null>(null);
 
   const countries = ['All', ...new Set(stocks.map(s => s.country))];
+  const sectors = ['All', ...new Set(stocks.map(s => s.sector))].sort();
 
   const filteredStocks = stocks.filter(s => {
     const matchesSearch = s.symbol.toLowerCase().includes(searchTerm.toLowerCase()) || 
                          s.name.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCountry = selectedCountry === 'All' || s.country === selectedCountry;
-    return matchesSearch && matchesCountry;
+    const matchesSector = selectedSector === 'All' || s.sector === selectedSector;
+    return matchesSearch && matchesCountry && matchesSector;
   });
 
   const toggleExpand = (symbol: string) => {
     setExpandedSymbol(expandedSymbol === symbol ? null : symbol);
   };
 
+  const formattedTime = new Date(lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <header className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div>
-          <h2 className="text-4xl font-black text-indigo-950 tracking-tighter italic">Live Exchange</h2>
-          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-1">Real-time Trading Simulation Engine</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          {countries.map(country => (
+    <div className="space-y-10 ">
+      <header className="space-y-6">
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h2 className="text-3xl md:text-5xl vibrant-heading gold-gradient-text italic">Live Exchange</h2>
+              <span className="flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-black uppercase tracking-wider shrink-0 mt-2 md:mt-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                Real-Time Quotes
+              </span>
+            </div>
+            <p className="text-text-muted font-bold uppercase text-[8px] md:text-[9px] tracking-[0.2em] md:tracking-[0.3em] mt-2 max-w-sm md:max-w-none">
+              Real-Time Market Data Feed • 6-Second Low Latency Synchronization
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 md:gap-4">
+            {/* Market exchange status tags */}
+            <div className="flex flex-col md:flex-row md:items-center gap-2 px-3 py-2 md:px-3.5 rounded-xl bg-ui-surface border border-ui-border text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none">
+              <span className="text-text-muted text-[8px] md:text-[9px]">NYSE:</span>
+              <span className={`px-2 py-0.5 rounded-md font-mono ${marketStatus.nyse === 'OPEN' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}`}>
+                {marketStatus.nyse}
+              </span>
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-center gap-2 px-3 py-2 md:px-3.5 rounded-xl bg-ui-surface border border-ui-border text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none">
+              <span className="text-text-muted text-[8px] md:text-[9px]">NSE:</span>
+              <span className={`px-2 py-0.5 rounded-md font-mono ${marketStatus.nse === 'OPEN' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}`}>
+                {marketStatus.nse}
+              </span>
+            </div>
+
             <button
-              key={country}
-              onClick={() => setSelectedCountry(country)}
-              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                selectedCountry === country 
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-100' 
-                  : 'bg-white text-slate-400 hover:bg-slate-50'
-              }`}
+              onClick={() => refresh()}
+              disabled={isLoading}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-ui-surface hover:bg-ui-bg border border-ui-border text-text-muted hover:text-gold transition-all text-[9px] font-black uppercase tracking-wider shadow-sm w-full md:w-auto mt-2 md:mt-0"
             >
-              {country}
+              <RefreshCw size={13} className={isLoading ? 'animate-spin text-gold' : ''} />
+              <span>{formattedTime}</span>
             </button>
-          ))}
+          </div>
         </div>
-        <div className="relative group w-full md:w-96">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-indigo-600 transition-colors" size={18} />
-          <input 
-            type="text" 
-            placeholder="Search assets (e.g. NVDA, Apple)..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white border-2 border-slate-100 rounded-2xl py-3 pl-12 pr-4 focus:outline-none focus:border-indigo-600 transition-all text-sm font-bold shadow-sm"
-          />
+
+        {/* Global Key Indices */}
+        <KeyIndicesBar />
+
+        {/* Filter controls and search bar */}
+        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 pt-2">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2 bg-ui-bg p-1.5 rounded-2xl border border-ui-border shadow-md">
+              <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-3">Region:</span>
+              <div className="flex items-center gap-1">
+                {countries.map(country => (
+                  <button
+                    key={country}
+                    onClick={() => setSelectedCountry(country)}
+                    className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
+                      selectedCountry === country 
+                        ? 'bg-gold text-ui-bg shadow-lg shadow-gold/10' 
+                        : 'text-text-muted hover:text-gold hover:bg-ui-surface'
+                    }`}
+                  >
+                    {country}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 bg-ui-bg p-1.5 rounded-2xl border border-ui-border shadow-md">
+              <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-3">Sector:</span>
+              <div className="flex flex-wrap gap-1">
+                {sectors.map(sector => (
+                  <button
+                    key={sector}
+                    onClick={() => setSelectedSector(sector)}
+                    className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
+                      selectedSector === sector 
+                        ? 'bg-gold text-ui-bg shadow-lg shadow-gold/10' 
+                        : 'text-text-muted hover:text-gold hover:bg-ui-surface'
+                    }`}
+                  >
+                    {sector}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="relative group w-full xl:w-80">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted group-focus-within:text-gold transition-colors" size={16} />
+            <input 
+              type="text" 
+              placeholder="Search ticker or name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full bg-ui-surface border border-ui-border rounded-xl py-3 pl-12 pr-4 focus:outline-none focus:border-gold/50 transition-all text-xs font-black tracking-wide text-text-main placeholder:text-text-muted shadow-md"
+            />
+          </div>
         </div>
       </header>
 
-      <div className="vibrant-card overflow-hidden bg-white">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-50/50 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] border-b border-ui-border">
-              <th className="px-8 py-5 font-black">Market Asset</th>
-              <th className="px-8 py-5 font-black">Last Price</th>
-              <th className="px-8 py-5 font-black">24h Change</th>
-              <th className="px-8 py-5 font-black">Trend</th>
-              <th className="px-8 py-5 font-black">Market Cap</th>
-              <th className="px-8 py-5 font-black text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {filteredStocks.map((stock) => (
-              <React.Fragment key={stock.symbol}>
-                <tr 
-                  className={`group hover:bg-indigo-50/30 transition-all cursor-pointer ${expandedSymbol === stock.symbol ? 'bg-indigo-50/50' : ''}`}
-                  onClick={() => toggleExpand(stock.symbol)}
-                >
-                  <td className="px-8 py-6">
-                    <div className="flex items-center gap-4">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleWatchlist(stock.symbol);
-                        }}
-                        className={`transition-all hover:scale-125 ${isWatchlisted(stock.symbol) ? 'text-amber-400' : 'text-slate-200 hover:text-amber-200'}`}
-                      >
-                        <Star size={18} fill={isWatchlisted(stock.symbol) ? 'currentColor' : 'none'} />
-                      </button>
-                      <div className="w-12 h-12 bg-indigo-900 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-sm">
-                        {stock.symbol.slice(0, 1)}
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-black text-indigo-950 tracking-tight">{stock.symbol}</p>
-                          {expandedSymbol === stock.symbol ? <ChevronUp size={14} className="text-indigo-400" /> : <ChevronDown size={14} className="text-slate-300" />}
-                        </div>
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{stock.name}</p>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-8 py-6 font-mono font-black text-slate-900 tabular-nums text-lg italic tracking-tighter">
-                    {stock.currency}{stock.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </td>
-                  <td className="px-8 py-6">
-                    <div className={`inline-flex items-center gap-1 font-black px-2.5 py-1 rounded-lg text-xs ${stock.change >= 0 ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-600 border border-rose-100'}`}>
-                      {stock.change >= 0 ? '+' : ''}{stock.changePercent}%
-                    </div>
-                  </td>
-                  <td className="px-8 py-6">
-                    <StockChart stock={stock} showDetails={false} />
-                  </td>
-                  <td className="px-8 py-6 text-xs font-bold font-mono text-slate-400 uppercase tracking-tighter">{stock.marketCap}</td>
-                  <td className="px-8 py-6 text-right">
-                    <div className="flex items-center justify-end gap-3">
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setAlertStock(stock);
-                        }}
-                        className="p-2.5 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                        title="Set Price Alert"
-                      >
-                        <Bell size={18} />
-                      </button>
-                      <button 
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onTrade(stock);
-                        }}
-                        className="px-5 py-2.5 bg-indigo-600 text-white text-[10px] uppercase font-black tracking-widest rounded-xl hover:bg-indigo-700 shadow-lg shadow-indigo-100 hover:shadow-indigo-200 transition-all transform active:scale-95"
-                      >
-                        Trade
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-                {expandedSymbol === stock.symbol && (
-                  <tr>
-                    <td colSpan={6} className="px-8 py-0 bg-slate-50/30">
-                      <div className="py-8 animate-in fade-in zoom-in-95 duration-300">
-                        <div className="flex items-center justify-between mb-4">
-                          <div>
-                            <h4 className="font-black text-indigo-950 uppercase text-[10px] tracking-widest">Performance Insight</h4>
-                            <p className="text-slate-400 text-[10px] font-bold">24-Hour Price Action Protocol</p>
+      <div className="vibrant-card overflow-hidden">
+        <div className="overflow-x-auto no-scrollbar">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead>
+              <tr className="bg-ui-bg/50 text-[9px] font-black text-text-muted uppercase tracking-[0.3em] border-b border-ui-border">
+                <th className="px-4 md:px-8 py-5 font-black sticky left-0 bg-ui-surface z-10">Asset Protocol</th>
+                <th className="px-4 md:px-8 py-5 font-black hidden sm:table-cell">Designation</th>
+                <th className="px-4 md:px-8 py-5 font-black">Live Valuation</th>
+                <th className="px-4 md:px-8 py-5 font-black">Delta 24h</th>
+                <th className="px-4 md:px-8 py-5 font-black hidden lg:table-cell">Trajectory</th>
+                <th className="px-4 md:px-8 py-5 font-black hidden xl:table-cell">Capitalization</th>
+                <th className="px-4 md:px-8 py-5 font-black text-right">Execution</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-ui-border">
+              {filteredStocks.map((stock) => {
+                const tick = priceTicks[stock.symbol];
+                const dayLow = stock.dayLow ?? (stock.price * 0.985);
+                const dayHigh = stock.dayHigh ?? (stock.price * 1.015);
+                const rangeSpan = dayHigh - dayLow;
+                const rangePercent = rangeSpan > 0 ? Math.min(100, Math.max(0, ((stock.price - dayLow) / rangeSpan) * 100)) : 50;
+
+                return (
+                  <React.Fragment key={stock.symbol}>
+                    <tr 
+                      className={`group hover:bg-ui-bg transition-all cursor-pointer ${expandedSymbol === stock.symbol ? 'bg-ui-bg' : ''}`}
+                      onClick={() => toggleExpand(stock.symbol)}
+                    >
+                      <td className="px-4 md:px-8 py-4 md:py-6 sticky left-0 bg-ui-surface group-hover:bg-ui-bg transition-all z-10">
+                        <div className="flex items-center gap-3 md:gap-5">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleWatchlist(stock.symbol);
+                            }}
+                            className={`transition-all hover:scale-125 hidden md:block ${isWatchlisted(stock.symbol) ? 'text-gold' : 'text-text-muted/30 hover:text-gold/50'}`}
+                          >
+                            <Star size={18} fill={isWatchlisted(stock.symbol) ? 'currentColor' : 'none'} />
+                          </button>
+                          <div className="w-10 h-10 md:w-12 md:h-12 bg-ui-bg border border-ui-border rounded-2xl flex items-center justify-center text-gold font-serif text-lg italic shadow-md group-hover:border-gold/30 transition-all shrink-0">
+                            {stock.symbol.slice(0, 1)}
                           </div>
-                          <div className="text-right">
-                             <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Current Valuation</span>
-                             <p className="text-xl font-mono font-black italic tracking-tighter text-indigo-600">{stock.currency}{stock.price.toLocaleString()}</p>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p className="font-serif italic text-text-main text-base md:text-lg tracking-tight">{stock.symbol}</p>
+                              {expandedSymbol === stock.symbol ? <ChevronUp size={14} className="text-gold hidden md:block" /> : <ChevronDown size={14} className="text-text-muted hidden md:block" />}
+                            </div>
+                            <p className="text-[8px] md:text-[9px] font-bold text-text-muted uppercase tracking-[0.2em] truncate max-w-[100px] md:max-w-none">{stock.name}</p>
                           </div>
                         </div>
-                        <div className="bg-white p-6 rounded-3xl border border-indigo-50 shadow-sm overflow-hidden relative">
-                           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-bl-[64px] -mr-8 -mt-8 opacity-50" />
-                           <StockChart stock={stock} height={250} />
+                      </td>
+                      <td className="px-4 md:px-8 py-4 md:py-6 hidden sm:table-cell">
+                        <span className="text-[8px] md:text-[9px] font-black px-2 md:px-3 py-1 md:py-1.5 bg-ui-bg text-text-muted rounded-lg uppercase tracking-widest border border-ui-border whitespace-nowrap">{stock.sector}</span>
+                      </td>
+                      <td className="px-4 md:px-8 py-4 md:py-6">
+                        <div className={`inline-flex items-center gap-1 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-xl font-mono font-black text-lg md:text-xl italic tracking-tighter tabular-nums transition-all duration-300 ${
+                          tick === 'up'
+                            ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 scale-105 shadow-lg shadow-emerald-500/10'
+                            : tick === 'down'
+                            ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 scale-105 shadow-lg shadow-rose-500/10'
+                            : 'text-text-main'
+                        }`}>
+                          <span className="text-xs md:text-sm opacity-60 font-sans">{stock.currency}</span>
+                          <span>{stock.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                          {tick === 'up' && <TrendingUp size={14} className="text-emerald-400 animate-bounce hidden md:block" />}
+                          {tick === 'down' && <TrendingDown size={14} className="text-rose-400 animate-bounce hidden md:block" />}
                         </div>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </React.Fragment>
-            ))}
+                      </td>
+                      <td className="px-4 md:px-8 py-4 md:py-6">
+                        <div className={`inline-flex items-center gap-1.5 font-black px-2 md:px-3 py-1 md:py-1.5 rounded-xl text-[9px] md:text-[10px] tracking-widest ${stock.change >= 0 ? 'bg-emerald-400/10 text-emerald-400 border border-emerald-400/40' : 'bg-rose-400/10 text-rose-400 border border-rose-400/40'}`}>
+                          {stock.change >= 0 ? '+' : ''}{stock.changePercent.toFixed(2)}%
+                        </div>
+                      </td>
+                      <td className="px-4 md:px-8 py-4 md:py-6 w-32 md:w-48 hidden lg:table-cell">
+                        <div className="opacity-60 group-hover:opacity-100 transition-opacity">
+                          <StockChart stock={stock} showDetails={false} />
+                        </div>
+                      </td>
+                      <td className="px-4 md:px-8 py-4 md:py-6 text-xs md:text-sm font-mono font-black text-text-muted italic tracking-tighter hidden xl:table-cell">
+                        {stock.marketCap}
+                      </td>
+                      <td className="px-4 md:px-8 py-4 md:py-6 text-right">
+                        <div className="flex items-center justify-end gap-2 md:gap-3">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setAlertStock(stock);
+                            }}
+                            className="p-2 md:p-3 bg-ui-bg text-text-muted hover:text-gold hover:bg-ui-surface rounded-xl transition-all border border-ui-border shadow-sm hidden sm:block"
+                            title="Set Price Alert"
+                          >
+                            <Bell size={16} />
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onTrade(stock);
+                            }}
+                            className="glass-button shadow-gold/5 text-[10px] md:text-xs px-3 md:px-6"
+                          >
+                            Trade
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  {expandedSymbol === stock.symbol && (
+                    <tr>
+                      <td colSpan={7} className="px-10 py-10 bg-ui-bg/60 border-b border-ui-border">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                          <div className="space-y-6">
+                            <div className="flex items-center justify-between">
+                              <h5 className="text-[10px] font-black text-gold uppercase tracking-[0.4em]">Real-Time Market Depth</h5>
+                              <span className="flex items-center gap-2 text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-black">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                Real-Time Feed Active
+                              </span>
+                            </div>
+
+                            {/* Intraday Day Range Slider */}
+                            <div className="p-5 bg-ui-surface rounded-2xl border border-ui-border space-y-2">
+                              <div className="flex justify-between items-center text-[9px] font-mono font-bold uppercase tracking-wider text-text-muted">
+                                <span>Day Low: {stock.currency}{dayLow.toFixed(2)}</span>
+                                <span className="text-text-main font-black">Current: {stock.currency}{stock.price.toFixed(2)}</span>
+                                <span>Day High: {stock.currency}{dayHigh.toFixed(2)}</span>
+                              </div>
+                              <div className="w-full h-2 bg-ui-bg rounded-full overflow-hidden relative border border-ui-border">
+                                <div 
+                                  className="h-full bg-linear-to-r from-rose-400 via-gold to-emerald-400 rounded-full transition-all duration-500"
+                                  style={{ width: `${rangePercent}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            <p className="text-text-muted text-sm font-bold leading-relaxed border-l-2 border-gold/30 pl-4 italic">
+                              {stock.description || 'This asset is traded continuously with real-time liquidity on major exchanges.'}
+                            </p>
+
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                              {[
+                                { label: 'Market Cap', value: stock.marketCap },
+                                { label: 'Real Volume', value: stock.volume },
+                                { label: '52W Range', value: stock.fiftyTwoWeekHigh ? `${stock.currency}${stock.fiftyTwoWeekLow?.toFixed(0)} - ${stock.currency}${stock.fiftyTwoWeekHigh?.toFixed(0)}` : 'N/A' },
+                                { label: 'Region', value: stock.country }
+                              ].map(detail => (
+                                <div key={detail.label} className="p-4 bg-ui-surface rounded-2xl border border-ui-border">
+                                  <p className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-1">{detail.label}</p>
+                                  <p className="text-xs font-mono font-black text-text-main italic">{detail.value}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="h-80 bg-ui-surface rounded-3xl border border-ui-border p-6 relative overflow-hidden backdrop-blur-3xl group/chart flex flex-col justify-between">
+                            <div className="flex items-center justify-between mb-1">
+                              <h5 className="text-[10px] font-black text-text-muted uppercase tracking-[0.4em]">Real-Time Stock Chart & Historical Candlesticks</h5>
+                              <span className="flex items-center gap-1 text-emerald-400 text-[9px] font-mono font-bold uppercase">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                                Realtime Feed
+                              </span>
+                            </div>
+                            <div className="flex-1 w-full min-h-0">
+                              <StockChart stock={stock} height={220} showDetails={true} showTimeframes={true} />
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
+              );
+            })}
           </tbody>
         </table>
+        </div>
         {filteredStocks.length === 0 && (
-          <div className="py-20 text-center text-zinc-600 flex flex-col items-center">
-            <Search size={40} className="mb-4 opacity-20" />
-            <p>No results found for "{searchTerm}"</p>
+          <div className="py-20 text-center text-text-muted flex flex-col items-center">
+            <Search size={40} className="mb-4 opacity-10" />
+            <p className="text-[10px] font-black uppercase tracking-[0.2em]">Zero Protocols Matching Query</p>
           </div>
         )}
       </div>
