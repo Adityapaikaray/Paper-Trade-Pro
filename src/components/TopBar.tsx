@@ -188,10 +188,12 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
               className="flex items-center gap-3 pl-3 border-l border-ui-border cursor-pointer group"
             >
               <div className="w-10 h-10 rounded-full bg-linear-to-tr from-primary-dark to-primary-light p-[1.5px] shadow-sm transition-transform hover:scale-105 duration-300">
-                <div className="w-full h-full bg-[#6366F1] rounded-full flex items-center justify-center text-white font-black uppercase text-sm">\n                  JD\n                </div>
+                <div className="w-full h-full bg-[#11151C] rounded-full flex items-center justify-center text-white font-black uppercase text-sm">
+                  PU
+                </div>
               </div>
               <div className="hidden sm:flex flex-col items-start mr-1">
-                <p className="text-xs font-bold text-gray-900 dark:text-text-main leading-tight group-hover:text-primary transition-colors">James Doe</p>
+                <p className="text-xs font-bold text-gray-900 dark:text-text-main leading-tight group-hover:text-primary transition-colors">Prestige User</p>
                 <p className="text-[9px] font-black text-primary-dark uppercase tracking-widest leading-none">ELITE TIER</p>
               </div>
               <motion.svg animate={{ rotate: profileOpen ? 180 : 0 }} transition={{ duration: 0.2 }} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-text-muted group-hover:text-text-main transition-colors hidden sm:block">

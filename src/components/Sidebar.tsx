@@ -20,7 +20,10 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
     { id: 'market', icon: BarChart3, label: 'Markets' },
     { id: 'portfolio', icon: Briefcase, label: 'Portfolio' },
     { id: 'watchlist', icon: Eye, label: 'Watchlist' },
+    { id: 'orders', icon: TrendingUp, label: 'Orders' },
+    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
     { id: 'news', icon: Newspaper, label: 'News' },
+    { id: 'research', icon: GraduationCap, label: 'Research' },
   ];
   
   const bottomItems = [
@@ -40,7 +43,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
               TRADEPRO
             </h1>
             <p className="text-[8px] font-sans font-bold text-text-muted mt-1 uppercase tracking-[0.1em]">
-              Trade. Analyze. Grow.
+              Track. Analyze. Grow.
             </p>
           </div>
         </div>
@@ -54,7 +57,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
             onClick={() => setActiveTab(item.id)}
             className={`w-full flex items-center gap-3 px-4 md:px-0 xl:px-4 py-3 rounded-xl transition-all duration-300 group relative justify-center xl:justify-start active:scale-[0.98] ${
               activeTab === item.id 
-                ? 'bg-[#EEF2FF] text-primary-dark font-semibold shadow-sm dark:bg-primary/10' 
+                ? 'bg-[#F6F4EB] text-primary-dark font-semibold shadow-sm dark:bg-primary/10' 
                 : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover font-medium'
             }`}
           >
@@ -75,7 +78,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
               onClick={() => setActiveTab(item.id)}
               className={`w-full flex items-center gap-3 px-4 md:px-0 xl:px-4 py-3 rounded-xl transition-all duration-300 group relative justify-center xl:justify-start active:scale-[0.98] ${
                 activeTab === item.id 
-                  ? 'bg-[#EEF2FF] text-primary-dark font-semibold shadow-sm dark:bg-primary/10' 
+                  ? 'bg-[#F6F4EB] text-primary-dark font-semibold shadow-sm dark:bg-primary/10' 
                   : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover font-medium'
               }`}
             >
@@ -89,7 +92,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
       </nav>
 
       <div className="p-6 md:p-4 xl:p-6 mt-auto">
-        <div className="p-5 md:p-0 xl:p-5 rounded-2xl bg-[#EEF2FF] border border-[#E0E7FF] dark:bg-primary/10 dark:border-primary/20 flex flex-col items-center xl:items-start shadow-sm md:bg-none md:border-none xl:bg-linear-to-br xl:border relative group cursor-pointer" onClick={() => openModal('upgrade')}>
+        <div className="p-5 md:p-0 xl:p-5 rounded-2xl bg-[#F6F4EB] border border-[#E9E4D4] dark:bg-primary/10 dark:border-primary/20 flex flex-col items-center xl:items-start shadow-sm md:bg-none md:border-none xl:bg-linear-to-br xl:border relative group cursor-pointer" onClick={() => openModal('upgrade')}>
           <div className="w-8 h-8 rounded-full bg-white dark:bg-primary/20 shadow-sm flex shrink-0 items-center justify-center text-primary-dark mb-3 md:mb-0 xl:mb-3" title="Upgrade to Pro">
             <Crown size={16} strokeWidth={2.5} />
           </div>

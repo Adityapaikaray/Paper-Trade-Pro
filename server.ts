@@ -185,7 +185,14 @@ app.get("/api/market-data", async (req, res) => {
   const results: Record<string, CachedQuote> = {};
   try {
     const yahooTickers = symbolList.map(mapToYahooTicker);
-    const quotes = await yahooFinance.quote(yahooTickers);
+    let quotes = [];
+    // Break into chunks of 10 or fetch individually to avoid INKApi Error which happens on bad bulk tickers
+    for (const t of yahooTickers) {
+      try {
+        const q = await yahooFinance.quote(t);
+        if (q) quotes.push(q);
+      } catch(e) { console.warn(`Failed to fetch quote for ${t}:`, e.message); }
+    }
     const quoteArray = Array.isArray(quotes) ? quotes : [quotes];
     const now = Date.now();
     
