@@ -5,8 +5,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, Holding, Transaction, Stock, Currency, MarketRegion } from '../types.ts';
 
-const INITIAL_BALANCES = { '$': 1000000, '₹': 1000000 };
-
+const INITIAL_BALANCES = { '$': 0, '₹': 0 };
 interface PortfolioContextType {
   profile: UserProfile;
   marketContext: MarketRegion | null;
@@ -21,6 +20,7 @@ interface PortfolioContextType {
   addHistoryPoint: (value: number) => void;
   setPreferredCurrency: (currency: Currency) => void;
   resetAccount: (marketRegion?: MarketRegion) => void;
+  addFunds: (amount: number, currency: string) => void;
 }
 
 const DEFAULT_CURRENCY: Currency = { code: 'USD', symbol: '$', rate: 1 };
@@ -40,8 +40,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       const parsed = JSON.parse(saved);
       // Upgrade logic for balances
       let balances = parsed.balances || INITIAL_BALANCES;
-      if (!balances['$'] || balances['$'] === 100000) balances['$'] = 1000000;
-      if (!balances['₹']) balances['₹'] = 1000000;
+      if (!balances['$']) balances['$'] = 0;
+      if (!balances['₹']) balances['₹'] = 0;
       
       return {
         ...parsed,
@@ -183,6 +183,10 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     setProfile(prev => ({ ...prev, preferredCurrency: currency }));
   };
 
+  const addFunds = (amount: number, currency: string) => {
+    setProfile(prev => ({ ...prev, balances: { ...prev.balances, [currency]: (prev.balances[currency] || 0) + amount } }));
+  };
+
   const resetAccount = (marketRegion?: MarketRegion) => {
     if (!marketRegion) {
       setProfile({
@@ -232,7 +236,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
        markAlertTriggered,
        addHistoryPoint,
        setPreferredCurrency,
-       resetAccount
+       resetAccount,
+       addFunds
     }}>
       {children}
     </PortfolioContext.Provider>

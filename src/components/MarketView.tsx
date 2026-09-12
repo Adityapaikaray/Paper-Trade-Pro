@@ -18,7 +18,7 @@ interface MarketViewProps {
 
 const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
   const { stocks, isLive, lastUpdated, priceTicks, refresh, isLoading, marketStatus } = useMarketData();
-  const { toggleWatchlist, isWatchlisted } = usePortfolio();
+  const { toggleWatchlist, isWatchlisted, marketContext } = usePortfolio();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedCountry, setSelectedCountry] = React.useState('All');
   const [selectedSector, setSelectedSector] = React.useState('All');
@@ -28,13 +28,17 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
   const countries = ['All', ...new Set(stocks.map(s => s.country))];
   const sectors = ['All', ...new Set(stocks.map(s => s.sector))].sort();
 
+  
+  const contextCountry = marketContext === 'IN' ? 'India' : (marketContext === 'US' ? 'USA' : 'All');
+
   const filteredStocks = stocks.filter(s => {
     const matchesSearch = s.symbol.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                         s.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCountry = selectedCountry === 'All' || s.country === selectedCountry;
+                          s.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCountry = contextCountry !== 'All' ? s.country === contextCountry : (selectedCountry === 'All' || s.country === selectedCountry);
     const matchesSector = selectedSector === 'All' || s.sector === selectedSector;
     return matchesSearch && matchesCountry && matchesSector;
   });
+
 
   const toggleExpand = (symbol: string) => {
     setExpandedSymbol(expandedSymbol === symbol ? null : symbol);

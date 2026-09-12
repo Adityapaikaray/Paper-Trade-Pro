@@ -22,29 +22,34 @@ import CommandPalette from './components/CommandPalette.tsx';
 import { UIProvider } from './contexts/UIContext.tsx';
 import { UIManager } from './components/UIManager.tsx';
 import AICopilot from './components/AICopilot.tsx';
+import { AuthProvider, useAuth } from './contexts/AuthContext.tsx';
 import { PortfolioProvider, usePortfolio } from './contexts/PortfolioContext.tsx';
 import { ThemeProvider } from './contexts/ThemeContext.tsx';
 import { MarketProvider } from './contexts/MarketContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SplashScreen from './components/SplashScreen.tsx';
 import MarketSelection from './components/MarketSelection.tsx';
+import LoginView from './components/LoginView.tsx';
 import { Stock } from './types.ts';
 
 export default function AppWrapper() {
   return (
     <UIProvider>
       <ThemeProvider>
-        <MarketProvider>
-          <PortfolioProvider>
-            <AppContent />
-          </PortfolioProvider>
-        </MarketProvider>
+        <AuthProvider>
+          <MarketProvider>
+            <PortfolioProvider>
+              <AppContent />
+            </PortfolioProvider>
+          </MarketProvider>
+        </AuthProvider>
       </ThemeProvider>
     </UIProvider>
   );
 }
 
 function AppContent() {
+  const { isAuthenticated } = useAuth();
   const { marketContext } = usePortfolio();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
@@ -89,8 +94,9 @@ function AppContent() {
   return (
     <>
           {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
-          {!showSplash && marketContext === null && <MarketSelection onComplete={() => {}} />}
-          {(!showSplash && marketContext !== null) && (
+          {!showSplash && !isAuthenticated && <LoginView />}
+          {!showSplash && isAuthenticated && marketContext === null && <MarketSelection onComplete={() => {}} />}
+          {(!showSplash && isAuthenticated && marketContext !== null) && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

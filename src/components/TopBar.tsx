@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Search, Bell, Menu, X, ArrowUpRight, ArrowDownRight, User, Settings, LogOut, Wallet, Moon, Sun, ArrowRightLeft } from 'lucide-react';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { useAuth } from '../contexts/AuthContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useUI } from '../contexts/UIContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -15,6 +16,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
   const { profile, marketContext, setMarketContext } = usePortfolio();
   const { theme, toggleTheme } = useTheme();
   const { addToast } = useUI();
+  const { logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   
@@ -155,7 +157,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
           className="w-9 h-9 rounded-xl bg-ui-bg text-text-muted hover:text-primary hover:bg-ui-surface-hover border border-ui-border flex items-center justify-center transition-all relative shadow-sm"
         >
           <Bell size={16} />
-          <span className="absolute top-1.5 right-1.5 w-3.5 h-3.5 bg-rose-500 rounded-full border-2 border-ui-bg flex items-center justify-center text-[8px] font-bold text-white leading-none">3</span>
+          
         </button>
         
         {/* Profile */}
@@ -197,7 +199,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
                 
                 <div className="h-px bg-ui-border my-2" />
                 
-                <button onClick={() => { setProfileOpen(false); addToast('Logged out successfully', 'success'); }} className="w-full text-left px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 transition-colors flex items-center gap-3">
+                <button onClick={() => { setProfileOpen(false); logout(); addToast('Logged out successfully', 'success'); }} className="w-full text-left px-4 py-2 text-sm text-rose-500 hover:bg-rose-500/10 transition-colors flex items-center gap-3">
                   <LogOut size={16} /> Log Out
                 </button>
               </motion.div>

@@ -108,7 +108,7 @@ const MarketSelection: React.FC<MarketSelectionProps> = ({ onComplete }) => {
               >
                 Start Indian Trading &rarr;
               </button>
-              <button className="w-full py-3 rounded-xl border border-ui-border text-text-main font-semibold hover:bg-ui-surface-hover transition-colors">
+              <button onClick={() => handleSelect('IN')} className="w-full py-3 rounded-xl border border-ui-border text-text-main font-semibold hover:bg-ui-surface-hover transition-colors">
                 Explore Indian Markets
               </button>
             </div>
@@ -178,7 +178,7 @@ const MarketSelection: React.FC<MarketSelectionProps> = ({ onComplete }) => {
               >
                 Start US Trading &rarr;
               </button>
-              <button className="w-full py-3 rounded-xl border border-ui-border text-text-main font-semibold hover:bg-ui-surface-hover transition-colors">
+              <button onClick={() => handleSelect('US')} className="w-full py-3 rounded-xl border border-ui-border text-text-main font-semibold hover:bg-ui-surface-hover transition-colors">
                 Explore US Markets
               </button>
             </div>

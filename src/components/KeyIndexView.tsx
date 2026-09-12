@@ -5,6 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useMarketData } from '../hooks/useMarketData.ts';
+import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import {
   Activity,
   TrendingUp,
@@ -40,8 +41,16 @@ const INDEX_CONSTITUENTS: Record<string, string[]> = {
 
 export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
   const { indices, indexTicks, stocks, isLive, lastUpdated, refresh, isLoading, marketStatus } = useMarketData();
+  const { marketContext } = usePortfolio();
   const [selectedKey, setSelectedKey] = useState<string>('dow');
-  const [regionFilter, setRegionFilter] = useState<string>('ALL');
+  const [regionFilter, setRegionFilter] = useState<string>(marketContext === 'IN' ? 'India' : (marketContext === 'US' ? 'US' : 'ALL'));
+
+  React.useEffect(() => {
+    const newRegion = marketContext === 'IN' ? 'India' : (marketContext === 'US' ? 'US' : 'ALL');
+    const firstIndex = indices.find(idx => newRegion === 'ALL' || idx.region === newRegion);
+    if (firstIndex) setSelectedKey(firstIndex.key);
+    setRegionFilter(marketContext === 'IN' ? 'India' : (marketContext === 'US' ? 'US' : 'ALL'));
+  }, [marketContext]);
 
   const selectedIndex = useMemo(() => {
     return indices.find(idx => idx.key === selectedKey) || indices[0];

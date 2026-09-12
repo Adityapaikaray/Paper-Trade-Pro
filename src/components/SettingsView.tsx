@@ -89,12 +89,7 @@ const SettingsView: React.FC = () => {
                 <p className="text-sm font-bold text-gray-900 dark:text-text-main">Base Currency</p>
                 <p className="text-xs text-gray-500 dark:text-text-muted mt-1">Display all prices in USD</p>
               </div>
-              <button 
-                onClick={() => addToast('Currency selection coming soon', 'info')}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-ui-surface-hover text-gray-700 dark:text-text-main text-xs font-bold hover:opacity-80 transition-opacity border border-transparent dark:border-ui-border"
-              >
-                <DollarSign size={14} /> USD ($)
-              </button>
+              
             </div>
           </div>
 

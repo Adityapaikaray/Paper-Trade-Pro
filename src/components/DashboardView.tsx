@@ -25,18 +25,77 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
   const [viewMode, setViewMode] = useState<'grid'|'list'>('list');
   const [sortOpen, setSortOpen] = useState(false);
   const [sortMode, setSortMode] = useState('Value (High → Low)');
+  const [moversType, setMoversType] = useState<'gainers'|'losers'>('gainers');
 
   
-  const { profile, marketContext } = usePortfolio();
+  const { profile, marketContext, addFunds } = usePortfolio();
   const isIndia = marketContext === 'IN';
   const currencySymbol = isIndia ? '₹' : '$';
-  const portfolioValue = isIndia ? 2469011.47 : 1024850.00;
-  const todayReturn = isIndia ? 14250.80 : 12450.50;
-  const todayReturnPct = isIndia ? 0.58 : 1.2;
-  const unrealizedReturn = isIndia ? 245000.00 : 45000.00;
-  const unrealizedReturnPct = isIndia ? 11.2 : 4.5;
   const { stocks } = useMarketData();
+  
+  let currentHoldingsValue = 0;
+  let totalCost = 0;
+  
+  profile.holdings.forEach(holding => {
+    const stock = stocks.find(s => s.symbol === holding.symbol);
+    if (stock && stock.currency === currencySymbol) {
+      currentHoldingsValue += stock.price * holding.shares;
+      totalCost += holding.averagePrice * holding.shares;
+    }
+  });
+
+  const cashBalance = profile.balances[currencySymbol] || 0;
+  const portfolioValue = cashBalance + currentHoldingsValue;
+  
+  const unrealizedReturn = currentHoldingsValue - totalCost;
+  const unrealizedReturnPct = totalCost > 0 ? (unrealizedReturn / totalCost) * 100 : 0;
+
+  const holdingsWithData = profile.holdings
+    .map(holding => {
+      const stock = stocks.find(s => s.symbol === holding.symbol);
+      return { holding, stock };
+    })
+    .filter(h => h.stock && h.stock.currency === currencySymbol)
+    .map(h => {
+      const currentPrice = h.stock.price;
+      const avgCost = h.holding.averagePrice;
+      const quantity = h.holding.shares;
+      const marketValue = currentPrice * quantity;
+      const costValue = avgCost * quantity;
+      const unrealizedPL = marketValue - costValue;
+      const unrealizedPLPct = (currentPrice / avgCost - 1) * 100;
+      const todayChange = h.stock.change * quantity;
+      const todayChangePct = h.stock.changePercent;
+      const allocation = portfolioValue > 0 ? (marketValue / portfolioValue) * 100 : 0;
+      
+      return {
+        ...h.holding,
+        stock: h.stock,
+        currentPrice,
+        marketValue,
+        unrealizedPL,
+        unrealizedPLPct,
+        todayChange,
+        todayChangePct,
+        allocation
+      };
+    });
+
+  
+  // Day return mock based on portfolio size
+  const todayReturn = portfolioValue > 0 ? (portfolioValue * (isIndia ? 0.005 : 0.012)) : 0;
+  const todayReturnPct = portfolioValue > 0 ? (todayReturn / portfolioValue) * 100 : 0;
+
   const { openModal, addToast, setIsCopilotOpen } = useUI();
+
+  const contextCountry = marketContext === 'IN' ? 'India' : (marketContext === 'US' ? 'USA' : 'All');
+  
+  const topMovers = stocks
+    .filter(s => contextCountry === 'All' || s.country === contextCountry)
+    .sort((a, b) => moversType === 'gainers' ? b.changePercent - a.changePercent : a.changePercent - b.changePercent)
+    .slice(0, 5)
+    .map(s => ({ s: s.symbol, v: (s.changePercent >= 0 ? '+' : '') + s.changePercent.toFixed(2) + '%' }));
+
 
   return (
     <div className="pb-16 max-w-[1600px] mx-auto w-full">
@@ -59,11 +118,18 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
         <div className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
           <div className="relative z-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Total Portfolio Value</p>
-            <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">{currencySymbol}{portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
-            <p className="text-xs font-bold text-positive mt-2 flex items-center gap-1">
-              <TrendingUp size={14} />
-              +₹2,457,354.21 (+21080.03%)
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Total Portfolio Value</p>
+                <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">{currencySymbol}{portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+              </div>
+              <button onClick={() => addFunds(isIndia ? 1000000 : 10000, currencySymbol)} className="px-3 py-1 bg-primary/10 text-primary hover:bg-primary/20 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1" title="Add virtual funds">
+                <Plus size={12} /> Add Cash
+              </button>
+            </div>
+            <p className={`text-xs font-bold mt-2 flex items-center gap-1 ${todayReturn >= 0 ? 'text-positive' : 'text-rose-500'}`}>
+              {todayReturn >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+              {todayReturn >= 0 ? '+' : '-'}{currencySymbol}{Math.abs(todayReturn).toLocaleString(undefined, { minimumFractionDigits: 2 })} ({todayReturn >= 0 ? '+' : '-'}{Math.abs(todayReturnPct).toFixed(2)}%)
             </p>
           </div>
         </div>
@@ -387,23 +453,17 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
               <h3 className="text-base font-bold text-text-main">Top Movers Today</h3>
             </div>
             <div className="flex gap-2 mb-4">
-              <button className="flex-1 py-1.5 text-xs font-bold rounded-lg bg-ui-bg border border-primary text-primary-dark">Gainers</button>
-              <button className="flex-1 py-1.5 text-xs font-bold rounded-lg bg-transparent text-text-muted hover:bg-ui-bg transition-colors">Losers</button>
+              <button onClick={() => setMoversType('gainers')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${moversType === 'gainers' ? 'bg-ui-bg border border-primary text-primary-dark' : 'bg-transparent text-text-muted hover:bg-ui-bg'}`}>Gainers</button>
+              <button onClick={() => setMoversType('losers')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${moversType === 'losers' ? 'bg-ui-bg border border-primary text-primary-dark' : 'bg-transparent text-text-muted hover:bg-ui-bg'}`}>Losers</button>
             </div>
             <div className="space-y-3">
-              {[
-                { s: 'TITAN', v: '+1.17%' },
-                { s: 'AMD', v: '+2.54%' },
-                { s: 'RELIANCE', v: '+1.28%' },
-                { s: 'HDFC', v: '+0.96%' },
-                { s: 'INFY', v: '+0.83%' },
-              ].map(mover => (
+              {topMovers.map(mover => (
                 <div key={mover.s} className="flex justify-between items-center p-2 rounded-lg hover:bg-ui-bg transition-colors cursor-pointer">
                    <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-ui-surface border border-ui-border flex items-center justify-center text-[10px] font-bold text-text-main">{mover.s.substring(0, 2)}</div>
                       <span className="text-sm font-bold text-text-main">{mover.s}</span>
                    </div>
-                   <span className="text-xs font-mono font-bold text-positive">{mover.v}</span>
+                   <span className={`text-xs font-mono font-bold ${moversType === 'gainers' ? 'text-positive' : 'text-negative'}`}>{mover.v}</span>
                 </div>
               ))}
             </div>
@@ -413,12 +473,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
           <div className="vibrant-card p-6">
             <h3 className="text-base font-bold text-text-main mb-4">Top News for You</h3>
             <div className="space-y-4">
-              {[
-                { t: 'AMD', h: 'New AI chip demand boosts revenue outlook', time: '2 hours ago · Reuters' },
-                { t: 'TITAN', h: 'Strong Q4 results beat expectations', time: '4 hours ago · Bloomberg' },
-                { t: 'India', h: 'NIFTY reaches new 52-week high', time: '5 hours ago · Economic Times' },
-                { t: 'NVDA', h: 'AI infrastructure demand continues to grow', time: '6 hours ago · TechCrunch' }
-              ].map((news, i) => (
+              {[ { t: 'AMD', h: 'New AI chip demand boosts revenue outlook', time: '2 hours ago · Reuters', us: true },
+                { t: 'TITAN', h: 'Strong Q4 results beat expectations', time: '4 hours ago · Bloomberg', in: true },
+                { t: 'India', h: 'NIFTY reaches new 52-week high', time: '5 hours ago · Economic Times', in: true },
+                { t: 'NVDA', h: 'AI infrastructure demand continues to grow', time: '6 hours ago · TechCrunch', us: true }
+              ].filter(n => (isIndia ? n.in : n.us)).map((news, i) => (
                 <div key={i} className="group cursor-pointer border-b border-ui-border last:border-0 pb-4 last:pb-0">
                   <div className="flex gap-3">
                     <div className="flex-1">
@@ -436,12 +495,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
           <div className="vibrant-card p-6">
             <h3 className="text-base font-bold text-text-main mb-4">Recent Activity</h3>
             <div className="space-y-4">
-               {[
-                 { type: 'BUY', symbol: 'AMD', desc: '10 shares @ $175.77', color: 'text-positive' },
-                 { type: 'BUY', symbol: 'TITAN', desc: '245 shares @ ₹3,645.60', color: 'text-positive' },
-                 { type: 'DIV', symbol: 'TITAN', desc: 'Dividend Received', color: 'text-primary' },
-                 { type: 'BUY', symbol: 'AAPL', desc: '5 shares @ $168.20', color: 'text-positive' },
-               ].map((act, i) => (
+               {[ isIndia ? { type: 'BUY', symbol: 'TITAN', desc: '245 shares @ ₹3,645.60', color: 'text-positive' } : { type: 'BUY', symbol: 'AMD', desc: '10 shares @ $175.77', color: 'text-positive' },
+                isIndia ? { type: 'DIV', symbol: 'RELIANCE', desc: 'Dividend Received', color: 'text-primary' } : { type: 'BUY', symbol: 'AAPL', desc: '5 shares @ $168.20', color: 'text-positive' },
+                isIndia ? { type: 'SELL', symbol: 'TCS', desc: '10 shares @ ₹4,100.00', color: 'text-rose-500' } : { type: 'DIV', symbol: 'MSFT', desc: 'Dividend Received', color: 'text-primary' },
+              ].map((act, i) => (
                  <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-ui-bg transition-colors cursor-pointer group">
                     <div className={`w-10 h-10 rounded-full bg-ui-surface border border-ui-border flex items-center justify-center text-[10px] font-bold ${act.color}`}>
                        {act.type}
@@ -459,7 +516,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
           <div className="vibrant-card p-6">
              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-text-main">Your Goals</h3>
-                <button className="text-xs text-primary hover:text-primary-light font-bold flex items-center gap-1">Manage <ArrowRight size={12} /></button>
+                
              </div>
              <div className="space-y-5">
                 <div>
@@ -470,7 +527,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                    <div className="w-full h-2 rounded-full bg-ui-bg border border-ui-border overflow-hidden">
                       <div className="h-full bg-primary rounded-full w-1/2" />
                    </div>
-                   <p className="text-[10px] text-text-muted font-mono mt-1 text-right">₹15,00,000 / ₹30,00,000</p>
+                   <p className="text-[10px] text-text-muted font-mono mt-1 text-right">{currencySymbol}{isIndia ? '15,00,000' : '150,000'} / {currencySymbol}{isIndia ? '30,00,000' : '300,000'}</p>
                 </div>
                 <div>
                    <div className="flex justify-between items-end mb-2">
@@ -480,7 +537,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                    <div className="w-full h-2 rounded-full bg-ui-bg border border-ui-border overflow-hidden">
                       <div className="h-full bg-positive rounded-full w-[28%]" />
                    </div>
-                   <p className="text-[10px] text-text-muted font-mono mt-1 text-right">₹28,20,000 / ₹1,00,00,000</p>
+                   <p className="text-[10px] text-text-muted font-mono mt-1 text-right">{currencySymbol}{isIndia ? '28,20,000' : '282,000'} / {currencySymbol}{isIndia ? '1,00,00,000' : '1,000,000'}</p>
                 </div>
              </div>
           </div>

@@ -17,10 +17,10 @@ interface PortfolioViewProps {
 }
 
 const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
-  const { profile } = usePortfolio();
+  const { profile, addFunds, marketContext } = usePortfolio();
   const { stocks } = useMarketData();
   const { openModal } = useUI();
-  const currency = profile.preferredCurrency!;
+  const currency = { symbol: marketContext === 'IN' ? '₹' : '$', rate: 1 };
 
   const holdingsWithData = profile.holdings.map(holding => {
     const stock = stocks.find(s => s.symbol === holding.symbol);
@@ -38,13 +38,16 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
   });
 
   const totalPortfolioValue = holdingsWithData.reduce((acc, pos) => acc + pos.valueInPreferred, 0);
-  const totalBalanceInSelectedCurrency = profile.balances[currency.symbol] || (profile.balances["$"] * currency.rate);
+  const totalBalanceInSelectedCurrency = profile.balances[currency.symbol] || 0;
   const totalValue = totalPortfolioValue + totalBalanceInSelectedCurrency;
 
 
   if (profile.holdings.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-40 space-y-8 ">
+        <button onClick={() => addFunds(marketContext === 'IN' ? 100000 : 10000, marketContext === 'IN' ? '₹' : '$')} className="px-6 py-2 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">
+          Deposit Virtual Funds
+        </button>
         <div className="w-28 h-28 rounded-[40px] bg-ui-surface border border-ui-border flex items-center justify-center text-text-muted shadow-2xl relative">
           <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full" />
           <Briefcase size={56} strokeWidth={1} className="relative z-10" />
