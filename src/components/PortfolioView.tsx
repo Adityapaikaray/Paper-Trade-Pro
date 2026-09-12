@@ -22,7 +22,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
   const { openModal } = useUI();
   const currency = { symbol: marketContext === 'IN' ? '₹' : '$', rate: 1 };
 
-  const holdingsWithData = profile.holdings.map(holding => {
+  const holdingsWithData = (profile?.holdings || []).map(holding => {
     const stock = stocks.find(s => s.symbol === holding.symbol);
     const currentPrice = stock?.price || holding.averagePrice;
     const profit = (currentPrice - holding.averagePrice) * holding.shares;
@@ -38,11 +38,11 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
   });
 
   const totalPortfolioValue = holdingsWithData.reduce((acc, pos) => acc + pos.valueInPreferred, 0);
-  const totalBalanceInSelectedCurrency = profile.balances[currency.symbol] || 0;
+  const totalBalanceInSelectedCurrency = profile?.balances?.[currency.symbol] || 0;
   const totalValue = totalPortfolioValue + totalBalanceInSelectedCurrency;
 
 
-  if (profile.holdings.length === 0) {
+  if ((profile?.holdings || []).length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-40 space-y-8 ">
         <button onClick={() => addFunds(marketContext === 'IN' ? 100000 : 10000, marketContext === 'IN' ? '₹' : '$')} className="px-6 py-2 bg-primary/10 text-primary hover:bg-primary/20 text-xs font-bold uppercase tracking-wider rounded-xl transition-colors">

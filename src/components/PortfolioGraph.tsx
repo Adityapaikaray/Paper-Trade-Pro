@@ -16,6 +16,7 @@ import {
 } from 'recharts';
 import { HistoryPoint } from '../types.ts';
 import { motion } from 'framer-motion';
+import { useTheme } from '../contexts/ThemeContext.tsx';
 
 interface PortfolioGraphProps {
   history: HistoryPoint[];
@@ -23,10 +24,13 @@ interface PortfolioGraphProps {
   currencySymbol?: string;
   currencyRate?: number;
   baseline?: number; // In USD
+  premiumMode?: boolean;
 }
 
-const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, currencySymbol = '$', currencyRate = 1, baseline = 112000 }) => {
+const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, currencySymbol = '$', currencyRate = 1, baseline = 112000, premiumMode = false }) => {
   const [timeRange, setTimeRange] = useState<'1m' | '5m' | '15m' | 'ALL'>('ALL');
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
   const [now, setNow] = useState(Date.now());
 
   // Force a re-render every second to keep the "live" point moving on the x-axis
@@ -92,100 +96,155 @@ const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, 
   const strokeColor = isPositive ? '#10b981' : '#f43f5e';
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          {(['1m', '5m', '15m', 'ALL'] as const).map((range) => (
-            <button
-              key={range}
-              onClick={() => setTimeRange(range)}
-              className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                timeRange === range 
-                  ? 'bg-primary text-ui-bg shadow-lg shadow-primary/20 scale-105' 
-                  : 'text-text-muted hover:bg-ui-surface'
-              }`}
-            >
-              {range}
-            </button>
-          ))}
-        </div>
-        <div className="text-right">
-          <div className="flex items-center justify-end gap-3">
-             <div className="text-right">
-                <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Live Portfolio Performance</p>
-                <div className="flex items-center gap-1.5 justify-end">
-                  <div className={`w-1.5 h-1.5 rounded-full animate-ping ${isPositive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                  <p className={`text-lg font-mono font-black italic ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                    {currencySymbol}{latestValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                  </p>
-                </div>
-             </div>
+    <div className={`space-y-6 ${premiumMode ? 'h-full w-full' : ''}`}>
+      {!premiumMode && (
+        <div className="flex items-center justify-between">
+          <div className="flex gap-2">
+            {(['1m', '5m', '15m', 'ALL'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setTimeRange(range)}
+                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                  timeRange === range 
+                    ? 'bg-primary text-ui-bg shadow-lg shadow-primary/20 scale-105' 
+                    : 'text-text-muted hover:bg-ui-surface'
+                }`}
+              >
+                {range}
+              </button>
+            ))}
+          </div>
+          <div className="text-right">
+            <div className="flex items-center justify-end gap-3">
+               <div className="text-right">
+                  <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Live Portfolio Performance</p>
+                  <div className="flex items-center gap-1.5 justify-end">
+                    <div className={`w-1.5 h-1.5 rounded-full animate-ping ${isPositive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                    <p className={`text-lg font-mono font-black italic ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      {currencySymbol}{latestValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </p>
+                  </div>
+               </div>
+            </div>
           </div>
         </div>
-      </div>
-
-      <div className="h-80 w-full">
+      )}
+      <div className={`${premiumMode ? 'h-[360px]' : 'h-80'} w-full`}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <AreaChart data={filteredData} margin={{ top: 10, right: premiumMode ? 40 : 10, left: 0, bottom: 0 }}>
             <defs>
-              <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
-                <stop offset={gradientOffset} stopColor="#10b981" stopOpacity={0.6} />
-                <stop offset={gradientOffset} stopColor="#f43f5e" stopOpacity={0.6} />
-              </linearGradient>
-              <linearGradient id="splitColorFill" x1="0" y1="0" x2="0" y2="1">
-                <stop offset={gradientOffset} stopColor="#10b981" stopOpacity={0.2} />
-                <stop offset={gradientOffset} stopColor="#f43f5e" stopOpacity={0.2} />
-              </linearGradient>
+              {premiumMode ? (
+                <>
+                  <linearGradient id="premiumColor" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={isDark ? "#00D084" : "#00A878"} stopOpacity={0.4} />
+                    <stop offset="95%" stopColor={isDark ? "#00D084" : "#00A878"} stopOpacity={0.0} />
+                  </linearGradient>
+                </>
+              ) : (
+                <>
+                  <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset={gradientOffset} stopColor="#10b981" stopOpacity={0.6} />
+                    <stop offset={gradientOffset} stopColor="#f43f5e" stopOpacity={0.6} />
+                  </linearGradient>
+                  <linearGradient id="splitColorFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset={gradientOffset} stopColor="#10b981" stopOpacity={0.2} />
+                    <stop offset={gradientOffset} stopColor="#f43f5e" stopOpacity={0.2} />
+                  </linearGradient>
+                </>
+              )}
             </defs>
             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ui-border)" opacity={0.5} />
             <XAxis 
               dataKey="time" 
               fontSize={10}
-              tickMargin={10}
+              tickMargin={12}
               axisLine={false}
               tickLine={false}
-              tick={{ fill: 'var(--text-muted)', fontWeight: 'bold' }}
+              tick={{ fill: 'var(--text-muted)', fontWeight: premiumMode ? '600' : 'bold' }}
+              minTickGap={30}
             />
             <YAxis 
+              orientation="right"
               domain={[minVal, maxVal]} 
-              hide={true} 
+              hide={!premiumMode} 
+              axisLine={false}
+              tickLine={false}
+              tick={{ fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 }}
+              tickMargin={10}
+              tickFormatter={(val) => `${currencySymbol}${(val / 1000).toFixed(1)}K`}
             />
-            <Tooltip
-              contentStyle={{
-                backgroundColor: 'var(--ui-surface)',
-                border: '1px solid var(--ui-border)',
-                borderRadius: '16px',
-                padding: '12px',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
-              }}
-              itemStyle={{ color: 'var(--text-main)' }}
-              labelStyle={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '900' }}
-              formatter={(value: number) => [
-                <span className={value >= (baseline * currencyRate) ? 'text-emerald-400' : 'text-rose-400'}>
-                  {currencySymbol}{value.toLocaleString()}
-                </span>, 
-                'Live Valuation'
-              ]}
-            />
+            
+            {premiumMode ? (
+              <Tooltip 
+                content={({ active, payload, label }) => {
+                  if (active && payload && payload.length) {
+                    const currentVal = payload[0].value as number;
+                    const pctChange = ((currentVal / (baseline * currencyRate)) - 1) * 100;
+                    const isUp = pctChange >= 0;
+                    return (
+                      <div className="bg-ui-surface rounded-xl p-3 shadow-xl border border-primary flex flex-col gap-1 relative overflow-hidden">
+                        <div className="flex justify-between items-center gap-4">
+                          <span className="text-[15px] font-mono font-bold text-text-main">
+                            {currencySymbol}{currentVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center gap-4">
+                          <span className={`text-[11px] font-mono font-bold ${isUp ? 'text-positive' : 'text-rose-500'}`}>
+                            {isUp ? '+' : ''}{pctChange.toFixed(2)}%
+                          </span>
+                          <span className="text-[10px] text-text-main/50 uppercase tracking-widest">{label}</span>
+                        </div>
+                        <div className="absolute top-0 right-0 w-8 h-8 bg-positive blur-xl opacity-20 rounded-full" />
+                      </div>
+                    );
+                  }
+                  return null;
+                }}
+                cursor={{ stroke: isDark ? '#00D084' : '#00A878', strokeWidth: 1, strokeDasharray: '4 4' }}
+              />
+            ) : (
+              <Tooltip
+                contentStyle={{
+                  backgroundColor: 'var(--ui-surface)',
+                  border: '1px solid var(--ui-border)',
+                  borderRadius: '16px',
+                  padding: '12px',
+                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
+                }}
+                itemStyle={{ color: 'var(--text-main)' }}
+                labelStyle={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '900' }}
+                formatter={(value: number) => [
+                  <span className={value >= (baseline * currencyRate) ? 'text-emerald-400' : 'text-rose-400'}>
+                    {currencySymbol}{value.toLocaleString()}
+                  </span>, 
+                  'Live Valuation'
+                ]}
+              />
+            )}
+            
             <Area
               type="monotone"
               dataKey="value"
-              stroke="url(#splitColor)"
-              strokeWidth={4}
+              stroke={premiumMode ? (isDark ? "#00D084" : "#00A878") : "url(#splitColor)"}
+              strokeWidth={premiumMode ? 2.5 : 4}
               fillOpacity={1}
-              fill="url(#splitColorFill)"
-              animationDuration={500}
+              fill={premiumMode ? "url(#premiumColor)" : "url(#splitColorFill)"}
+              animationDuration={1000}
               isAnimationActive={true}
               baseLine={baseline * currencyRate}
+              activeDot={premiumMode ? { r: 6, fill: isDark ? '#00D084' : '#00A878', stroke: isDark ? '#FFFFFF' : '#0B1728', strokeWidth: 2, style: { filter: 'drop-shadow(0 0 8px rgba(0,168,120,0.8))' } } : true}
             />
-            <Brush 
-              dataKey="time" 
-              height={30} 
-              stroke="var(--primary)" 
-              fill="var(--ui-bg)"
-              travellerWidth={10}
-              gap={1}
-            />
+            
+            {!premiumMode && (
+              <Brush 
+                dataKey="time" 
+                height={30} 
+                stroke="var(--primary)" 
+                fill="var(--ui-bg)"
+                travellerWidth={10}
+                gap={1}
+              />
+            )}
           </AreaChart>
         </ResponsiveContainer>
       </div>

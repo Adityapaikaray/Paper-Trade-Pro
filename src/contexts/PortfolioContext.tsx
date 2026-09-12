@@ -39,15 +39,15 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (saved) {
       const parsed = JSON.parse(saved);
       // Upgrade logic for balances
-      let balances = parsed.balances || INITIAL_BALANCES;
+      let balances = parsed?.balances || INITIAL_BALANCES;
       if (!balances['$']) balances['$'] = 0;
       if (!balances['₹']) balances['₹'] = 0;
       
       return {
         ...parsed,
-        alerts: parsed.alerts || [],
+        alerts: parsed?.alerts || [],
         balances: balances,
-        history: parsed.history || []
+        history: parsed?.history || []
       };
     }
     return {
@@ -79,16 +79,16 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const buyStock = (stock: Stock, shares: number) => {
     const cost = stock.price * shares;
-    const currentBalance = profile.balances[stock.currency] || 0;
+    const currentBalance = profile?.balances?.[stock.currency] || 0;
     
     if (currentBalance < cost) return false;
 
     setProfile(prev => {
-      const existingHolding = prev.holdings.find(h => h.symbol === stock.symbol);
+      const existingHolding = (prev?.holdings || []).find(h => h.symbol === stock.symbol);
       let newHoldings;
       
       if (existingHolding) {
-        newHoldings = prev.holdings.map(h => 
+        newHoldings = (prev?.holdings || []).map(h => 
           h.symbol === stock.symbol 
             ? {
                 ...h,
@@ -98,7 +98,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             : h
         );
       } else {
-        newHoldings = [...prev.holdings, { symbol: stock.symbol, shares, averagePrice: stock.price }];
+        newHoldings = [...(prev?.holdings || []), { symbol: stock.symbol, shares, averagePrice: stock.price }];
       }
 
       const transaction: Transaction = {
@@ -113,8 +113,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return {
         ...prev,
         balances: {
-          ...prev.balances,
-          [stock.currency]: (prev.balances[stock.currency] || 0) - cost
+          ...(prev?.balances || {}),
+          [stock.currency]: (prev?.balances?.[stock.currency] || 0) - cost
         },
         holdings: newHoldings,
         transactions: [transaction, ...prev.transactions]
@@ -124,11 +124,11 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const sellStock = (stock: Stock, shares: number) => {
-    const holding = profile.holdings.find(h => h.symbol === stock.symbol);
+    const holding = (profile?.holdings || []).find(h => h.symbol === stock.symbol);
     if (!holding || holding.shares < shares) return false;
 
     setProfile(prev => {
-      const newHoldings = prev.holdings
+      const newHoldings = (prev?.holdings || [])
         .map(h => h.symbol === stock.symbol ? { ...h, shares: h.shares - shares } : h)
         .filter(h => h.shares > 0);
 
@@ -144,8 +144,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       return {
         ...prev,
         balances: {
-          ...prev.balances,
-          [stock.currency]: (prev.balances[stock.currency] || 0) + (stock.price * shares)
+          ...(prev?.balances || {}),
+          [stock.currency]: (prev?.balances?.[stock.currency] || 0) + (stock.price * shares)
         },
         holdings: newHoldings,
         transactions: [transaction, ...prev.transactions]
@@ -184,7 +184,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const addFunds = (amount: number, currency: string) => {
-    setProfile(prev => ({ ...prev, balances: { ...prev.balances, [currency]: (prev.balances[currency] || 0) + amount } }));
+    setProfile(prev => ({ ...prev, balances: { ...(prev?.balances || {}), [currency]: (prev?.balances?.[currency] || 0) + amount } }));
   };
 
   const resetAccount = (marketRegion?: MarketRegion) => {
@@ -214,7 +214,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
          return {
            ...prev,
            balances: {
-             ...prev.balances,
+             ...(prev?.balances || {}),
              [targetCurrency]: INITIAL_BALANCES[targetCurrency]
            }
          }

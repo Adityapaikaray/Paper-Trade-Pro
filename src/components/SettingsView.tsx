@@ -30,7 +30,7 @@ const SettingsView: React.FC = () => {
         {/* Navigation Sidebar */}
         <div className="flex flex-col gap-2">
           <button className="flex items-center gap-3 p-3 rounded-xl bg-ui-surface-hover text-text-main font-bold border border-ui-border transition-colors">
-            <User size={18} className="text-[#D4AF37] dark:text-primary" />
+            <User size={18} className="text-primary dark:text-primary" />
             General
           </button>
           <button className="flex items-center gap-3 p-3 rounded-xl bg-transparent text-text-muted hover:text-text-main hover:bg-ui-surface-hover font-semibold transition-colors border border-transparent">
@@ -52,7 +52,7 @@ const SettingsView: React.FC = () => {
               <User size={18} className="text-gray-400" /> Account Profile
             </h3>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full bg-[#D4AF37] flex items-center justify-center text-white font-black uppercase text-xl shadow-md">
+              <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-text-main font-black uppercase text-xl shadow-md">
                 JD
               </div>
               <div>
@@ -108,7 +108,7 @@ const SettingsView: React.FC = () => {
                 <div className="flex gap-3">
                   <button 
                     onClick={handleReset}
-                    className="px-4 py-2 bg-rose-500 text-white text-xs font-bold rounded-lg hover:bg-rose-600 transition-colors shadow-sm"
+                    className="px-4 py-2 bg-rose-500 text-text-main text-xs font-bold rounded-lg hover:bg-rose-600 transition-colors shadow-sm"
                   >
                     Yes, Reset Everything
                   </button>
@@ -123,7 +123,7 @@ const SettingsView: React.FC = () => {
             ) : (
               <button 
                 onClick={() => setShowConfirmReset(true)}
-                className="px-5 py-2.5 bg-rose-500 text-white text-xs font-bold rounded-xl hover:bg-rose-600 transition-colors shadow-sm w-full sm:w-auto"
+                className="px-5 py-2.5 bg-rose-500 text-text-main text-xs font-bold rounded-xl hover:bg-rose-600 transition-colors shadow-sm w-full sm:w-auto"
               >
                 Reset Account Data
               </button>

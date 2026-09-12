@@ -1,0 +1,246 @@
+          {/* AI Portfolio Copilot Card */}
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }} className="bg-[#0A0A0A] rounded-[32px] p-8 lg:p-10 border border-[#222222] shadow-[0_20px_40px_rgba(0,0,0,0.8)] relative overflow-hidden group flex flex-col justify-between">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#D4AF37]/5 to-transparent rounded-bl-full pointer-events-none" />
+            
+            <div className="flex items-start gap-5 mb-8 relative z-10">
+               <div className="w-14 h-14 rounded-2xl bg-[#101010] border border-[#222222] flex items-center justify-center shadow-[0_5px_15px_rgba(0,0,0,0.5)] shrink-0">
+                 <Bot size={28} className="text-[#D4AF37]" strokeWidth={1.5} />
+               </div>
+               <div>
+                 <div className="flex items-center gap-2">
+                   <h3 className="text-[17px] font-sans font-bold text-white">AI Portfolio Copilot</h3>
+                   <span className="text-[8px] font-bold uppercase tracking-widest bg-[#101010] border border-[#D4AF37] text-[#D4AF37] px-1.5 py-0.5 rounded-sm shadow-[0_0_8px_rgba(212,175,55,0.2)]">Beta</span>
+                 </div>
+                 <p className="text-[13px] text-[#8C8C8C] mt-1 leading-relaxed">Get intelligent insights, ask questions and make better decisions.</p>
+               </div>
+            </div>
+
+            <button 
+               onClick={() => setIsCopilotOpen(true)}
+               className="w-full py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#A6822B] text-[#000000] font-bold rounded-xl hover:shadow-[0_4px_20px_rgba(212,175,55,0.4)] transition-all flex items-center justify-center gap-2 mb-6 relative z-10"
+            >
+              Ask AI Copilot <ArrowRight size={16} strokeWidth={2} />
+            </button>
+
+            <div className="space-y-2.5 relative z-10">
+              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3 rounded-xl bg-[#101010] border border-[#222222] text-[13px] font-medium text-white hover:border-[#D4AF37]/50 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all flex items-center justify-between group">
+                "Why is my portfolio up today?" <ArrowRight size={14} className="text-[#8C8C8C] group-hover:text-[#D4AF37] transition-colors" />
+              </button>
+              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3 rounded-xl bg-[#101010] border border-[#222222] text-[13px] font-medium text-white hover:border-[#D4AF37]/50 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all flex items-center justify-between group">
+                "What are my biggest risks?" <ArrowRight size={14} className="text-[#8C8C8C] group-hover:text-[#D4AF37] transition-colors" />
+              </button>
+              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3 rounded-xl bg-[#101010] border border-[#222222] text-[13px] font-medium text-white hover:border-[#D4AF37]/50 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all flex items-center justify-between group">
+                "Suggest next investment opportunities" <ArrowRight size={14} className="text-[#8C8C8C] group-hover:text-[#D4AF37] transition-colors" />
+              </button>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* Market Sentiment and Ticker Wrapper */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          
+          {/* Market Sentiment */}
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="bg-[#0A0A0A] rounded-[32px] border border-[#222222] shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col">
+            <div className="p-8 lg:p-10 pb-8 flex flex-col flex-1">
+              <div className="flex justify-between items-start mb-10">
+                <div>
+                  <h3 className="text-[26px] font-serif font-bold text-white leading-tight tracking-tight">Market Sentiment</h3>
+                  <p className="text-[14px] text-[#8C8C8C] mt-1.5 font-medium">Based on broad indices and volume</p>
+                </div>
+                <button className="w-10 h-10 rounded-full bg-[#101010] flex items-center justify-center border border-[#222222] text-[#8C8C8C] hover:text-[#D4AF37] hover:border-[#D4AF37] transition-colors shadow-sm">
+                  <Info size={18} strokeWidth={2} />
+                </button>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center relative flex-1">
+                {/* SVG Gauge */}
+                <div className="relative w-full flex justify-center mb-6">
+                  <svg width="300" height="150" viewBox="0 0 300 150" className="overflow-visible">
+                    <defs>
+                      <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="12" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                      <filter id="needle-shadow-dark" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="5" stdDeviation="5" floodOpacity="0.8" floodColor="#000000" />
+                      </filter>
+                    </defs>
+
+                    {/* Labels */}
+                    <text x="30" y="125" fill="#8C8C8C" fontSize="13.5" fontWeight="500" textAnchor="middle">Bearish</text>
+                    <text x="150" y="10" fill="#8C8C8C" fontSize="13.5" fontWeight="500" textAnchor="middle">Neutral</text>
+                    <text x="270" y="125" fill="#8C8C8C" fontSize="13.5" fontWeight="500" textAnchor="middle">Bullish</text>
+
+                    {/* Gauge Segments */}
+                    <g transform="rotate(180 150 135)">
+                      {/* Bearish */}
+                      <circle cx="150" cy="135" r="100" fill="none" stroke="#FF5C5C" strokeWidth="18" strokeLinecap="round" strokeDasharray="84.72 628.32" strokeDashoffset="0" />
+                      {/* Neutral */}
+                      <circle cx="150" cy="135" r="100" fill="none" stroke="#D4AF37" strokeWidth="18" strokeLinecap="round" strokeDasharray="84.72 628.32" strokeDashoffset="-114.72" />
+                      {/* Bullish */}
+                      <circle cx="150" cy="135" r="100" fill="none" stroke="#00D084" strokeWidth="18" strokeLinecap="round" strokeDasharray="84.72 628.32" strokeDashoffset="-229.44" style={{ filter: 'drop-shadow(0 0 14px rgba(0,208,132,0.4))' }} />
+                    </g>
+
+                    {/* Needle */}
+                    <g transform="rotate(-38 150 135)" filter="url(#needle-shadow-dark)">
+                      {/* Metallic black body */}
+                      <polygon points="150,131 235,135 150,139" fill="url(#metallic-needle)" />
+                      <linearGradient id="metallic-needle" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#333333" />
+                        <stop offset="50%" stopColor="#F5F5F0" />
+                        <stop offset="100%" stopColor="#111111" />
+                      </linearGradient>
+                      
+                      {/* Base */}
+                      <circle cx="150" cy="135" r="12" fill="#111111" stroke="#333333" strokeWidth="1" />
+                      {/* Gold Center */}
+                      <circle cx="150" cy="135" r="6" fill="#D4AF37" />
+                    </g>
+                  </svg>
+                </div>
+                <div className="text-center mt-[-5px] z-10 relative">
+                  <p className="text-[38px] font-serif font-bold text-[#00D084] tracking-tight leading-none mb-2.5 drop-shadow-[0_0_15px_rgba(0,208,132,0.5)]">Bullish</p>
+                  <p className="text-[15px] font-medium text-[#8C8C8C]">Overall market sentiment is positive.</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Market Intelligence */}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }} className="bg-[#0A0A0A] rounded-[32px] border border-[#222222] shadow-[0_20px_40px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col">
+            <div className="p-8 lg:p-10 flex flex-col">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h3 className="text-[26px] font-serif font-bold text-white leading-tight tracking-tight">Market Intelligence</h3>
+                  <p className="text-[14px] text-[#8C8C8C] mt-1.5 font-medium">Top financial news and impacts</p>
+                </div>
+                <button className="w-10 h-10 rounded-full bg-[#101010] flex items-center justify-center border border-[#222222] text-[#8C8C8C] hover:text-[#D4AF37] hover:border-[#D4AF37] transition-colors shadow-sm">
+                  <Newspaper size={18} strokeWidth={2} />
+                </button>
+              </div>
+
+              <div className="space-y-5">
+                {/* News Item 1 */}
+                <div className="group border border-[#222222] rounded-[24px] p-5 hover:border-[#333333] transition-all cursor-pointer bg-[#0A0A0A] hover:bg-[#101010] hover:shadow-[0_10px_30px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                         <span className="text-[10px] font-bold uppercase tracking-widest bg-[#111111] text-white border border-[#333333] px-2.5 py-1 rounded-full">Tech</span>
+                         <span className="text-[12px] font-medium text-[#8C8C8C]">2 hours ago</span>
+                      </div>
+                      <h4 className="text-[17px] font-bold text-white leading-tight mb-2 group-hover:text-[#D4AF37] transition-colors">TCS Secures Multi-Billion Dollar Deal with European Retailer</h4>
+                      <p className="text-[14px] text-[#8C8C8C] leading-relaxed line-clamp-2">India's largest IT services firm announced a massive digital transformation contract, boosting revenue visibility for the upcoming fiscal year.</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 pt-5 border-t border-[#222222] flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                       <div className="w-9 h-9 rounded-full bg-[#101010] border border-[#222222] flex items-center justify-center font-bold text-[12px] text-[#D4AF37]">TCS</div>
+                       <div className="flex flex-col">
+                         <span className="text-[15px] font-bold text-white leading-none mb-1">₹4,120.50</span>
+                         <span className="text-[13px] font-bold text-[#00D084] flex items-center leading-none"><span className="text-[10px] mr-0.5">▲</span> +2.4%</span>
+                       </div>
+                     </div>
+                     <button className="text-[13px] font-bold bg-[#101010] border border-[#222222] px-4 py-2 rounded-xl text-white hover:bg-[#D4AF37] hover:text-[#000000] hover:border-[#D4AF37] transition-colors flex items-center gap-1.5 shadow-sm">
+                        Trade <ChevronRight size={14} strokeWidth={2.5} />
+                     </button>
+                  </div>
+                </div>
+
+                {/* News Item 2 */}
+                <div className="group border border-[#222222] rounded-[24px] p-5 hover:border-[#333333] transition-all cursor-pointer bg-[#0A0A0A] hover:bg-[#101010] hover:shadow-[0_10px_30px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-[#D4AF37] opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                         <span className="text-[10px] font-bold uppercase tracking-widest bg-[#111111] text-white border border-[#333333] px-2.5 py-1 rounded-full">Banking</span>
+                         <span className="text-[12px] font-medium text-[#8C8C8C]">4 hours ago</span>
+                      </div>
+                      <h4 className="text-[17px] font-bold text-white leading-tight mb-2 group-hover:text-[#D4AF37] transition-colors">HDFC Bank Reports Strong Q3 Earnings, Margins Improve</h4>
+                      <p className="text-[14px] text-[#8C8C8C] leading-relaxed line-clamp-2">The private sector lender beat estimates with healthy credit growth and stable asset quality, leading to a surge in banking stocks.</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 pt-5 border-t border-[#222222] flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                       <div className="w-9 h-9 rounded-full bg-[#101010] border border-[#222222] flex items-center justify-center font-bold text-[12px] text-[#D4AF37]">HDFC</div>
+                       <div className="flex flex-col">
+                         <span className="text-[15px] font-bold text-white leading-none mb-1">₹1,680.10</span>
+                         <span className="text-[13px] font-bold text-[#00D084] flex items-center leading-none"><span className="text-[10px] mr-0.5">▲</span> +1.8%</span>
+                       </div>
+                     </div>
+                     <button className="text-[13px] font-bold bg-[#101010] border border-[#222222] px-4 py-2 rounded-xl text-white hover:bg-[#D4AF37] hover:text-[#000000] hover:border-[#D4AF37] transition-colors flex items-center gap-1.5 shadow-sm">
+                        Trade <ChevronRight size={14} strokeWidth={2.5} />
+                     </button>
+                  </div>
+                </div>
+              </div>
+              
+              <button className="w-full mt-8 py-4 border border-[#222222] text-[#F5F5F0] font-bold text-[14px] rounded-2xl hover:bg-[#101010] hover:border-[#333333] transition-colors flex items-center justify-center gap-2 shadow-sm">
+                View All Market News <ArrowRight size={16} strokeWidth={2} />
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+      
+      {/* 8. Bottom Market Ticker */}
+      <div className="fixed bottom-0 left-0 right-0 h-10 bg-[#050505] border-t border-[#222222] z-50 flex items-center overflow-hidden">
+        <div className="flex items-center h-full px-4 border-r border-[#222222] shrink-0 bg-[#000000] z-10 relative">
+          <div className="w-2 h-2 rounded-full bg-[#00D084] animate-pulse mr-2" />
+          <span className="text-[11px] font-bold text-white uppercase tracking-widest">Live Markets</span>
+        </div>
+        
+        {/* Ticker Animation Container */}
+        <div className="flex items-center h-full flex-1 relative overflow-hidden">
+          <div className="flex items-center gap-10 whitespace-nowrap animate-[ticker_30s_linear_infinite] pl-10 hover:[animation-play-state:paused]">
+            
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-white">NIFTY 50</span>
+              <span className="text-[11px] font-mono text-[#F5F5F0]">24,716.30</span>
+              <span className="text-[11px] font-mono font-bold text-[#00D084]">+0.82%</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-white">SENSEX</span>
+              <span className="text-[11px] font-mono text-[#F5F5F0]">81,123.45</span>
+              <span className="text-[11px] font-mono font-bold text-[#00D084]">+0.76%</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-white">NASDAQ</span>
+              <span className="text-[11px] font-mono text-[#F5F5F0]">17,623.91</span>
+              <span className="text-[11px] font-mono font-bold text-[#00D084]">+1.14%</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-white">S&P 500</span>
+              <span className="text-[11px] font-mono text-[#F5F5F0]">5,487.21</span>
+              <span className="text-[11px] font-mono font-bold text-[#00D084]">+0.67%</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-white">RELIANCE</span>
+              <span className="text-[11px] font-mono text-[#F5F5F0]">2,840.75</span>
+              <span className="text-[11px] font-mono font-bold text-[#FF5C5C]">-0.61%</span>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-white">TCS</span>
+              <span className="text-[11px] font-mono text-[#F5F5F0]">4,120.50</span>
+              <span className="text-[11px] font-mono font-bold text-[#00D084]">+2.40%</span>
+            </div>
+
+            {/* Duplicate for seamless scrolling */}
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-white">NIFTY 50</span>
+              <span className="text-[11px] font-mono text-[#F5F5F0]">24,716.30</span>
+              <span className="text-[11px] font-mono font-bold text-[#00D084]">+0.82%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default DashboardView;

@@ -4,10 +4,12 @@
  */
 
 import React, { useState } from 'react';
-import { Plus, ChevronDown, List, Grid, MoreVertical, TrendingUp, TrendingDown, Bot, ArrowRight, Play, CheckCircle2, ChevronRight, Activity, Zap, ShieldAlert, PieChart, BarChart3, Newspaper, LineChart } from 'lucide-react';
+import { Plus, ChevronDown, List, Grid, MoreVertical, TrendingUp, TrendingDown, Bot, ArrowRight, Play, CheckCircle2, ChevronRight, Activity, Zap, ShieldAlert, PieChart, BarChart3, Newspaper, LineChart, Info, Briefcase } from 'lucide-react';
 import { Stock } from '../types.ts';
 import PortfolioGraph from './PortfolioGraph.tsx';
+import PremiumPerformanceCard from './PremiumPerformanceCard.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { useUI } from '../contexts/UIContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +31,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
 
   
   const { profile, marketContext, addFunds } = usePortfolio();
+  const { theme } = useTheme();
   const isIndia = marketContext === 'IN';
   const currencySymbol = isIndia ? '₹' : '$';
   const { stocks } = useMarketData();
@@ -36,7 +39,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
   let currentHoldingsValue = 0;
   let totalCost = 0;
   
-  profile.holdings.forEach(holding => {
+  (profile?.holdings || []).forEach(holding => {
     const stock = stocks.find(s => s.symbol === holding.symbol);
     if (stock && stock.currency === currencySymbol) {
       currentHoldingsValue += stock.price * holding.shares;
@@ -44,13 +47,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
     }
   });
 
-  const cashBalance = profile.balances[currencySymbol] || 0;
+  const cashBalance = profile?.balances?.[currencySymbol] || 0;
   const portfolioValue = cashBalance + currentHoldingsValue;
   
   const unrealizedReturn = currentHoldingsValue - totalCost;
   const unrealizedReturnPct = totalCost > 0 ? (unrealizedReturn / totalCost) * 100 : 0;
 
-  const holdingsWithData = profile.holdings
+  const holdingsWithData = (profile?.holdings || [])
     .map(holding => {
       const stock = stocks.find(s => s.symbol === holding.symbol);
       return { holding, stock };
@@ -99,152 +102,158 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
 
   return (
     <div className="pb-16 max-w-[1600px] mx-auto w-full">
+      
       {/* Hero */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8 relative z-10">
-        <div className="relative">
-          <h1 className="text-3xl md:text-[40px] font-sans font-bold text-text-main tracking-tight leading-tight">
+      <div className="bg-ui-bg rounded-[24px] p-8 md:p-12 mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-end justify-between gap-8 shadow-[0_20px_50px_rgba(0,0,0,0.9)] border border-ui-border">
+        
+        {/* Subtle cinematic dark background simulation via CSS gradients */}
+        <div className="absolute inset-0 opacity-80 pointer-events-none" style={{ background: theme === 'dark' ? 'radial-gradient(ellipse at center bottom, #111111 0%, #000000 100%), linear-gradient(180deg, transparent 0%, #000000 100%)' : 'radial-gradient(ellipse at center bottom, #FCFBF8 0%, #F5F2EA 100%), linear-gradient(180deg, transparent 0%, #F5F2EA 100%)' }} />
+        
+        {/* Mountain silhouette */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100%25\' height=\'100%25\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 100 L20 70 L40 85 L70 30 L100 100 Z\' fill=\'none\' stroke=\'%23D4AF37\' stroke-width=\'1\' stroke-opacity=\'1\' /%3E%3C/svg%3E")', backgroundSize: 'cover', backgroundPosition: 'bottom' }} />
+        
+        {/* Very subtle warm-gold highlight along bottom edge */}
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/30 to-transparent" />
+
+        <div className="relative z-10 max-w-2xl">
+          <h1 className="text-3xl md:text-[44px] font-sans font-medium text-text-main tracking-tight leading-[1.1] mb-2">
             Good Morning, <br />
             <span className="font-serif italic text-primary font-black">Investor!</span>
           </h1>
-          <p className="text-text-muted mt-2 text-sm font-medium">Here's what's happening with your portfolio today.</p>
+          <p className="text-text-muted text-[15px] font-medium mt-4">Here's what's happening with your portfolio today.</p>
         </div>
-        <div className="text-left md:text-right">
-          <p className="text-sm font-bold text-text-main uppercase tracking-wider">{new Date().toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</p>
-          <p className="text-xs text-text-muted mt-1 font-serif italic">"A smarter you, a brighter tomorrow."</p>
+        
+        <div className="relative z-10 flex flex-col md:items-end gap-6 md:text-right">
+          <div className="text-left md:text-right">
+            <p className="text-lg md:text-xl font-serif text-text-main font-medium italic">"Discipline today, compounds a brighter tomorrow."</p>
+            <p className="text-text-muted text-xs font-bold uppercase tracking-widest mt-2">— Warren Buffett</p>
+            <div className="w-12 h-[1px] bg-primary opacity-50 mt-4 md:ml-auto" />
+          </div>
+          
+          <div className="flex items-end justify-between md:justify-end gap-8 w-full">
+            <div className="bg-ui-surface border border-ui-border rounded-xl p-3 flex items-center gap-3 shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] text-text-muted font-bold uppercase tracking-wider">SUN, 13 SEPT 2026</span>
+                <span className="text-[11px] text-text-main font-medium mt-0.5">Small steps. Bigger tomorrows. <ArrowRight size={10} className="inline text-primary" /></span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Portfolio Summary 4 Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
-          <div className="relative z-10">
-            <div className="flex justify-between items-start">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Total Portfolio Value</p>
-                <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">{currencySymbol}{portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+        
+        {/* Total Portfolio Value */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border">
+              <Briefcase size={14} className="text-primary" />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Total Portfolio Value</p>
+          </div>
+          <p className="text-2xl xl:text-[28px] font-serif font-black text-text-main leading-none mb-2">₹1,487,026.83</p>
+          <p className="text-[13px] font-bold text-positive flex items-center gap-1">
+            <TrendingUp size={14} /> +₹7,435.13 (+0.50%)
+          </p>
+        </motion.div>
+
+        {/* Today's P/L */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00D084]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border shadow-[0_0_10px_rgba(0,208,132,0.1)]">
+              <Activity size={14} className="text-positive" />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Today's P/L</p>
+          </div>
+          <p className="text-2xl xl:text-[28px] font-serif font-black text-text-main leading-none mb-2">+₹612.38</p>
+          <p className="text-[13px] font-bold text-positive flex items-center gap-1">
+            <TrendingUp size={14} /> (+4.03%)
+          </p>
+        </motion.div>
+
+        {/* Cash Balance */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.2 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border">
+                <span className="text-text-muted font-bold text-xs">₹</span>
               </div>
-              <button onClick={() => addFunds(isIndia ? 1000000 : 10000, currencySymbol)} className="px-3 py-1 bg-primary/10 text-primary hover:bg-primary/20 text-[10px] font-bold uppercase tracking-wider rounded-lg transition-colors flex items-center gap-1" title="Add virtual funds">
-                <Plus size={12} /> Add Cash
-              </button>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Cash Balance</p>
             </div>
-            <p className={`text-xs font-bold mt-2 flex items-center gap-1 ${todayReturn >= 0 ? 'text-positive' : 'text-rose-500'}`}>
-              {todayReturn >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-              {todayReturn >= 0 ? '+' : '-'}{currencySymbol}{Math.abs(todayReturn).toLocaleString(undefined, { minimumFractionDigits: 2 })} ({todayReturn >= 0 ? '+' : '-'}{Math.abs(todayReturnPct).toFixed(2)}%)
-            </p>
+            <button onClick={() => addFunds(isIndia ? 1000000 : 10000, currencySymbol)} className="text-primary hover:bg-ui-surface-hover p-1.5 rounded-lg transition-colors border border-transparent hover:border-primary/30" title="Add virtual funds">
+              <Plus size={14} strokeWidth={3} />
+            </button>
           </div>
+          <p className="text-2xl xl:text-[28px] font-serif font-black text-text-main leading-none">₹10,774.33</p>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
-          <div className="relative z-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Today's P/L</p>
-            <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">+₹612.38</p>
-            <p className="text-xs font-bold text-positive mt-2 flex items-center gap-1">
-              <TrendingUp size={14} />
-              (+4.03%)
-            </p>
-          </div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
-          <div className="relative z-10">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Cash Balance</p>
-            <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">₹10,774.33</p>
-          </div>
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
-          <div className="relative z-10 flex items-center justify-between">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Portfolio Health</p>
-              <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">86 <span className="text-sm text-text-muted font-sans font-medium">/ 100</span></p>
-              <p className="text-xs font-bold text-positive mt-2">Strong</p>
+        {/* Portfolio Health */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.3 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00D084]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative z-10 flex items-center justify-between h-full">
+            <div className="flex flex-col justify-between h-full">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border shadow-[0_0_10px_rgba(0,208,132,0.1)]">
+                  <ShieldAlert size={14} className="text-positive" />
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Portfolio Health</p>
+              </div>
+              <div>
+                <p className="text-2xl xl:text-[28px] font-serif font-black text-text-main leading-none mb-1">86 <span className="text-sm text-text-muted font-sans font-medium">/ 100</span></p>
+                <p className="text-[13px] font-bold text-positive">Strong</p>
+              </div>
             </div>
-            <div className="w-16 h-16 rounded-full border-4 border-ui-border border-t-primary border-r-primary flex items-center justify-center rotate-45 shadow-sm relative">
-               <div className="absolute inset-2 rounded-full border-4 border-ui-border border-b-positive border-l-positive -rotate-45" />
+            
+            {/* Circular Progress Gauge */}
+            <div className="w-[72px] h-[72px] relative shrink-0">
+              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ui-border)" strokeWidth="8" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--color-positive)" strokeWidth="8" strokeDasharray={`${251.2 * 0.86} 251.2`} strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(0,208,132,0.5))' }} />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2.5 h-2.5 rounded-full bg-primary" />
+              </div>
             </div>
           </div>
         </motion.div>
       </div>
-
       <div className="flex flex-col xl:flex-row gap-8">
         
         {/* LEFT MAIN CONTENT */}
         <div className="flex-1 space-y-8 min-w-0">
           
-          {/* Portfolio Performance */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <div>
-                <h3 className="text-lg font-serif font-bold text-text-main">Portfolio Performance</h3>
-                <div className="flex items-center gap-3 mt-1">
-                  <span className="text-2xl font-mono font-bold text-positive">+35.41%</span>
-                  <span className="text-sm font-mono text-text-muted">+₹4,128.26</span>
-                </div>
-              </div>
-              <div className="flex bg-ui-bg p-1 rounded-xl border border-ui-border shrink-0 overflow-x-auto no-scrollbar">
-                {FILTERS.map(f => (
-                  <button 
-                    key={f}
-                    onClick={() => setActiveFilter(f)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${
-                      activeFilter === f ? 'bg-ui-surface text-primary-dark shadow-sm' : 'text-text-muted hover:text-text-main'
-                    }`}
-                  >
-                    {f}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="h-[300px] w-full">
-               <PortfolioGraph 
-                  history={profile.history || []} 
-                  currentValue={12500} 
-                  baseline={10000} 
-               />
-            </div>
-          </motion.div>
+          {/* Portfolio Performance & Navigation */}
+          <PremiumPerformanceCard activeTab={activeTab} setActiveTab={setActiveTab} />
 
-          {/* Active Positions */}
+          {/* Active Positions Content */}
           <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ui-border mb-6">
-              <div className="flex gap-6 overflow-x-auto no-scrollbar relative flex-1">
-                {TABS.map(tab => (
-                  <button 
-                    key={tab} 
-                    onClick={() => setActiveTab(tab)}
-                    className={`pb-4 text-sm font-semibold transition-all whitespace-nowrap relative ${
-                      activeTab === tab ? 'text-text-main' : 'text-text-muted hover:text-text-main'
-                    }`}
-                  >
-                    {tab === 'Active Positions' ? 'Active Positions (2)' : tab}
-                    {activeTab === tab && (
-                      <motion.div layoutId="posTab" className="absolute bottom-0 left-0 w-full h-[2px] bg-primary rounded-t-full" />
-                    )}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-center gap-3 pb-4">
+            <div className="flex items-center justify-between gap-3 mb-6">
+              <h3 className="text-lg font-serif font-bold text-text-main">Active Positions</h3>
+              <div className="flex items-center gap-2">
                 <button 
                   onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-ui-surface text-text-main' : 'text-text-muted hover:text-text-main'}`}
+                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-ui-surface text-text-main border border-ui-border' : 'text-text-muted hover:text-text-main'}`}
                 >
                   <List size={16} />
                 </button>
                 <button 
                   onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-ui-surface text-text-main' : 'text-text-muted hover:text-text-main'}`}
+                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-ui-surface text-text-main border border-ui-border' : 'text-text-muted hover:text-text-main'}`}
                 >
                   <Grid size={16} />
                 </button>
               </div>
             </div>
-
             <div className="space-y-4">
               {/* TITAN CARD */}
               <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-5 group">
                 <div className="flex flex-col sm:flex-row justify-between gap-4 mb-5 border-b border-ui-border pb-5">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#1A1F29] border border-ui-border flex items-center justify-center font-bold text-lg text-white">
+                    <div className="w-12 h-12 rounded-full bg-[#1A1F29] border border-ui-border flex items-center justify-center font-bold text-lg text-text-main">
                       TI
                     </div>
                     <div>
@@ -304,7 +313,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
               <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-5 group">
                 <div className="flex flex-col sm:flex-row justify-between gap-4 mb-5 border-b border-ui-border pb-5">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#1A1F29] border border-ui-border flex items-center justify-center font-bold text-lg text-white">
+                    <div className="w-12 h-12 rounded-full bg-[#1A1F29] border border-ui-border flex items-center justify-center font-bold text-lg text-text-main">
                       AM
                     </div>
                     <div>
@@ -367,230 +376,248 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
         <div className="w-full xl:w-[380px] shrink-0 space-y-6">
           
           {/* AI Portfolio Copilot Card */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 border-primary/30 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="flex items-start gap-4 mb-4">
-               <div className="w-12 h-12 rounded-xl bg-primary-dark text-white flex items-center justify-center shadow-md">
-                 <Bot size={24} />
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }} className="bg-ui-surface rounded-[32px] p-8 lg:p-10 border border-ui-border shadow-2xl relative overflow-hidden group flex flex-col justify-between">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#D4AF37]/5 to-transparent rounded-bl-full pointer-events-none" />
+            
+            <div className="flex items-start gap-5 mb-8 relative z-10">
+               <div className="w-14 h-14 rounded-2xl bg-ui-surface-hover border border-ui-border flex items-center justify-center shadow-[0_5px_15px_rgba(0,0,0,0.5)] shrink-0">
+                 <Bot size={28} className="text-primary" strokeWidth={1.5} />
                </div>
                <div>
-                 <h3 className="text-lg font-serif font-bold text-text-main">AI Portfolio Copilot</h3>
-                 <p className="text-xs text-text-muted mt-1 leading-relaxed">Get intelligent insights, ask questions and make better decisions.</p>
+                 <div className="flex items-center gap-2">
+                   <h3 className="text-[17px] font-sans font-bold text-text-main">AI Portfolio Copilot</h3>
+                   <span className="text-[8px] font-bold uppercase tracking-widest bg-ui-surface-hover border border-primary text-primary px-1.5 py-0.5 rounded-sm shadow-[0_0_8px_rgba(212,175,55,0.2)]">Beta</span>
+                 </div>
+                 <p className="text-[13px] text-text-muted mt-1 leading-relaxed">Get intelligent insights, ask questions and make better decisions.</p>
                </div>
             </div>
+
             <button 
                onClick={() => setIsCopilotOpen(true)}
-               className="w-full py-3 bg-ui-bg border border-primary/50 text-primary-dark font-bold rounded-xl hover:bg-primary hover:text-ui-bg transition-colors flex items-center justify-center gap-2 mb-4"
+               className="w-full py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#A6822B] text-[#000000] font-bold rounded-xl hover:shadow-[0_4px_20px_rgba(212,175,55,0.4)] transition-all flex items-center justify-center gap-2 mb-6 relative z-10"
             >
-              Ask AI Copilot <ArrowRight size={16} />
+              Ask AI Copilot <ArrowRight size={16} strokeWidth={2} />
             </button>
-            <div className="space-y-2">
-              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-2.5 rounded-lg bg-ui-bg border border-ui-border text-xs text-text-main hover:border-primary transition-colors">"Why is my portfolio up today?"</button>
-              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-2.5 rounded-lg bg-ui-bg border border-ui-border text-xs text-text-main hover:border-primary transition-colors">"Show my biggest risks"</button>
-            </div>
-          </motion.div>
 
-          {/* Asset Allocation */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="bg-ui-surface rounded-[32px] border border-ui-border shadow-sm overflow-hidden flex flex-col">
-            <div className="px-8 pt-8 pb-4 flex justify-between items-start">
-              <div>
-                <h3 className="text-[28px] font-sans font-bold text-text-main tracking-tight leading-none mb-1.5">Asset Allocation</h3>
-                <p className="text-[15px] text-text-muted font-medium">Your investments by asset</p>
-              </div>
-              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-ui-border bg-ui-bg text-[13px] font-medium text-text-main hover:bg-ui-surface-hover transition-colors">
-                All Accounts <ChevronDown size={14} className="text-text-muted opacity-70" />
+            <div className="space-y-2.5 relative z-10">
+              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3 rounded-xl bg-ui-surface-hover border border-ui-border text-[13px] font-medium text-text-main hover:border-primary/50 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all flex items-center justify-between group">
+                "Why is my portfolio up today?" <ArrowRight size={14} className="text-text-muted group-hover:text-primary transition-colors" />
+              </button>
+              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3 rounded-xl bg-ui-surface-hover border border-ui-border text-[13px] font-medium text-text-main hover:border-primary/50 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all flex items-center justify-between group">
+                "What are my biggest risks?" <ArrowRight size={14} className="text-text-muted group-hover:text-primary transition-colors" />
+              </button>
+              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3 rounded-xl bg-ui-surface-hover border border-ui-border text-[13px] font-medium text-text-main hover:border-primary/50 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all flex items-center justify-between group">
+                "Suggest next investment opportunities" <ArrowRight size={14} className="text-text-muted group-hover:text-primary transition-colors" />
               </button>
             </div>
-            
-            <div className="flex-1 flex flex-col items-center justify-center py-6">
-              <div className="w-64 h-64 rounded-full relative shadow-[inset_0_-2px_10px_rgba(0,0,0,0.02)]" style={{ background: 'conic-gradient(from -90deg, #D6A848 0% 56.6%, #0CA773 56.6% 88.5%, #61738C 88.5% 96.9%, #EE5E54 96.9% 100%)' }}>
-                <div className="absolute inset-[32px] bg-ui-surface rounded-full flex flex-col items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] z-10">
-                  <p className="text-[32px] font-sans font-bold text-text-main tracking-tight leading-none mb-1">₹2.46M</p>
-                  <p className="text-[11px] uppercase font-bold text-text-muted tracking-[0.15em]">Total Value</p>
-                </div>
-                
-                {/* Segment Labels */}
-                <span className="absolute top-[50%] right-[8%] text-white text-[13px] font-bold drop-shadow-sm z-10 translate-x-1/2 -translate-y-1/2">56.6%</span>
-                <span className="absolute top-[50%] left-[8%] text-white text-[13px] font-bold drop-shadow-sm z-10 -translate-x-1/2 -translate-y-1/2">31.9%</span>
-                <span className="absolute top-[12%] left-[30%] text-white text-[12px] font-bold drop-shadow-sm z-10 -translate-x-1/2 -translate-y-1/2">8.4%</span>
-                <span className="absolute top-[8%] left-[48%] text-white text-[11px] font-bold drop-shadow-sm z-10 -translate-x-1/2 -translate-y-1/2">3.1%</span>
-                
-                {/* Thin white borders between segments */}
-                <div className="absolute top-0 left-1/2 w-[2px] h-1/2 bg-ui-surface origin-bottom -translate-x-1/2" />
-                <div className="absolute top-0 left-1/2 w-[2px] h-1/2 bg-ui-surface origin-bottom -translate-x-1/2 rotate-[203.76deg]" /> {/* 56.6% */}
-                <div className="absolute top-0 left-1/2 w-[2px] h-1/2 bg-ui-surface origin-bottom -translate-x-1/2 rotate-[318.6deg]" /> {/* 56.6% + 31.9% = 88.5% */}
-                <div className="absolute top-0 left-1/2 w-[2px] h-1/2 bg-ui-surface origin-bottom -translate-x-1/2 rotate-[348.84deg]" /> {/* 88.5% + 8.4% = 96.9% */}
-              </div>
-            </div>
-
-            <div className="px-6 pb-6">
-              <div className="bg-ui-bg rounded-2xl border border-ui-border overflow-hidden">
-                {[
-                  { name: 'TITAN', desc: 'Equity • 1 holding', pct: '56.6%', val: '₹1.39M', color: '#D6A848' },
-                  { name: 'AMD', desc: 'Equity • 1 holding', pct: '31.9%', val: '₹0.78M', color: '#0CA773' },
-                  { name: 'Cash', desc: 'Liquid • Cash balance', pct: '8.4%', val: '₹0.21M', color: '#61738C' },
-                  { name: 'Others', desc: 'Diversified investments', pct: '3.1%', val: '₹0.08M', color: '#EE5E54' }
-                ].map((item, i, arr) => (
-                  <div key={item.name} className={`flex items-center justify-between p-4 px-5 hover:bg-ui-surface-hover transition-colors cursor-pointer group ${i !== arr.length - 1 ? 'border-b border-ui-border/50' : ''}`}>
-                    <div className="flex items-center gap-4">
-                      <div className="w-5 h-5 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]" style={{ backgroundColor: item.color }} />
-                      <div>
-                        <p className="text-[15px] font-bold text-text-main leading-tight">{item.name}</p>
-                        <p className="text-[13px] text-text-muted mt-0.5">{item.desc}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right">
-                        <p className="text-[15px] font-bold leading-tight" style={{ color: item.color }}>{item.pct}</p>
-                        <p className="text-[14px] text-text-muted mt-0.5 font-medium">{item.val}</p>
-                      </div>
-                      <ChevronRight size={16} className="text-text-muted opacity-40 group-hover:opacity-100 transition-opacity ml-1" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
           </motion.div>
+        </div>
 
+        {/* Market Sentiment and Ticker Wrapper */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          
           {/* Market Sentiment */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
-            <h3 className="text-base font-bold text-text-main mb-4">Market Sentiment</h3>
-            <div className="flex flex-col items-center">
-              <div className="w-full max-w-[200px] h-[100px] relative overflow-hidden mb-2">
-                 <div className="w-[200px] h-[200px] rounded-full border-[12px] border-ui-bg border-t-negative border-l-primary-dark border-r-positive border-b-transparent transform -rotate-45 relative">
-                    <div className="absolute top-[80px] left-[80px] w-4 h-[60px] bg-white rounded-full origin-bottom transform rotate-[110deg] shadow-md border border-gray-200 z-10 transition-transform duration-1000 ease-out" />
-                 </div>
-              </div>
-              <h4 className="text-lg font-black text-positive uppercase tracking-widest">Bullish</h4>
-              <p className="text-xs text-text-muted text-center mt-2">"Markets are showing positive momentum."</p>
-            </div>
-          </motion.div>
-
-          {/* Top Movers Today */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-base font-bold text-text-main">Top Movers Today</h3>
-            </div>
-            <div className="flex gap-2 mb-4">
-              <button onClick={() => setMoversType('gainers')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${moversType === 'gainers' ? 'bg-ui-bg border border-primary text-primary-dark' : 'bg-transparent text-text-muted hover:bg-ui-bg'}`}>Gainers</button>
-              <button onClick={() => setMoversType('losers')} className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-colors ${moversType === 'losers' ? 'bg-ui-bg border border-primary text-primary-dark' : 'bg-transparent text-text-muted hover:bg-ui-bg'}`}>Losers</button>
-            </div>
-            <div className="space-y-3">
-              {topMovers.map(mover => (
-                <div key={mover.s} className="flex justify-between items-center p-2 rounded-lg hover:bg-ui-bg transition-colors cursor-pointer">
-                   <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-ui-surface border border-ui-border flex items-center justify-center text-[10px] font-bold text-text-main">{mover.s.substring(0, 2)}</div>
-                      <span className="text-sm font-bold text-text-main">{mover.s}</span>
-                   </div>
-                   <span className={`text-xs font-mono font-bold ${moversType === 'gainers' ? 'text-positive' : 'text-negative'}`}>{mover.v}</span>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="bg-ui-surface rounded-[32px] border border-ui-border shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-8 lg:p-10 pb-8 flex flex-col flex-1">
+              <div className="flex justify-between items-start mb-10">
+                <div>
+                  <h3 className="text-[26px] font-serif font-bold text-text-main leading-tight tracking-tight">Market Sentiment</h3>
+                  <p className="text-[14px] text-text-muted mt-1.5 font-medium">Based on broad indices and volume</p>
                 </div>
-              ))}
+                <button className="w-10 h-10 rounded-full bg-ui-surface-hover flex items-center justify-center border border-ui-border text-text-muted hover:text-primary hover:border-primary transition-colors shadow-sm">
+                  <Info size={18} strokeWidth={2} />
+                </button>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center relative flex-1">
+                {/* SVG Gauge */}
+                <div className="relative w-full flex justify-center mb-6">
+                  <svg width="300" height="150" viewBox="0 0 300 150" className="overflow-visible">
+                    <defs>
+                      <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="12" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                      <filter id="needle-shadow-dark" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="0" dy="5" stdDeviation="5" floodOpacity={theme === 'dark' ? "0.8" : "0.2"} floodColor={theme === 'dark' ? "#000000" : "#0B1728"} />
+                      </filter>
+                    </defs>
+
+                    {/* Labels */}
+                    <text x="30" y="125" fill="var(--text-muted)" fontSize="13.5" fontWeight="500" textAnchor="middle">Bearish</text>
+                    <text x="150" y="10" fill="var(--text-muted)" fontSize="13.5" fontWeight="500" textAnchor="middle">Neutral</text>
+                    <text x="270" y="125" fill="var(--text-muted)" fontSize="13.5" fontWeight="500" textAnchor="middle">Bullish</text>
+
+                    {/* Gauge Segments */}
+                    <g transform="rotate(180 150 135)">
+                      {/* Bearish */}
+                      <circle cx="150" cy="135" r="100" fill="none" stroke="var(--color-negative)" strokeWidth="18" strokeLinecap="round" strokeDasharray="84.72 628.32" strokeDashoffset="0" />
+                      {/* Neutral */}
+                      <circle cx="150" cy="135" r="100" fill="none" stroke="var(--color-primary)" strokeWidth="18" strokeLinecap="round" strokeDasharray="84.72 628.32" strokeDashoffset="-114.72" />
+                      {/* Bullish */}
+                      <circle cx="150" cy="135" r="100" fill="none" stroke="var(--color-positive)" strokeWidth="18" strokeLinecap="round" strokeDasharray="84.72 628.32" strokeDashoffset="-229.44" style={{ filter: theme === 'dark' ? 'drop-shadow(0 0 14px rgba(0,208,132,0.4))' : 'none' }} />
+                    </g>
+
+                    {/* Needle */}
+                    <g transform="rotate(-38 150 135)" filter="url(#needle-shadow-dark)">
+                      {/* Metallic black body */}
+                      <polygon points="150,131 235,135 150,139" fill="url(#metallic-needle)" />
+                      <linearGradient id="metallic-needle" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor={theme === 'dark' ? "#333333" : "#D4D4D4"} />
+                        <stop offset="50%" stopColor={theme === 'dark' ? "#F5F5F0" : "#0B1728"} />
+                        <stop offset="100%" stopColor={theme === 'dark' ? "#111111" : "#FFFFFF"} />
+                      </linearGradient>
+                      
+                      {/* Base */}
+                      <circle cx="150" cy="135" r="12" fill={theme === 'dark' ? "#111111" : "#FFFFFF"} stroke={theme === 'dark' ? "#333333" : "#D4D4D4"} strokeWidth="1" />
+                      {/* Gold Center */}
+                      <circle cx="150" cy="135" r="6" fill="var(--color-primary)" />
+                    </g>
+                  </svg>
+                </div>
+                <div className="text-center mt-[-5px] z-10 relative">
+                  <p className="text-[38px] font-serif font-bold text-positive tracking-tight leading-none mb-2.5 ${theme === 'dark' ? 'drop-shadow-[0_0_15px_rgba(0,208,132,0.5)]' : ''}">Bullish</p>
+                  <p className="text-[15px] font-medium text-text-muted">Overall market sentiment is positive.</p>
+                </div>
+              </div>
             </div>
           </motion.div>
 
           {/* Market Intelligence */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="bg-ui-surface rounded-[32px] border border-ui-border shadow-sm overflow-hidden flex flex-col">
-            <div className="px-8 pt-8 pb-4 flex justify-between items-start">
-              <div>
-                <h3 className="text-[28px] font-sans font-bold text-text-main tracking-tight leading-none mb-1.5">Market Intelligence</h3>
-                <p className="text-[15px] text-text-muted font-medium">Important news & updates</p>
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut', delay: 0.1 }} className="bg-ui-surface rounded-[32px] border border-ui-border shadow-2xl overflow-hidden flex flex-col">
+            <div className="p-8 lg:p-10 flex flex-col">
+              <div className="flex justify-between items-start mb-8">
+                <div>
+                  <h3 className="text-[26px] font-serif font-bold text-text-main leading-tight tracking-tight">Market Intelligence</h3>
+                  <p className="text-[14px] text-text-muted mt-1.5 font-medium">Top financial news and impacts</p>
+                </div>
+                <button className="w-10 h-10 rounded-full bg-ui-surface-hover flex items-center justify-center border border-ui-border text-text-muted hover:text-primary hover:border-primary transition-colors shadow-sm">
+                  <Newspaper size={18} strokeWidth={2} />
+                </button>
               </div>
-              <button className="w-10 h-10 rounded-full border border-ui-border bg-ui-bg flex items-center justify-center text-text-muted hover:bg-ui-surface-hover hover:text-text-main transition-colors">
-                <Newspaper size={18} />
-              </button>
-            </div>
-            
-            <div className="px-6 pb-6 pt-2">
-              <div className="space-y-3">
-                {[
-                  { t: 'AMD', name: 'Advanced Micro', h: 'New AI chip demand boosts revenue outlook for upcoming quarters.', time: '2h ago', source: 'Reuters', change: '+4.2%', up: true, color: '#0CA773', in: false },
-                  { t: 'TITAN', name: 'Titan Company', h: 'Strong Q4 results beat expectations driven by jewelry sales.', time: '4h ago', source: 'Bloomberg', change: '+1.8%', up: true, color: '#D6A848', in: true },
-                  { t: 'NVDA', name: 'Nvidia Corp', h: 'AI infrastructure demand continues to grow globally.', time: '5h ago', source: 'TechCrunch', change: '+1.1%', up: true, color: '#76B900', in: false },
-                  { t: 'RELIANCE', name: 'Reliance Ind', h: 'Retail arm expands operations with new strategic acquisitions.', time: '6h ago', source: 'Economic Times', change: '-0.4%', up: false, color: '#00548F', in: true },
-                  { t: 'AAPL', name: 'Apple Inc', h: 'Mixed-reality headset sales show early momentum in retail.', time: '7h ago', source: 'WSJ', change: '+0.8%', up: true, color: '#A2AAAD', in: false }
-                ].filter(n => marketContext === 'ALL' || (isIndia ? n.in : !n.in)).slice(0, 3).map((news, i) => (
-                  <div key={i} className="group p-4 rounded-2xl bg-ui-bg border border-ui-border hover:border-ui-border/80 hover:shadow-sm transition-all cursor-pointer">
-                    <div className="flex items-start gap-4">
-                      {/* Logo */}
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] shrink-0" style={{ backgroundColor: news.color }}>
-                        {news.t.slice(0, 1)}
+
+              <div className="space-y-5">
+                {/* News Item 1 */}
+                <div className="group border border-ui-border rounded-[24px] p-5 hover:border-ui-border transition-all cursor-pointer bg-ui-surface hover:bg-ui-surface-hover hover:shadow-[0_10px_30px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                         <span className="text-[10px] font-bold uppercase tracking-widest bg-ui-surface-hover text-text-main border border-ui-border px-2.5 py-1 rounded-full">Tech</span>
+                         <span className="text-[12px] font-medium text-text-muted">2 hours ago</span>
                       </div>
-                      
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[11px] font-black uppercase tracking-wider text-text-muted">{news.source} • {news.time}</span>
-                          
-                          {/* Stock Shortcut Pill */}
-                          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono border ${news.up ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
-                            <span>{news.t}</span>
-                            <span>{news.change}</span>
-                          </div>
-                        </div>
-                        <p className="text-[15px] font-bold text-text-main leading-snug group-hover:text-primary transition-colors">{news.h}</p>
-                      </div>
+                      <h4 className="text-[17px] font-bold text-text-main leading-tight mb-2 group-hover:text-primary transition-colors">TCS Secures Multi-Billion Dollar Deal with European Retailer</h4>
+                      <p className="text-[14px] text-text-muted leading-relaxed line-clamp-2">India's largest IT services firm announced a massive digital transformation contract, boosting revenue visibility for the upcoming fiscal year.</p>
                     </div>
                   </div>
-                ))}
+                  <div className="mt-5 pt-5 border-t border-ui-border flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                       <div className="w-9 h-9 rounded-full bg-ui-surface-hover border border-ui-border flex items-center justify-center font-bold text-[12px] text-primary">TCS</div>
+                       <div className="flex flex-col">
+                         <span className="text-[15px] font-bold text-text-main leading-none mb-1">₹4,120.50</span>
+                         <span className="text-[13px] font-bold text-positive flex items-center leading-none"><span className="text-[10px] mr-0.5">▲</span> +2.4%</span>
+                       </div>
+                     </div>
+                     <button className="text-[13px] font-bold bg-ui-surface-hover border border-ui-border px-4 py-2 rounded-xl text-text-main hover:bg-primary hover:text-[#000000] hover:border-primary transition-colors flex items-center gap-1.5 shadow-sm">
+                        Trade <ChevronRight size={14} strokeWidth={2.5} />
+                     </button>
+                  </div>
+                </div>
+
+                {/* News Item 2 */}
+                <div className="group border border-ui-border rounded-[24px] p-5 hover:border-ui-border transition-all cursor-pointer bg-ui-surface hover:bg-ui-surface-hover hover:shadow-[0_10px_30px_rgba(0,0,0,0.8)] relative overflow-hidden">
+                  <div className="absolute top-0 left-0 w-1 h-full bg-primary opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-3">
+                         <span className="text-[10px] font-bold uppercase tracking-widest bg-ui-surface-hover text-text-main border border-ui-border px-2.5 py-1 rounded-full">Banking</span>
+                         <span className="text-[12px] font-medium text-text-muted">4 hours ago</span>
+                      </div>
+                      <h4 className="text-[17px] font-bold text-text-main leading-tight mb-2 group-hover:text-primary transition-colors">HDFC Bank Reports Strong Q3 Earnings, Margins Improve</h4>
+                      <p className="text-[14px] text-text-muted leading-relaxed line-clamp-2">The private sector lender beat estimates with healthy credit growth and stable asset quality, leading to a surge in banking stocks.</p>
+                    </div>
+                  </div>
+                  <div className="mt-5 pt-5 border-t border-ui-border flex items-center justify-between">
+                     <div className="flex items-center gap-3">
+                       <div className="w-9 h-9 rounded-full bg-ui-surface-hover border border-ui-border flex items-center justify-center font-bold text-[12px] text-primary">HDFC</div>
+                       <div className="flex flex-col">
+                         <span className="text-[15px] font-bold text-text-main leading-none mb-1">₹1,680.10</span>
+                         <span className="text-[13px] font-bold text-positive flex items-center leading-none"><span className="text-[10px] mr-0.5">▲</span> +1.8%</span>
+                       </div>
+                     </div>
+                     <button className="text-[13px] font-bold bg-ui-surface-hover border border-ui-border px-4 py-2 rounded-xl text-text-main hover:bg-primary hover:text-[#000000] hover:border-primary transition-colors flex items-center gap-1.5 shadow-sm">
+                        Trade <ChevronRight size={14} strokeWidth={2.5} />
+                     </button>
+                  </div>
+                </div>
               </div>
+              
+              <button className="w-full mt-8 py-4 border border-ui-border text-text-main font-bold text-[14px] rounded-2xl hover:bg-ui-surface-hover hover:border-ui-border transition-colors flex items-center justify-center gap-2 shadow-sm">
+                View All Market News <ArrowRight size={16} strokeWidth={2} />
+              </button>
             </div>
           </motion.div>
-
-          {/* Recent Activity */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
-            <h3 className="text-base font-bold text-text-main mb-4">Recent Activity</h3>
-            <div className="space-y-4">
-               {[ isIndia ? { type: 'BUY', symbol: 'TITAN', desc: '245 shares @ ₹3,645.60', color: 'text-positive' } : { type: 'BUY', symbol: 'AMD', desc: '10 shares @ $175.77', color: 'text-positive' },
-                isIndia ? { type: 'DIV', symbol: 'RELIANCE', desc: 'Dividend Received', color: 'text-primary' } : { type: 'BUY', symbol: 'AAPL', desc: '5 shares @ $168.20', color: 'text-positive' },
-                isIndia ? { type: 'SELL', symbol: 'TCS', desc: '10 shares @ ₹4,100.00', color: 'text-rose-500' } : { type: 'DIV', symbol: 'MSFT', desc: 'Dividend Received', color: 'text-primary' },
-              ].map((act, i) => (
-                 <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-ui-bg transition-colors cursor-pointer group">
-                    <div className={`w-10 h-10 rounded-full bg-ui-surface border border-ui-border flex items-center justify-center text-[10px] font-bold ${act.color}`}>
-                       {act.type}
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-text-main group-hover:text-primary transition-colors">{act.symbol}</p>
-                      <p className="text-xs text-text-muted font-mono">{act.desc}</p>
-                    </div>
-                 </div>
-               ))}
+        </div>
+      </div>
+      
+      {/* 8. Bottom Market Ticker */}
+      <div className="fixed bottom-0 left-0 right-0 h-10 bg-ui-sidebar border-t border-ui-border z-50 flex items-center overflow-hidden">
+        <div className="flex items-center h-full px-4 border-r border-ui-border shrink-0 bg-ui-bg z-10 relative">
+          <div className="w-2 h-2 rounded-full bg-positive animate-pulse mr-2" />
+          <span className="text-[11px] font-bold text-text-main uppercase tracking-widest">Live Markets</span>
+        </div>
+        
+        {/* Ticker Animation Container */}
+        <div className="flex items-center h-full flex-1 relative overflow-hidden">
+          <div className="flex items-center gap-10 whitespace-nowrap animate-[ticker_30s_linear_infinite] pl-10 hover:[animation-play-state:paused]">
+            
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-text-main">NIFTY 50</span>
+              <span className="text-[11px] font-mono text-text-main">24,716.30</span>
+              <span className="text-[11px] font-mono font-bold text-positive">+0.82%</span>
             </div>
-          </motion.div>
+            
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-text-main">SENSEX</span>
+              <span className="text-[11px] font-mono text-text-main">81,123.45</span>
+              <span className="text-[11px] font-mono font-bold text-positive">+0.76%</span>
+            </div>
 
-          {/* Goals */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
-             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-base font-bold text-text-main">Your Goals</h3>
-                
-             </div>
-             <div className="space-y-5">
-                <div>
-                   <div className="flex justify-between items-end mb-2">
-                      <p className="text-sm font-bold text-text-main">Buy a House</p>
-                      <p className="text-xs font-mono font-bold text-text-main">50%</p>
-                   </div>
-                   <div className="w-full h-2 rounded-full bg-ui-bg border border-ui-border overflow-hidden">
-                      <div className="h-full bg-primary rounded-full w-1/2" />
-                   </div>
-                   <p className="text-[10px] text-text-muted font-mono mt-1 text-right">{currencySymbol}{isIndia ? '15,00,000' : '150,000'} / {currencySymbol}{isIndia ? '30,00,000' : '300,000'}</p>
-                </div>
-                <div>
-                   <div className="flex justify-between items-end mb-2">
-                      <p className="text-sm font-bold text-text-main">Retirement Fund</p>
-                      <p className="text-xs font-mono font-bold text-text-main">28%</p>
-                   </div>
-                   <div className="w-full h-2 rounded-full bg-ui-bg border border-ui-border overflow-hidden">
-                      <div className="h-full bg-positive rounded-full w-[28%]" />
-                   </div>
-                   <p className="text-[10px] text-text-muted font-mono mt-1 text-right">{currencySymbol}{isIndia ? '28,20,000' : '282,000'} / {currencySymbol}{isIndia ? '1,00,00,000' : '1,000,000'}</p>
-                </div>
-             </div>
-          </motion.div>
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-text-main">NASDAQ</span>
+              <span className="text-[11px] font-mono text-text-main">17,623.91</span>
+              <span className="text-[11px] font-mono font-bold text-positive">+1.14%</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-text-main">S&P 500</span>
+              <span className="text-[11px] font-mono text-text-main">5,487.21</span>
+              <span className="text-[11px] font-mono font-bold text-positive">+0.67%</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-text-main">RELIANCE</span>
+              <span className="text-[11px] font-mono text-text-main">2,840.75</span>
+              <span className="text-[11px] font-mono font-bold text-negative">-0.61%</span>
+            </div>
 
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-text-main">TCS</span>
+              <span className="text-[11px] font-mono text-text-main">4,120.50</span>
+              <span className="text-[11px] font-mono font-bold text-positive">+2.40%</span>
+            </div>
+
+            {/* Duplicate for seamless scrolling */}
+            <div className="flex items-center gap-3">
+              <span className="text-[11px] font-bold text-text-main">NIFTY 50</span>
+              <span className="text-[11px] font-mono text-text-main">24,716.30</span>
+              <span className="text-[11px] font-mono font-bold text-positive">+0.82%</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
   );
-
 };
+
 export default DashboardView;

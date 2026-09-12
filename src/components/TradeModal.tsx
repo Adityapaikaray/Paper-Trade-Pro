@@ -45,7 +45,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
 
   const shares = parseInt(sharesStr) || 0;
   const total = liveStock.price * shares;
-  const holding = profile.holdings.find(h => h.symbol === liveStock.symbol);
+  const holding = (profile?.holdings || []).find(h => h.symbol === liveStock.symbol);
   const currentShares = holding?.shares || 0;
 
   const handleAction = () => {
@@ -270,7 +270,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                       <p className="text-[8px] font-black text-text-muted uppercase tracking-[0.3em] mb-1.5">Available Virtual Cash</p>
                       <div className="flex items-center gap-2">
                         <p className="text-text-main font-black font-mono italic text-base leading-none">
-                          {liveStock.currency}{(profile.balances[liveStock.currency] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          {liveStock.currency}{(profile?.balances?.[liveStock.currency] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
                         <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
                       </div>
@@ -326,7 +326,7 @@ const TradeModal: React.FC<TradeModalProps> = ({ stock, onClose, onBack }) => {
                 </div>
 
                 <button 
-                  disabled={type === 'BUY' ? (profile.balances[liveStock.currency] || 0) < total : currentShares < shares}
+                  disabled={type === 'BUY' ? (profile?.balances?.[liveStock.currency] || 0) < total : currentShares < shares}
                   onClick={handleAction}
                   className={`w-full py-5 rounded-2xl font-black tracking-[0.3em] text-xs uppercase transition-all duration-300 transform active:scale-95 shadow-2xl border disabled:opacity-20 disabled:grayscale ${
                     type === 'BUY' 

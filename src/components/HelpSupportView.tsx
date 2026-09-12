@@ -33,14 +33,14 @@ const HelpSupportView: React.FC = () => {
   return (
     <div className="flex flex-col gap-8 max-w-4xl mx-auto py-8">
       {/* Header */}
-      <div className="text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-6 bg-[#F6F4EB] dark:bg-primary/10 p-8 rounded-3xl border border-[#E9E4D4] dark:border-primary/20">
+      <div className="text-center md:text-left flex flex-col md:flex-row items-center justify-between gap-6 bg-ui-surface-hover p-8 rounded-3xl border border-ui-border">
         <div>
           <h2 className="text-3xl font-serif font-black text-gray-900 dark:text-text-main italic mb-2 tracking-tight">Help & Support</h2>
           <p className="text-sm text-gray-600 dark:text-text-muted font-medium tracking-wide max-w-lg">
             Find answers to common questions or reach out to our team for dedicated support.
           </p>
         </div>
-        <div className="w-16 h-16 rounded-full bg-white dark:bg-primary/20 flex shrink-0 items-center justify-center text-primary-dark shadow-sm">
+        <div className="w-16 h-16 rounded-full bg-ui-surface border border-ui-border flex shrink-0 items-center justify-center text-primary-dark shadow-sm">
           <HelpCircle size={32} strokeWidth={2} />
         </div>
       </div>
@@ -55,7 +55,7 @@ const HelpSupportView: React.FC = () => {
               placeholder="Search knowledge base..." 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-ui-surface border border-[#E9E4D4] dark:border-ui-border text-sm text-gray-900 dark:text-text-main placeholder:text-gray-400 focus:outline-none focus:border-[#D4AF37] dark:focus:border-primary transition-colors shadow-sm"
+              className="w-full pl-12 pr-4 py-3 rounded-xl bg-white dark:bg-ui-surface border border-[#E9E4D4] dark:border-ui-border text-sm text-gray-900 dark:text-text-main placeholder:text-gray-400 focus:outline-none focus:border-primary dark:focus:border-primary transition-colors shadow-sm"
             />
           </div>
 
@@ -106,7 +106,7 @@ const HelpSupportView: React.FC = () => {
             </div>
             <h4 className="text-sm font-bold text-gray-900 dark:text-text-main mb-1">Email Support</h4>
             <p className="text-xs text-gray-500 dark:text-text-muted mb-4">Get in touch with our team directly. We usually respond within 24 hours.</p>
-            <button className="flex items-center gap-2 text-xs font-bold text-[#D4AF37] dark:text-primary hover:opacity-80 transition-opacity">
+            <button className="flex items-center gap-2 text-xs font-bold text-primary dark:text-primary hover:opacity-80 transition-opacity">
               support@tradepro.com <ExternalLink size={14} />
             </button>
           </div>
@@ -117,7 +117,7 @@ const HelpSupportView: React.FC = () => {
             </div>
             <h4 className="text-sm font-bold text-gray-900 dark:text-text-main mb-1">Live Chat</h4>
             <p className="text-xs text-gray-500 dark:text-text-muted mb-4">Talk to a support representative in real-time. Available 9am - 5pm EST.</p>
-            <button className="w-full py-2.5 bg-gray-900 dark:bg-white text-white dark:text-ui-bg text-xs font-bold rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors shadow-sm">
+            <button className="w-full py-2.5 bg-gray-900 dark:bg-white text-text-main dark:text-ui-bg text-xs font-bold rounded-lg hover:bg-gray-800 dark:hover:bg-gray-200 transition-colors shadow-sm">
               Start Chat
             </button>
           </div>

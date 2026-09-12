@@ -1,0 +1,100 @@
+          {/* Market Sentiment */}
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="bg-[#FFFFFF] rounded-[32px] border border-[#E8E4DB] shadow-[0_8px_30px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col mt-6">
+            <div className="p-8 lg:p-10 pb-8 flex flex-col flex-1">
+              <div className="flex justify-between items-start mb-10">
+                <div>
+                  <h3 className="text-[26px] font-serif font-bold text-[#0B1728] leading-tight tracking-tight">Market Sentiment</h3>
+                  <p className="text-[14px] text-[#718096] mt-1.5 font-medium">Based on broad indices and volume</p>
+                </div>
+                <button className="w-10 h-10 rounded-full bg-[#F5F2EA] flex items-center justify-center border border-[#E8E4DB] text-[#718096] hover:text-[#0B1728] transition-colors shadow-sm">
+                  <Info size={18} strokeWidth={2} />
+                </button>
+              </div>
+              
+              <div className="flex flex-col items-center justify-center relative flex-1">
+                {/* SVG Gauge */}
+                <div className="relative w-full flex justify-center mb-6">
+                  <svg width="300" height="150" viewBox="0 0 300 150" className="overflow-visible">
+                    <defs>
+                      <filter id="glow-green" x="-20%" y="-20%" width="140%" height="140%">
+                        <feGaussianBlur stdDeviation="12" result="blur" />
+                        <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                      </filter>
+                      <filter id="needle-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                        <feDropShadow dx="2" dy="5" stdDeviation="5" floodOpacity="0.2" floodColor="#0B1728" />
+                      </filter>
+                    </defs>
+
+                    {/* Labels */}
+                    <text x="30" y="125" fill="#718096" fontSize="13.5" fontWeight="500" textAnchor="middle">Bearish</text>
+                    <text x="150" y="10" fill="#718096" fontSize="13.5" fontWeight="500" textAnchor="middle">Neutral</text>
+                    <text x="270" y="125" fill="#718096" fontSize="13.5" fontWeight="500" textAnchor="middle">Bullish</text>
+
+                    {/* Gauge Segments */}
+                    {/* r = 100, cx = 150, cy = 135 */}
+                    <g transform="rotate(180 150 135)">
+                      {/* Bearish */}
+                      <circle cx="150" cy="135" r="100" fill="none" stroke="#EF6B68" strokeWidth="18" strokeLinecap="round" strokeDasharray="84.72 628.32" strokeDashoffset="0" />
+                      {/* Neutral */}
+                      <circle cx="150" cy="135" r="100" fill="none" stroke="#E7B83E" strokeWidth="18" strokeLinecap="round" strokeDasharray="84.72 628.32" strokeDashoffset="-114.72" />
+                      {/* Bullish */}
+                      <circle cx="150" cy="135" r="100" fill="none" stroke="#08A874" strokeWidth="18" strokeLinecap="round" strokeDasharray="84.72 628.32" strokeDashoffset="-229.44" style={{ filter: 'drop-shadow(0 0 14px rgba(8,168,116,0.35))' }} />
+                    </g>
+
+                    {/* Needle */}
+                    <g transform="rotate(-38 150 135)" filter="url(#needle-shadow)">
+                      <polygon points="150,131 235,135 150,139" fill="#0B1728" />
+                      <circle cx="150" cy="135" r="10" fill="#0B1728" />
+                      <circle cx="150" cy="135" r="4" fill="#F5F2EA" />
+                      <circle cx="150" cy="135" r="14" fill="none" stroke="#F5F2EA" strokeWidth="1.5" />
+                    </g>
+                  </svg>
+                </div>
+
+                <div className="text-center mt-[-5px] z-10 relative">
+                  <p className="text-[38px] font-serif font-bold text-[#08A874] tracking-tight leading-none mb-2.5 drop-shadow-sm">Bullish</p>
+                  <p className="text-[15px] font-medium text-[#718096]">Overall market sentiment is positive.</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Index Panel */}
+            <div className="bg-[#EAF8F2] px-8 py-7 border-t border-[#E8E4DB]">
+              <div className="flex items-center justify-between">
+                
+                {/* NIFTY 50 */}
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#718096] mb-2">Nifty 50</p>
+                  <p className="text-[19px] font-bold text-[#0B1728] leading-none mb-1.5">24,716.30</p>
+                  <p className="text-[13px] font-bold text-[#08A874] flex items-center gap-1">
+                    <span className="text-[10px]">▲</span> +0.82%
+                  </p>
+                </div>
+
+                {/* Separator */}
+                <div className="w-[1px] h-14 bg-[#0B1728] opacity-[0.06] rounded-full" />
+
+                {/* SENSEX */}
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#718096] mb-2">Sensex</p>
+                  <p className="text-[19px] font-bold text-[#0B1728] leading-none mb-1.5">81,123.45</p>
+                  <p className="text-[13px] font-bold text-[#08A874] flex items-center gap-1">
+                    <span className="text-[10px]">▲</span> +0.76%
+                  </p>
+                </div>
+
+                {/* Separator */}
+                <div className="w-[1px] h-14 bg-[#0B1728] opacity-[0.06] rounded-full" />
+
+                {/* NIFTY BANK */}
+                <div className="flex-1 flex flex-col items-center justify-center text-center">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-[#718096] mb-2">Nifty Bank</p>
+                  <p className="text-[19px] font-bold text-[#0B1728] leading-none mb-1.5">52,341.90</p>
+                  <p className="text-[13px] font-bold text-[#08A874] flex items-center gap-1">
+                    <span className="text-[10px]">▲</span> +1.12%
+                  </p>
+                </div>
+
+              </div>
+            </div>
+          </motion.div>

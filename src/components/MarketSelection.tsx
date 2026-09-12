@@ -56,14 +56,14 @@ const MarketSelection: React.FC<MarketSelectionProps> = ({ onComplete }) => {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className={`
               relative p-8 rounded-3xl border-2 transition-colors duration-300 flex flex-col
-              ${selectedCard === 'IN' ? 'border-[#D4AF37] bg-ui-surface shadow-2xl' : 'border-ui-border bg-ui-surface hover:border-[#D4AF37]/50'}
+              ${selectedCard === 'IN' ? 'border-primary bg-ui-surface shadow-2xl' : 'border-ui-border bg-ui-surface hover:border-primary/50'}
             `}
           >
             {selectedCard === 'IN' && (
               <motion.div 
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute -top-4 -right-4 w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-lg text-ui-bg"
+                className="absolute -top-4 -right-4 w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg text-ui-bg"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -94,7 +94,7 @@ const MarketSelection: React.FC<MarketSelectionProps> = ({ onComplete }) => {
               <ul className="grid grid-cols-2 gap-y-3 gap-x-4 mb-8">
                 {['NIFTY 50', 'SENSEX', 'NSE Stocks', 'BSE Stocks', 'ETFs', 'Indian Equities'].map(item => (
                   <li key={item} className="text-sm font-medium text-text-muted flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[#D4AF37]/50"></span>
+                    <span className="w-1 h-1 rounded-full bg-primary/50"></span>
                     {item}
                   </li>
                 ))}
@@ -104,7 +104,7 @@ const MarketSelection: React.FC<MarketSelectionProps> = ({ onComplete }) => {
             <div className="flex flex-col gap-3 mt-auto">
               <button 
                 onClick={() => handleSelect('IN')}
-                className="w-full py-4 rounded-xl bg-text-main text-ui-bg font-bold tracking-wide hover:bg-[#D4AF37] transition-colors"
+                className="w-full py-4 rounded-xl bg-text-main text-ui-bg font-bold tracking-wide hover:bg-primary transition-colors"
               >
                 Start Indian Trading &rarr;
               </button>
@@ -126,14 +126,14 @@ const MarketSelection: React.FC<MarketSelectionProps> = ({ onComplete }) => {
             transition={{ duration: 0.3, ease: 'easeOut' }}
             className={`
               relative p-8 rounded-3xl border-2 transition-colors duration-300 flex flex-col
-              ${selectedCard === 'US' ? 'border-[#D4AF37] bg-ui-surface shadow-2xl' : 'border-ui-border bg-ui-surface hover:border-[#D4AF37]/50'}
+              ${selectedCard === 'US' ? 'border-primary bg-ui-surface shadow-2xl' : 'border-ui-border bg-ui-surface hover:border-primary/50'}
             `}
           >
             {selectedCard === 'US' && (
               <motion.div 
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
-                className="absolute -top-4 -right-4 w-10 h-10 bg-[#D4AF37] rounded-full flex items-center justify-center shadow-lg text-ui-bg"
+                className="absolute -top-4 -right-4 w-10 h-10 bg-primary rounded-full flex items-center justify-center shadow-lg text-ui-bg"
               >
                 <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
@@ -164,7 +164,7 @@ const MarketSelection: React.FC<MarketSelectionProps> = ({ onComplete }) => {
               <ul className="grid grid-cols-2 gap-y-3 gap-x-4 mb-8">
                 {['S&P 500', 'NASDAQ', 'NYSE Stocks', 'NASDAQ Stocks', 'US ETFs', 'US Equities'].map(item => (
                   <li key={item} className="text-sm font-medium text-text-muted flex items-center gap-2">
-                    <span className="w-1 h-1 rounded-full bg-[#D4AF37]/50"></span>
+                    <span className="w-1 h-1 rounded-full bg-primary/50"></span>
                     {item}
                   </li>
                 ))}
@@ -174,7 +174,7 @@ const MarketSelection: React.FC<MarketSelectionProps> = ({ onComplete }) => {
             <div className="flex flex-col gap-3 mt-auto">
               <button 
                 onClick={() => handleSelect('US')}
-                className="w-full py-4 rounded-xl bg-text-main text-ui-bg font-bold tracking-wide hover:bg-[#D4AF37] transition-colors"
+                className="w-full py-4 rounded-xl bg-text-main text-ui-bg font-bold tracking-wide hover:bg-primary transition-colors"
               >
                 Start US Trading &rarr;
               </button>

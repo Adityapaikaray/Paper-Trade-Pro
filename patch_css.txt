@@ -3,32 +3,6 @@
 
 @layer base {
   :root {
-    /* Light Mode Variables (Default) */
-    --color-primary: #C9A227; /* Gold */
-    --color-primary-light: #D9B338; 
-    --color-primary-dark: #A88720;
-    
-    --ui-bg: #F5F2EA; /* App background */
-    --ui-sidebar: #FCFBF8; /* Sidebar could use elevated surface */
-    --ui-surface: #FFFFFF; /* Cards */
-    --ui-surface-hover: #FCFBF8; /* Elevated */
-    
-    --ui-border: #E6E0D5;
-    
-    --text-main: #0B1728; /* Primary text */
-    --text-dark: #000000;
-    --text-muted: #64748B; /* Secondary text */
-    
-    --color-positive: #00A878; /* Emerald */
-    --color-positive-dark: #008760;
-    --color-negative: #D95454; /* Negative */
-    
-    --glass-opacity: 0;
-    --shadow-color: rgba(0, 0, 0, 0.05);
-  }
-
-  :root.dark {
-    /* Dark Mode Variables */
     --color-primary: #D4AF37; /* Champagne Gold */
     --color-primary-light: #F0C75E; /* Bright Gold */
     --color-primary-dark: #A6822B;
@@ -36,9 +10,9 @@
     --ui-bg: #000000; /* Main background */
     --ui-sidebar: #050505;
     --ui-surface: #0A0A0A; /* Cards */
-    --ui-surface-hover: #111111; /* Elevated cards */
+    --ui-surface-hover: #101010; /* Elevated */
     
-    --ui-border: #242424;
+    --ui-border: #222222;
     
     --text-main: #F5F5F0; 
     --text-dark: #FFFFFF; 
@@ -48,11 +22,12 @@
     --color-positive-dark: #007A50; /* Deep emerald */
     --color-negative: #FF5C5C; /* Negative red */
     
+    --glass-opacity: 0;
     --shadow-color: rgba(0, 0, 0, 0.9);
   }
   
   body {
-    @apply bg-[var(--ui-bg)] text-[var(--text-main)] font-sans antialiased selection:bg-primary/30 selection:text-primary transition-colors duration-500;
+    @apply bg-[var(--ui-bg)] text-[var(--text-main)] font-sans antialiased selection:bg-primary/30 selection:text-primary-light transition-colors duration-500;
   }
 }
 
@@ -84,11 +59,11 @@
   .vibrant-card {
     @apply rounded-3xl border border-ui-border transition-all duration-500;
     background-color: var(--ui-surface);
-    box-shadow: 0 10px 40px -10px var(--shadow-color);
+    box-shadow: 0 10px 40px -10px rgba(0,0,0,0.8);
   }
   
   .vibrant-card:hover {
-    @apply border-primary/30;
+    @apply border-[#333333];
     background-color: var(--ui-surface-hover);
   }
   
@@ -113,16 +88,5 @@
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-ui-border rounded-full hover:bg-text-muted;
-  }
-}
-
-@layer utilities {
-  @keyframes ticker {
-    0% {
-      transform: translateX(0);
-    }
-    100% {
-      transform: translateX(-50%);
-    }
   }
 }

@@ -1,0 +1,121 @@
+  return (
+    <div className="pb-16 max-w-[1600px] mx-auto w-full">
+      
+      {/* Hero */}
+      <div className="bg-[#000000] rounded-[24px] p-8 md:p-12 mb-8 relative overflow-hidden flex flex-col md:flex-row md:items-end justify-between gap-8 shadow-[0_20px_50px_rgba(0,0,0,0.9)] border border-[#222222]">
+        
+        {/* Subtle cinematic dark background simulation via CSS gradients */}
+        <div className="absolute inset-0 opacity-80 pointer-events-none" style={{ background: 'radial-gradient(ellipse at center bottom, #111111 0%, #000000 100%), linear-gradient(180deg, transparent 0%, #000000 100%)' }} />
+        
+        {/* Mountain silhouette */}
+        <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'100%25\' height=\'100%25\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M0 100 L20 70 L40 85 L70 30 L100 100 Z\' fill=\'none\' stroke=\'%23D4AF37\' stroke-width=\'1\' stroke-opacity=\'1\' /%3E%3C/svg%3E")', backgroundSize: 'cover', backgroundPosition: 'bottom' }} />
+        
+        {/* Very subtle warm-gold highlight along bottom edge */}
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/30 to-transparent" />
+
+        <div className="relative z-10 max-w-2xl">
+          <h1 className="text-3xl md:text-[44px] font-sans font-medium text-white tracking-tight leading-[1.1] mb-2">
+            Good Morning, <br />
+            <span className="font-serif italic text-[#D4AF37] font-black">Investor!</span>
+          </h1>
+          <p className="text-[#8C8C8C] text-[15px] font-medium mt-4">Here's what's happening with your portfolio today.</p>
+        </div>
+        
+        <div className="relative z-10 flex flex-col md:items-end gap-6 md:text-right">
+          <div className="text-left md:text-right">
+            <p className="text-lg md:text-xl font-serif text-[#F5F5F0] font-medium italic">"Discipline today, compounds a brighter tomorrow."</p>
+            <p className="text-[#8C8C8C] text-xs font-bold uppercase tracking-widest mt-2">— Warren Buffett</p>
+            <div className="w-12 h-[1px] bg-[#D4AF37] opacity-50 mt-4 md:ml-auto" />
+          </div>
+          
+          <div className="flex items-end justify-between md:justify-end gap-8 w-full">
+            <div className="bg-[#0A0A0A] border border-[#222222] rounded-xl p-3 flex items-center gap-3 shadow-[0_5px_15px_rgba(0,0,0,0.5)]">
+              <div className="flex flex-col text-left">
+                <span className="text-[10px] text-[#8C8C8C] font-bold uppercase tracking-wider">SUN, 13 SEPT 2026</span>
+                <span className="text-[11px] text-[#F5F5F0] font-medium mt-0.5">Small steps. Bigger tomorrows. <ArrowRight size={10} className="inline text-[#D4AF37]" /></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Portfolio Summary 4 Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
+        
+        {/* Total Portfolio Value */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="bg-[#0A0A0A] rounded-[20px] p-6 border border-[#222222] shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-[#101010] flex items-center justify-center shrink-0 border border-[#222222]">
+              <Briefcase size={14} className="text-[#D4AF37]" />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C8C8C]">Total Portfolio Value</p>
+          </div>
+          <p className="text-2xl xl:text-[28px] font-serif font-black text-white leading-none mb-2">₹1,487,026.83</p>
+          <p className="text-[13px] font-bold text-[#00D084] flex items-center gap-1">
+            <TrendingUp size={14} /> +₹7,435.13 (+0.50%)
+          </p>
+        </motion.div>
+
+        {/* Today's P/L */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1 }} className="bg-[#0A0A0A] rounded-[20px] p-6 border border-[#222222] shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00D084]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-[#101010] flex items-center justify-center shrink-0 border border-[#222222] shadow-[0_0_10px_rgba(0,208,132,0.1)]">
+              <Activity size={14} className="text-[#00D084]" />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C8C8C]">Today's P/L</p>
+          </div>
+          <p className="text-2xl xl:text-[28px] font-serif font-black text-white leading-none mb-2">+₹612.38</p>
+          <p className="text-[13px] font-bold text-[#00D084] flex items-center gap-1">
+            <TrendingUp size={14} /> (+4.03%)
+          </p>
+        </motion.div>
+
+        {/* Cash Balance */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.2 }} className="bg-[#0A0A0A] rounded-[20px] p-6 border border-[#222222] shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="flex justify-between items-start mb-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#101010] flex items-center justify-center shrink-0 border border-[#222222]">
+                <span className="text-[#8C8C8C] font-bold text-xs">₹</span>
+              </div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C8C8C]">Cash Balance</p>
+            </div>
+            <button onClick={() => addFunds(isIndia ? 1000000 : 10000, currencySymbol)} className="text-[#D4AF37] hover:bg-[#101010] p-1.5 rounded-lg transition-colors border border-transparent hover:border-[#D4AF37]/30" title="Add virtual funds">
+              <Plus size={14} strokeWidth={3} />
+            </button>
+          </div>
+          <p className="text-2xl xl:text-[28px] font-serif font-black text-white leading-none">₹10,774.33</p>
+        </motion.div>
+
+        {/* Portfolio Health */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.3 }} className="bg-[#0A0A0A] rounded-[20px] p-6 border border-[#222222] shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00D084]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative z-10 flex items-center justify-between h-full">
+            <div className="flex flex-col justify-between h-full">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-[#101010] flex items-center justify-center shrink-0 border border-[#222222] shadow-[0_0_10px_rgba(0,208,132,0.1)]">
+                  <ShieldAlert size={14} className="text-[#00D084]" />
+                </div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8C8C8C]">Portfolio Health</p>
+              </div>
+              <div>
+                <p className="text-2xl xl:text-[28px] font-serif font-black text-white leading-none mb-1">86 <span className="text-sm text-[#8C8C8C] font-sans font-medium">/ 100</span></p>
+                <p className="text-[13px] font-bold text-[#00D084]">Strong</p>
+              </div>
+            </div>
+            
+            {/* Circular Progress Gauge */}
+            <div className="w-[72px] h-[72px] relative shrink-0">
+              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#222222" strokeWidth="8" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#00D084" strokeWidth="8" strokeDasharray={`${251.2 * 0.86} 251.2`} strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(0,208,132,0.5))' }} />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#D4AF37]" />
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
