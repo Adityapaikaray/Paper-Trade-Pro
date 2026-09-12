@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -148,7 +149,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
         </div>
       </header>
 
-      <div className="vibrant-card overflow-hidden">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card overflow-hidden">
         <div className="overflow-x-auto no-scrollbar">
           <table className="w-full text-left border-collapse min-w-[800px]">
             <thead>
@@ -172,7 +173,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
 
                 return (
                   <React.Fragment key={stock.symbol}>
-                    <tr 
+                    <motion.tr initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3, ease: 'easeOut' }} 
                       className={`group hover:bg-ui-bg transition-all cursor-pointer ${expandedSymbol === stock.symbol ? 'bg-ui-bg' : ''}`}
                       onClick={() => toggleExpand(stock.symbol)}
                     >
@@ -252,9 +253,9 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                           </button>
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   {expandedSymbol === stock.symbol && (
-                    <tr>
+                    <motion.tr initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3, ease: 'easeOut' }}>
                       <td colSpan={7} className="px-10 py-10 bg-ui-bg/60 border-b border-ui-border">
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
                           <div className="space-y-6">
@@ -314,7 +315,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                           </div>
                         </div>
                       </td>
-                    </tr>
+                    </motion.tr>
                   )}
                 </React.Fragment>
               );
@@ -328,7 +329,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
             <p className="text-[10px] font-black uppercase tracking-[0.2em]">Zero Protocols Matching Query</p>
           </div>
         )}
-      </div>
+      </motion.div>
 
       <AlertModal 
         stock={alertStock} 

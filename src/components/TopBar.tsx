@@ -16,7 +16,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
   const { profile, marketContext, setMarketContext } = usePortfolio();
   const { theme, toggleTheme } = useTheme();
   const { addToast } = useUI();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   
@@ -172,7 +172,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
               </div>
             </div>
             <div className="hidden sm:flex flex-col items-start mr-1">
-              <p className="text-xs font-bold text-text-main leading-tight group-hover:text-primary transition-colors">Prestige User</p>
+              <p className="text-xs font-bold text-text-main leading-tight group-hover:text-primary transition-colors">{user?.name || "Prestige User"}</p>
               <p className="text-[9px] font-black text-primary uppercase tracking-widest leading-none">ELITE TIER</p>
             </div>
           </div>
@@ -186,8 +186,8 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
                 className="absolute right-0 top-full mt-3 w-56 bg-ui-surface border border-ui-border rounded-xl shadow-2xl overflow-hidden py-2 z-50"
               >
                 <div className="px-4 py-2 mb-2 border-b border-ui-border">
-                  <p className="text-sm font-bold text-text-main">Prestige User</p>
-                  <p className="text-xs text-text-muted">user@tradepro.com</p>
+                  <p className="text-sm font-bold text-text-main">{user?.name || "Prestige User"}</p>
+                  <p className="text-xs text-text-muted">{user?.email || "user@tradepro.com"}</p>
                 </div>
                 
                 <button onClick={() => { setProfileOpen(false); onNavigate?.('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3">

@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -19,7 +20,7 @@ const HistoryView: React.FC = () => {
         <p className="text-text-muted font-bold uppercase text-[9px] tracking-[0.3em] mt-2">Immutable Transaction Metadata Surveillance</p>
       </header>
 
-      <div className="vibrant-card overflow-hidden">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card overflow-hidden">
         {transactions.length === 0 ? (
           <div className="py-48 text-center flex flex-col items-center opacity-10">
             <HistoryIcon size={80} className="text-primary mb-6" />
@@ -39,7 +40,7 @@ const HistoryView: React.FC = () => {
             </thead>
             <tbody className="divide-y divide-ui-border">
               {transactions.map((tx) => (
-                <tr key={tx.id} className="group hover:bg-ui-surface transition-all cursor-default">
+                <motion.tr initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3, ease: 'easeOut' }} key={tx.id} className="group hover:bg-ui-surface transition-all cursor-default">
                   <td className="px-10 py-8">
                     <div className={`w-12 h-12 mx-auto rounded-xl flex items-center justify-center shadow-2xl ${tx.type === 'BUY' ? 'bg-primary/10 text-primary-light border border-primary/30' : 'bg-ui-surface text-text-muted border border-ui-border'}`}>
                       {tx.type === 'BUY' ? <ArrowUpRight size={24} /> : <ArrowDownLeft size={24} />}
@@ -62,12 +63,12 @@ const HistoryView: React.FC = () => {
                       {new Date(tx.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false })}
                     </p>
                   </td>
-                </tr>
+                </motion.tr>
               ))}
             </tbody>
           </table>
         )}
-      </div>
+      </motion.div>
     </div>
   );
 };

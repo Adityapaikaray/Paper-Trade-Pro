@@ -1,4 +1,6 @@
+const fs = require('fs');
 
+const authContextCode = `
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
@@ -18,12 +20,29 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [user, setUser] = useState<User | null>({ name: 'Guest User', email: 'guest@example.com' });
-  const [loading, setLoading] = useState<boolean>(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    // Auth check bypassed
+    const initAuth = async () => {
+      const token = localStorage.getItem('tradepro_auth_token');
+      if (token) {
+        try {
+          const res = await axios.get('/api/auth/me', {
+            headers: { Authorization: \`Bearer \${token}\` }
+          });
+          setUser(res.data.user);
+          setIsAuthenticated(true);
+        } catch (e) {
+          localStorage.removeItem('tradepro_auth_token');
+          setIsAuthenticated(false);
+          setUser(null);
+        }
+      }
+      setLoading(false);
+    };
+    initAuth();
   }, []);
 
   const login = (token: string, userData: User) => {
@@ -37,7 +56,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (token) {
       try {
         await axios.post('/api/auth/logout', {}, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: \`Bearer \${token}\` }
         });
       } catch (e) {}
     }
@@ -58,3 +77,6 @@ export const useAuth = () => {
   if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };
+`;
+
+fs.writeFileSync('src/contexts/AuthContext.tsx', authContextCode);

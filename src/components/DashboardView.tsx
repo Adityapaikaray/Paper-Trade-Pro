@@ -116,7 +116,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
 
       {/* Portfolio Summary 4 Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
-        <div className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
           <div className="relative z-10">
             <div className="flex justify-between items-start">
               <div>
@@ -132,9 +132,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
               {todayReturn >= 0 ? '+' : '-'}{currencySymbol}{Math.abs(todayReturn).toLocaleString(undefined, { minimumFractionDigits: 2 })} ({todayReturn >= 0 ? '+' : '-'}{Math.abs(todayReturnPct).toFixed(2)}%)
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
           <div className="relative z-10">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Today's P/L</p>
             <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">+₹612.38</p>
@@ -143,16 +143,16 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
               (+4.03%)
             </p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
           <div className="relative z-10">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Cash Balance</p>
             <p className="text-2xl xl:text-3xl font-serif font-black text-text-main">₹10,774.33</p>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 flex flex-col justify-between relative overflow-hidden group">
           <div className="relative z-10 flex items-center justify-between">
             <div>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted mb-2">Portfolio Health</p>
@@ -163,7 +163,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                <div className="absolute inset-2 rounded-full border-4 border-ui-border border-b-positive border-l-positive -rotate-45" />
             </div>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       <div className="flex flex-col xl:flex-row gap-8">
@@ -172,7 +172,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
         <div className="flex-1 space-y-8 min-w-0">
           
           {/* Portfolio Performance */}
-          <div className="vibrant-card p-6">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
               <div>
                 <h3 className="text-lg font-serif font-bold text-text-main">Portfolio Performance</h3>
@@ -202,7 +202,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                   baseline={10000} 
                />
             </div>
-          </div>
+          </motion.div>
 
           {/* Active Positions */}
           <div>
@@ -241,7 +241,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
 
             <div className="space-y-4">
               {/* TITAN CARD */}
-              <div className="vibrant-card p-5 group">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-5 group">
                 <div className="flex flex-col sm:flex-row justify-between gap-4 mb-5 border-b border-ui-border pb-5">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-[#1A1F29] border border-ui-border flex items-center justify-center font-bold text-lg text-white">
@@ -298,10 +298,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                   <button onClick={() => addToast('Modify allocation workflow', 'info')} className="px-4 py-2 text-xs font-bold rounded-lg bg-ui-bg border border-ui-border text-text-main hover:bg-ui-surface-hover transition-colors">Modify Allocation</button>
                   <button className="w-8 h-8 rounded-lg bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-text-main ml-auto"><MoreVertical size={14} /></button>
                 </div>
-              </div>
+              </motion.div>
 
               {/* AMD CARD */}
-              <div className="vibrant-card p-5 group">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-5 group">
                 <div className="flex flex-col sm:flex-row justify-between gap-4 mb-5 border-b border-ui-border pb-5">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-[#1A1F29] border border-ui-border flex items-center justify-center font-bold text-lg text-white">
@@ -358,7 +358,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                   <button onClick={() => addToast('Modify allocation workflow', 'info')} className="px-4 py-2 text-xs font-bold rounded-lg bg-ui-bg border border-ui-border text-text-main hover:bg-ui-surface-hover transition-colors">Modify Allocation</button>
                   <button className="w-8 h-8 rounded-lg bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-text-main ml-auto"><MoreVertical size={14} /></button>
                 </div>
-              </div>
+              </motion.div>
             </div>
           </div>
         </div>
@@ -367,7 +367,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
         <div className="w-full xl:w-[380px] shrink-0 space-y-6">
           
           {/* AI Portfolio Copilot Card */}
-          <div className="vibrant-card p-6 border-primary/30 relative overflow-hidden group">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6 border-primary/30 relative overflow-hidden group">
             <div className="absolute inset-0 bg-linear-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="flex items-start gap-4 mb-4">
                <div className="w-12 h-12 rounded-xl bg-primary-dark text-white flex items-center justify-center shadow-md">
@@ -388,53 +388,72 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
               <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-2.5 rounded-lg bg-ui-bg border border-ui-border text-xs text-text-main hover:border-primary transition-colors">"Why is my portfolio up today?"</button>
               <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-2.5 rounded-lg bg-ui-bg border border-ui-border text-xs text-text-main hover:border-primary transition-colors">"Show my biggest risks"</button>
             </div>
-          </div>
+          </motion.div>
 
           {/* Asset Allocation */}
-          <div className="vibrant-card p-6">
-            <h3 className="text-base font-bold text-text-main mb-6">Asset Allocation</h3>
-            <div className="flex justify-center mb-6 relative">
-               <div className="w-48 h-48 rounded-full" style={{ background: 'conic-gradient(#C9A23A 0% 56.6%, #00A878 56.6% 88.5%, #64748B 88.5% 96.9%, #D94B5B 96.9% 100%)' }}>
-                 <div className="absolute inset-4 bg-ui-surface rounded-full flex flex-col items-center justify-center shadow-inner">
-                   <p className="text-xl font-serif font-black text-text-main">₹2.46M</p>
-                   <p className="text-[10px] uppercase font-bold text-text-muted">Total Value</p>
-                 </div>
-               </div>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="bg-ui-surface rounded-[32px] border border-ui-border shadow-sm overflow-hidden flex flex-col">
+            <div className="px-8 pt-8 pb-4 flex justify-between items-start">
+              <div>
+                <h3 className="text-[28px] font-sans font-bold text-text-main tracking-tight leading-none mb-1.5">Asset Allocation</h3>
+                <p className="text-[15px] text-text-muted font-medium">Your investments by asset</p>
+              </div>
+              <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-ui-border bg-ui-bg text-[13px] font-medium text-text-main hover:bg-ui-surface-hover transition-colors">
+                All Accounts <ChevronDown size={14} className="text-text-muted opacity-70" />
+              </button>
             </div>
-            <div className="space-y-3">
-               <div className="flex items-center justify-between group cursor-pointer">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-sm bg-[#C9A23A]" />
-                   <span className="text-xs font-bold text-text-main">TITAN</span>
-                 </div>
-                 <span className="text-xs font-mono text-text-muted group-hover:text-text-main transition-colors">56.6%</span>
-               </div>
-               <div className="flex items-center justify-between group cursor-pointer">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-sm bg-[#00A878]" />
-                   <span className="text-xs font-bold text-text-main">AMD</span>
-                 </div>
-                 <span className="text-xs font-mono text-text-muted group-hover:text-text-main transition-colors">31.9%</span>
-               </div>
-               <div className="flex items-center justify-between group cursor-pointer">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-sm bg-[#64748B]" />
-                   <span className="text-xs font-bold text-text-main">Cash</span>
-                 </div>
-                 <span className="text-xs font-mono text-text-muted group-hover:text-text-main transition-colors">8.4%</span>
-               </div>
-               <div className="flex items-center justify-between group cursor-pointer">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 rounded-sm bg-[#D94B5B]" />
-                   <span className="text-xs font-bold text-text-main">Others</span>
-                 </div>
-                 <span className="text-xs font-mono text-text-muted group-hover:text-text-main transition-colors">3.1%</span>
-               </div>
+            
+            <div className="flex-1 flex flex-col items-center justify-center py-6">
+              <div className="w-64 h-64 rounded-full relative shadow-[inset_0_-2px_10px_rgba(0,0,0,0.02)]" style={{ background: 'conic-gradient(from -90deg, #D6A848 0% 56.6%, #0CA773 56.6% 88.5%, #61738C 88.5% 96.9%, #EE5E54 96.9% 100%)' }}>
+                <div className="absolute inset-[32px] bg-ui-surface rounded-full flex flex-col items-center justify-center shadow-[0_4px_20px_rgba(0,0,0,0.04)] z-10">
+                  <p className="text-[32px] font-sans font-bold text-text-main tracking-tight leading-none mb-1">₹2.46M</p>
+                  <p className="text-[11px] uppercase font-bold text-text-muted tracking-[0.15em]">Total Value</p>
+                </div>
+                
+                {/* Segment Labels */}
+                <span className="absolute top-[50%] right-[8%] text-white text-[13px] font-bold drop-shadow-sm z-10 translate-x-1/2 -translate-y-1/2">56.6%</span>
+                <span className="absolute top-[50%] left-[8%] text-white text-[13px] font-bold drop-shadow-sm z-10 -translate-x-1/2 -translate-y-1/2">31.9%</span>
+                <span className="absolute top-[12%] left-[30%] text-white text-[12px] font-bold drop-shadow-sm z-10 -translate-x-1/2 -translate-y-1/2">8.4%</span>
+                <span className="absolute top-[8%] left-[48%] text-white text-[11px] font-bold drop-shadow-sm z-10 -translate-x-1/2 -translate-y-1/2">3.1%</span>
+                
+                {/* Thin white borders between segments */}
+                <div className="absolute top-0 left-1/2 w-[2px] h-1/2 bg-ui-surface origin-bottom -translate-x-1/2" />
+                <div className="absolute top-0 left-1/2 w-[2px] h-1/2 bg-ui-surface origin-bottom -translate-x-1/2 rotate-[203.76deg]" /> {/* 56.6% */}
+                <div className="absolute top-0 left-1/2 w-[2px] h-1/2 bg-ui-surface origin-bottom -translate-x-1/2 rotate-[318.6deg]" /> {/* 56.6% + 31.9% = 88.5% */}
+                <div className="absolute top-0 left-1/2 w-[2px] h-1/2 bg-ui-surface origin-bottom -translate-x-1/2 rotate-[348.84deg]" /> {/* 88.5% + 8.4% = 96.9% */}
+              </div>
             </div>
-          </div>
+
+            <div className="px-6 pb-6">
+              <div className="bg-ui-bg rounded-2xl border border-ui-border overflow-hidden">
+                {[
+                  { name: 'TITAN', desc: 'Equity • 1 holding', pct: '56.6%', val: '₹1.39M', color: '#D6A848' },
+                  { name: 'AMD', desc: 'Equity • 1 holding', pct: '31.9%', val: '₹0.78M', color: '#0CA773' },
+                  { name: 'Cash', desc: 'Liquid • Cash balance', pct: '8.4%', val: '₹0.21M', color: '#61738C' },
+                  { name: 'Others', desc: 'Diversified investments', pct: '3.1%', val: '₹0.08M', color: '#EE5E54' }
+                ].map((item, i, arr) => (
+                  <div key={item.name} className={`flex items-center justify-between p-4 px-5 hover:bg-ui-surface-hover transition-colors cursor-pointer group ${i !== arr.length - 1 ? 'border-b border-ui-border/50' : ''}`}>
+                    <div className="flex items-center gap-4">
+                      <div className="w-5 h-5 rounded-full shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)]" style={{ backgroundColor: item.color }} />
+                      <div>
+                        <p className="text-[15px] font-bold text-text-main leading-tight">{item.name}</p>
+                        <p className="text-[13px] text-text-muted mt-0.5">{item.desc}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-right">
+                        <p className="text-[15px] font-bold leading-tight" style={{ color: item.color }}>{item.pct}</p>
+                        <p className="text-[14px] text-text-muted mt-0.5 font-medium">{item.val}</p>
+                      </div>
+                      <ChevronRight size={16} className="text-text-muted opacity-40 group-hover:opacity-100 transition-opacity ml-1" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
 
           {/* Market Sentiment */}
-          <div className="vibrant-card p-6">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
             <h3 className="text-base font-bold text-text-main mb-4">Market Sentiment</h3>
             <div className="flex flex-col items-center">
               <div className="w-full max-w-[200px] h-[100px] relative overflow-hidden mb-2">
@@ -445,10 +464,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
               <h4 className="text-lg font-black text-positive uppercase tracking-widest">Bullish</h4>
               <p className="text-xs text-text-muted text-center mt-2">"Markets are showing positive momentum."</p>
             </div>
-          </div>
+          </motion.div>
 
           {/* Top Movers Today */}
-          <div className="vibrant-card p-6">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-base font-bold text-text-main">Top Movers Today</h3>
             </div>
@@ -467,32 +486,58 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                 </div>
               ))}
             </div>
-          </div>
+          </motion.div>
 
-          {/* Top News */}
-          <div className="vibrant-card p-6">
-            <h3 className="text-base font-bold text-text-main mb-4">Top News for You</h3>
-            <div className="space-y-4">
-              {[ { t: 'AMD', h: 'New AI chip demand boosts revenue outlook', time: '2 hours ago · Reuters', us: true },
-                { t: 'TITAN', h: 'Strong Q4 results beat expectations', time: '4 hours ago · Bloomberg', in: true },
-                { t: 'India', h: 'NIFTY reaches new 52-week high', time: '5 hours ago · Economic Times', in: true },
-                { t: 'NVDA', h: 'AI infrastructure demand continues to grow', time: '6 hours ago · TechCrunch', us: true }
-              ].filter(n => (isIndia ? n.in : n.us)).map((news, i) => (
-                <div key={i} className="group cursor-pointer border-b border-ui-border last:border-0 pb-4 last:pb-0">
-                  <div className="flex gap-3">
-                    <div className="flex-1">
-                      <span className="text-[10px] font-bold uppercase text-primary-dark mb-1 block">{news.t}</span>
-                      <p className="text-sm font-medium text-text-main leading-tight mb-2 group-hover:text-primary transition-colors line-clamp-2">{news.h}</p>
-                      <p className="text-[10px] text-text-muted">{news.time}</p>
+          {/* Market Intelligence */}
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="bg-ui-surface rounded-[32px] border border-ui-border shadow-sm overflow-hidden flex flex-col">
+            <div className="px-8 pt-8 pb-4 flex justify-between items-start">
+              <div>
+                <h3 className="text-[28px] font-sans font-bold text-text-main tracking-tight leading-none mb-1.5">Market Intelligence</h3>
+                <p className="text-[15px] text-text-muted font-medium">Important news & updates</p>
+              </div>
+              <button className="w-10 h-10 rounded-full border border-ui-border bg-ui-bg flex items-center justify-center text-text-muted hover:bg-ui-surface-hover hover:text-text-main transition-colors">
+                <Newspaper size={18} />
+              </button>
+            </div>
+            
+            <div className="px-6 pb-6 pt-2">
+              <div className="space-y-3">
+                {[
+                  { t: 'AMD', name: 'Advanced Micro', h: 'New AI chip demand boosts revenue outlook for upcoming quarters.', time: '2h ago', source: 'Reuters', change: '+4.2%', up: true, color: '#0CA773', in: false },
+                  { t: 'TITAN', name: 'Titan Company', h: 'Strong Q4 results beat expectations driven by jewelry sales.', time: '4h ago', source: 'Bloomberg', change: '+1.8%', up: true, color: '#D6A848', in: true },
+                  { t: 'NVDA', name: 'Nvidia Corp', h: 'AI infrastructure demand continues to grow globally.', time: '5h ago', source: 'TechCrunch', change: '+1.1%', up: true, color: '#76B900', in: false },
+                  { t: 'RELIANCE', name: 'Reliance Ind', h: 'Retail arm expands operations with new strategic acquisitions.', time: '6h ago', source: 'Economic Times', change: '-0.4%', up: false, color: '#00548F', in: true },
+                  { t: 'AAPL', name: 'Apple Inc', h: 'Mixed-reality headset sales show early momentum in retail.', time: '7h ago', source: 'WSJ', change: '+0.8%', up: true, color: '#A2AAAD', in: false }
+                ].filter(n => marketContext === 'ALL' || (isIndia ? n.in : !n.in)).slice(0, 3).map((news, i) => (
+                  <div key={i} className="group p-4 rounded-2xl bg-ui-bg border border-ui-border hover:border-ui-border/80 hover:shadow-sm transition-all cursor-pointer">
+                    <div className="flex items-start gap-4">
+                      {/* Logo */}
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-[inset_0_2px_4px_rgba(0,0,0,0.1)] shrink-0" style={{ backgroundColor: news.color }}>
+                        {news.t.slice(0, 1)}
+                      </div>
+                      
+                      {/* Content */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[11px] font-black uppercase tracking-wider text-text-muted">{news.source} • {news.time}</span>
+                          
+                          {/* Stock Shortcut Pill */}
+                          <div className={`flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-bold font-mono border ${news.up ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border-rose-500/20'}`}>
+                            <span>{news.t}</span>
+                            <span>{news.change}</span>
+                          </div>
+                        </div>
+                        <p className="text-[15px] font-bold text-text-main leading-snug group-hover:text-primary transition-colors">{news.h}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Recent Activity */}
-          <div className="vibrant-card p-6">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
             <h3 className="text-base font-bold text-text-main mb-4">Recent Activity</h3>
             <div className="space-y-4">
                {[ isIndia ? { type: 'BUY', symbol: 'TITAN', desc: '245 shares @ ₹3,645.60', color: 'text-positive' } : { type: 'BUY', symbol: 'AMD', desc: '10 shares @ $175.77', color: 'text-positive' },
@@ -510,10 +555,10 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                  </div>
                ))}
             </div>
-          </div>
+          </motion.div>
 
           {/* Goals */}
-          <div className="vibrant-card p-6">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-6">
              <div className="flex items-center justify-between mb-4">
                 <h3 className="text-base font-bold text-text-main">Your Goals</h3>
                 
@@ -540,7 +585,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                    <p className="text-[10px] text-text-muted font-mono mt-1 text-right">{currencySymbol}{isIndia ? '28,20,000' : '282,000'} / {currencySymbol}{isIndia ? '1,00,00,000' : '1,000,000'}</p>
                 </div>
              </div>
-          </div>
+          </motion.div>
 
         </div>
       </div>

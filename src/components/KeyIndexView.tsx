@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
@@ -503,7 +504,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
               {indices.map(idx => {
                 const isPositive = idx.change >= 0;
                 return (
-                  <tr
+                  <motion.tr initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3, ease: 'easeOut' }}
                     key={idx.key}
                     id={`table-row-${idx.key}`}
                     onClick={() => {
@@ -552,7 +553,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                         Feature Chart
                       </button>
                     </td>
-                  </tr>
+                  </motion.tr>
                 );
               })}
             </tbody>

@@ -105,13 +105,14 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
             Upgrade Now <ArrowRight size={12} strokeWidth={3} />
           </div>
         </div>
+        
+        <div className="hidden xl:block mt-6 w-full text-center">
+           <p className="text-[10px] font-serif italic text-[#8AA1B9]">"Discipline today. Freedom tomorrow."</p>
+           <p className="text-[9px] uppercase tracking-[0.2em] text-[#8AA1B9]/60 font-bold mt-2">Made with ❤️ in India</p>
+        </div>
       </div>
 
       <div className="hidden xl:block absolute bottom-0 left-0 right-0 h-48 pointer-events-none opacity-20 bg-cover bg-bottom" style={{ backgroundImage: 'radial-gradient(circle at bottom, #C9A23A 0%, transparent 70%)' }}></div>
-      <div className="hidden xl:block absolute bottom-4 w-full text-center z-10">
-         <p className="text-[10px] font-serif italic text-[#8AA1B9]">"Discipline today. Freedom tomorrow."</p>
-         <p className="text-[9px] uppercase tracking-[0.2em] text-[#8AA1B9]/60 font-bold mt-2">Made with ❤️ in India</p>
-      </div>
     </div>
   );
 };

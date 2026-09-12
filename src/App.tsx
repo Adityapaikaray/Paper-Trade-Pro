@@ -29,7 +29,7 @@ import { MarketProvider } from './contexts/MarketContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SplashScreen from './components/SplashScreen.tsx';
 import MarketSelection from './components/MarketSelection.tsx';
-import LoginView from './components/LoginView.tsx';
+
 import { Stock } from './types.ts';
 
 export default function AppWrapper() {
@@ -49,13 +49,14 @@ export default function AppWrapper() {
 }
 
 function AppContent() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const { marketContext } = usePortfolio();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [searchOrigin, setSearchOrigin] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -94,9 +95,10 @@ function AppContent() {
   return (
     <>
           {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
-          {!showSplash && !isAuthenticated && <LoginView />}
-          {!showSplash && isAuthenticated && marketContext === null && <MarketSelection onComplete={() => {}} />}
-          {(!showSplash && isAuthenticated && marketContext !== null) && (
+          {loading && !showSplash && <div className="h-screen w-screen bg-ui-bg flex items-center justify-center"><div className="w-8 h-8 border-4 border-ui-border border-t-primary rounded-full animate-spin"></div></div>}
+
+          {!loading && !showSplash && isAuthenticated && marketContext === null && <MarketSelection onComplete={() => {}} />}
+          {(!loading && !showSplash && isAuthenticated && marketContext !== null) && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

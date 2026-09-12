@@ -71,8 +71,8 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
         {holdingsWithData.map((pos, i) => (
           <motion.div 
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.1, duration: 0.8 }}
             key={pos.symbol}
             className="p-10 vibrant-card shimmer border-ui-border group flex flex-col gap-10 "
@@ -117,7 +117,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
                 <p className="text-2xl font-mono font-black text-text-main tracking-tighter italic">{pos.stock?.currency || '$'}{pos.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
               </div>
               <div className="p-6 bg-primary/5 rounded-2xl border border-primary/10">
-                <p className="text-[8px] font-black text-primary/50 uppercase tracking-[0.3em] mb-2">Global Valuation ({currency.code})</p>
+                <p className="text-[8px] font-black text-primary/50 uppercase tracking-[0.3em] mb-2">Global Valuation ({marketContext === 'IN' ? 'INR' : 'USD'})</p>
                 <p className="text-2xl font-mono font-black text-primary-light tracking-tighter italic">{currency.symbol}{pos.valueInPreferred.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
               </div>
             </div>
