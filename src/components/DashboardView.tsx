@@ -36,7 +36,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
   const [modifySymbol, setModifySymbol] = useState<string | null>(null);
 
   
-  const { profile, marketContext, addFunds, modifyHoldingAllocation } = usePortfolio();
+  const { profile, marketContext, addFunds, modifyHoldingAllocation, summary } = usePortfolio();
   const { theme } = useTheme();
   const isIndia = marketContext === 'IN';
   const currencySymbol = isIndia ? '₹' : '$';
@@ -47,27 +47,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
     stocks.forEach(s => map.set(s.symbol.toUpperCase(), s));
     return { stocksMap: map };
   }, [stocks]);
-
-  const { currentHoldingsValue, totalCost } = useMemo(() => {
-    let holdingsVal = 0;
-    let cost = 0;
-    (profile?.holdings || []).forEach(holding => {
-      const stock = stocksMap.get(holding.symbol.toUpperCase());
-      if (stock && stock.currency === currencySymbol) {
-        holdingsVal += stock.price * holding.shares;
-        cost += holding.averagePrice * holding.shares;
-      }
-    });
-    return { currentHoldingsValue: holdingsVal, totalCost: cost };
-  }, [profile?.holdings, stocksMap, currencySymbol]);
-
-  const cashBalance = typeof profile?.balances?.[currencySymbol] === 'number'
-    ? profile.balances[currencySymbol] 
-    : 0;
-  const portfolioValue = cashBalance + currentHoldingsValue;
-  
-  const unrealizedReturn = currentHoldingsValue - totalCost;
-  const unrealizedReturnPct = totalCost > 0 ? (unrealizedReturn / totalCost) * 100 : 0;
 
   const holdingsWithData = useMemo(() => {
     return (profile?.holdings || [])
@@ -86,7 +65,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
         const unrealizedPLPct = avgCost > 0 ? (currentPrice / avgCost - 1) * 100 : 0;
         const todayChange = h.stock.change * quantity;
         const todayChangePct = h.stock.changePercent;
-        const allocation = portfolioValue > 0 ? (marketValue / portfolioValue) * 100 : 0;
+        const allocation = summary.currentValue > 0 ? (marketValue / summary.currentValue) * 100 : 0;
         
         return {
           ...h.holding,
@@ -100,11 +79,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
           allocation
         };
       });
-  }, [profile?.holdings, stocksMap, currencySymbol, portfolioValue]);
+  }, [profile?.holdings, stocksMap, currencySymbol, summary.currentValue]);
 
-  // Day return mock based on portfolio size
-  const todayReturn = portfolioValue > 0 ? (portfolioValue * (isIndia ? 0.005 : 0.012)) : 0;
-  const todayReturnPct = portfolioValue > 0 ? (todayReturn / portfolioValue) * 100 : 0;
+  // Day return strictly based on invested portfolio assets (zero when empty)
+  const todayReturn = summary.currentValue > 0 ? (summary.currentValue * (isIndia ? 0.005 : 0.012)) : 0;
+  const todayReturnPct = summary.currentValue > 0 ? (todayReturn / summary.currentValue) * 100 : 0;
 
   const { openModal, addToast, setIsCopilotOpen, openCopilotWithPrompt } = useUI();
 
@@ -173,11 +152,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Portfolio Value</p>
           </div>
           <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">
-            {currencySymbol}{portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {currencySymbol}{summary.currentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
-          <p className={`text-xs font-mono font-bold flex items-center gap-1 ${unrealizedReturn >= 0 ? 'text-positive' : 'text-negative'}`}>
-            {unrealizedReturn >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
-            {unrealizedReturn >= 0 ? '+' : ''}{currencySymbol}{unrealizedReturn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({unrealizedReturnPct >= 0 ? '+' : ''}{unrealizedReturnPct.toFixed(2)}%)
+          <p className={`text-xs font-mono font-bold flex items-center gap-1 ${summary.totalGain >= 0 ? 'text-positive' : 'text-negative'}`}>
+            {summary.totalGain >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+            {summary.totalGain >= 0 ? '+' : ''}{currencySymbol}{summary.totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({summary.returnPct >= 0 ? '+' : ''}{summary.returnPct.toFixed(2)}%)
           </p>
         </motion.div>
 
@@ -191,7 +170,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Invested</p>
           </div>
           <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">
-            {currencySymbol}{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {currencySymbol}{summary.investedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <p className="text-xs font-sans font-medium text-text-muted">
             Total capital invested across {holdingsWithData.length} asset{holdingsWithData.length === 1 ? '' : 's'}
@@ -200,19 +179,19 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
 
         {/* Total P&L */}
         <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.2 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-sm flex flex-col justify-between relative overflow-hidden group">
-          <div className={`absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent ${unrealizedReturn >= 0 ? 'via-positive/20' : 'via-negative/20'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
+          <div className={`absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent ${summary.totalGain >= 0 ? 'via-positive/20' : 'via-negative/20'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
           <div className="flex items-center gap-3 mb-4">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${unrealizedReturn >= 0 ? 'bg-positive/10 border-positive/30' : 'bg-negative/10 border-negative/30'}`}>
-              {unrealizedReturn >= 0 ? <TrendingUp size={14} className="text-positive" /> : <TrendingDown size={14} className="text-negative" />}
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${summary.totalGain >= 0 ? 'bg-positive/10 border-positive/30' : 'bg-negative/10 border-negative/30'}`}>
+              {summary.totalGain >= 0 ? <TrendingUp size={14} className="text-positive" /> : <TrendingDown size={14} className="text-negative" />}
             </div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Total P&L</p>
           </div>
-          <p className={`text-2xl xl:text-[28px] font-mono font-bold leading-none mb-2 ${unrealizedReturn >= 0 ? 'text-positive' : 'text-negative'}`}>
-            {unrealizedReturn >= 0 ? '+' : ''}{currencySymbol}{unrealizedReturn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          <p className={`text-2xl xl:text-[28px] font-mono font-bold leading-none mb-2 ${summary.totalGain >= 0 ? 'text-positive' : 'text-negative'}`}>
+            {summary.totalGain >= 0 ? '+' : ''}{currencySymbol}{summary.totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
-          <p className={`text-xs font-mono font-bold flex items-center gap-1 ${unrealizedReturn >= 0 ? 'text-positive' : 'text-negative'}`}>
-            <span className={`px-2 py-0.5 rounded-full ${unrealizedReturn >= 0 ? 'bg-positive/10 border border-positive/20' : 'bg-negative/10 border border-negative/20'}`}>
-              {unrealizedReturnPct >= 0 ? '+' : ''}{unrealizedReturnPct.toFixed(2)}% overall return
+          <p className={`text-xs font-mono font-bold flex items-center gap-1 ${summary.totalGain >= 0 ? 'text-positive' : 'text-negative'}`}>
+            <span className={`px-2 py-0.5 rounded-full ${summary.totalGain >= 0 ? 'bg-positive/10 border border-positive/20' : 'bg-negative/10 border border-negative/20'}`}>
+              {summary.returnPct >= 0 ? '+' : ''}{summary.returnPct.toFixed(2)}% overall return
             </span>
           </p>
         </motion.div>
@@ -232,7 +211,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
             </button>
           </div>
           <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">
-            {currencySymbol}{cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            {currencySymbol}{summary.availableCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
           <p className="text-xs font-sans font-medium text-text-muted">
             Purchasing power available for trading

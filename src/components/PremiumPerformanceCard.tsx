@@ -1,9 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, Clock, Activity, Briefcase, Star, FileText, BarChart2, PieChart, History as HistoryIcon } from 'lucide-react';
 import PortfolioGraph from './PortfolioGraph.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
-import { useMarket } from '../contexts/MarketContext.tsx';
 
 interface PremiumPerformanceCardProps {
   activeTab: string;
@@ -11,42 +10,26 @@ interface PremiumPerformanceCardProps {
 }
 
 const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeTab, setActiveTab }) => {
-  const { profile, marketContext } = usePortfolio();
-  const { stocks } = useMarket();
+  const { profile, summary } = usePortfolio();
   const [activeFilter, setActiveFilter] = useState('1M');
   const FILTERS = ['1D', '1W', '1M', '3M', '6M', '1Y', 'ALL'];
 
-  const isIndia = marketContext === 'IN';
-  const currencySymbol = isIndia ? '₹' : '$';
+  const {
+    investedValue,
+    currentValue,
+    totalGain,
+    returnPct,
+    availableCash,
+    startingCapital,
+    hasHoldings,
+    currencySymbol,
+    holdingsCount,
+  } = summary;
 
-  const holdings = profile.holdings || [];
-  const relevantHoldings = holdings.filter(h => {
-    const s = stocks.find(stock => stock.symbol.toUpperCase() === h.symbol.toUpperCase());
-    return !s || s.currency === currencySymbol;
-  });
-
-  const { totalValue, totalCost } = useMemo(() => {
-    let val = 0;
-    let cost = 0;
-    relevantHoldings.forEach(h => {
-      const s = stocks.find(stock => stock.symbol.toUpperCase() === h.symbol.toUpperCase());
-      const p = s ? s.price : h.averagePrice;
-      val += p * h.shares;
-      cost += h.averagePrice * h.shares;
-    });
-    return { totalValue: val, totalCost: cost };
-  }, [relevantHoldings, stocks]);
-
-  const cashBalance = typeof profile?.balances?.[currencySymbol] === 'number'
-    ? profile.balances[currencySymbol]
-    : 1000000;
-  const initialBase = 1000000;
-  const totalGain = totalValue - totalCost;
-  const returnPct = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
   const isPositive = totalGain >= 0;
 
   const tabs = [
-    { id: 'Active Positions', label: `Active Positions (${relevantHoldings.length})`, icon: Briefcase },
+    { id: 'Active Positions', label: `Active Positions (${holdingsCount})`, icon: Briefcase },
     { id: 'Watchlist', label: 'Watchlist', icon: Star },
     { id: 'Orders', label: `Orders (${profile.orders?.length || 0})`, icon: FileText },
     { id: 'Performance', label: 'Performance', icon: BarChart2 },
@@ -89,7 +72,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
           </div>
         </div>
 
-        {/* 2. Performance Summary */}
+        {/* 2. Performance Summary KPIs strictly using unified summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-ui-surface-hover rounded-2xl p-5 border border-ui-border flex items-center gap-4 relative overflow-hidden">
             <div className={`absolute top-0 left-0 w-1 h-full ${isPositive ? 'bg-positive' : 'bg-negative'}`} />
@@ -126,7 +109,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
             <div>
               <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-0.5">Current Portfolio Value</p>
               <p className="text-2xl font-mono font-bold text-text-main leading-none">
-                {currencySymbol}{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {currencySymbol}{currentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-[9px] text-primary mt-1 font-medium flex items-center gap-1"><Clock size={10} /> Market value of holdings</p>
             </div>
@@ -136,24 +119,24 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
         {/* 3. Main Chart */}
         <div className="h-[380px] w-full -mx-2 relative z-0">
           <PortfolioGraph 
-             investedValue={totalCost}
-             currentValue={totalValue}
+             investedValue={investedValue}
+             currentValue={currentValue}
              history={profile.history || []} 
              currencySymbol={currencySymbol} 
              timeRange={activeFilter}
              onTimeRangeChange={setActiveFilter}
-             isReset={profile.isPortfolioReset || relevantHoldings.length === 0 || totalCost === 0}
+             hasHoldings={hasHoldings}
              premiumMode={true}
           />
         </div>
 
-        {/* 4. Portfolio Statistics */}
+        {/* 4. Portfolio Statistics (Single Source of Truth) */}
         <div className="bg-ui-bg rounded-2xl border border-ui-border shadow-sm flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-ui-border overflow-hidden">
           {[
-            { label: 'Starting Capital', val: `${currencySymbol}${initialBase.toLocaleString()}` },
-            { label: 'Current Value', val: `${currencySymbol}${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
-            { label: 'Invested Value', val: `${currencySymbol}${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
-            { label: 'Available Cash', val: `${currencySymbol}${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
+            { label: 'Starting Capital', val: `${currencySymbol}${startingCapital.toLocaleString()}` },
+            { label: 'Current Value', val: `${currencySymbol}${currentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+            { label: 'Invested Value', val: `${currencySymbol}${investedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+            { label: 'Available Cash', val: `${currencySymbol}${availableCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
           ].map((stat, i) => (
             <div key={i} className="flex-1 p-5 flex items-center gap-4">
               <div className="w-8 h-8 rounded-full bg-ui-surface flex items-center justify-center border border-ui-border">

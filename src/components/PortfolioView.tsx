@@ -34,7 +34,7 @@ interface DisplayPosition {
 }
 
 export const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade, onNavigate }) => {
-  const { profile, marketContext } = usePortfolio();
+  const { profile, marketContext, summary } = usePortfolio();
   const { stocks } = useMarketData();
   const { addToast } = useUI();
 
@@ -61,17 +61,24 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade, onNavigat
 
   // Positions dynamically derived solely from actual profile holdings
   const positions: DisplayPosition[] = useMemo(() => {
-    if (profile?.isPortfolioReset || !profile?.holdings || profile.holdings.length === 0) {
+    const relevantHoldings = profile.holdings.filter((h) => {
+      if (!h || h.shares <= 0) return false;
+      const s = stocks.find(stock => stock.symbol.toUpperCase() === h.symbol.toUpperCase());
+      const stockCurrency = s?.currency || (['AMD', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL', 'META'].includes(h.symbol.toUpperCase()) ? '$' : '₹');
+      return stockCurrency === currencySymbol;
+    });
+
+    if (relevantHoldings.length === 0) {
       return [];
     }
 
-    const totalHoldingVal = profile.holdings.reduce((sum, h) => {
+    const totalHoldingVal = relevantHoldings.reduce((sum, h) => {
       const s = stocks.find((st) => st.symbol.toUpperCase() === h.symbol.toUpperCase());
       const p = s ? s.price : h.averagePrice;
       return sum + p * h.shares;
     }, 0);
 
-    return profile.holdings.map((holding) => {
+    return relevantHoldings.map((holding) => {
       const foundStock = stocks.find((s) => s.symbol.toUpperCase() === holding.symbol.toUpperCase());
       const currentPrice = foundStock?.price || holding.averagePrice;
       const curValue = currentPrice * holding.shares;
@@ -147,9 +154,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade, onNavigat
     return result;
   }, [positions, activeCategory, searchQuery, sortOption]);
 
-  const totalValue = useMemo(() => {
-    return positions.reduce((acc, pos) => acc + pos.currentValue, 0);
-  }, [positions]);
+  const totalValue = summary.currentValue;
 
   const totalValueFormatted = `${currencySymbol}${totalValue.toLocaleString(undefined, {
     minimumFractionDigits: 2,

@@ -25,6 +25,7 @@ export interface PortfolioGraphProps {
   currencySymbol?: string;
   timeRange?: string;
   onTimeRangeChange?: (range: string) => void;
+  hasHoldings?: boolean;
   isReset?: boolean;
   premiumMode?: boolean;
 }
@@ -46,15 +47,18 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
   currencySymbol = '₹',
   timeRange = '1M',
   onTimeRangeChange,
+  hasHoldings,
   isReset = false,
   premiumMode = false,
 }) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
 
-  const safeInvested = Math.max(0, isReset ? 0 : investedValue);
-  const safeCurrent = Math.max(0, isReset ? 0 : currentValue);
-  const isPortfolioEmpty = isReset || (safeInvested === 0 && safeCurrent === 0);
+  const isPortfolioEmpty = hasHoldings !== undefined
+    ? !hasHoldings
+    : (isReset || (investedValue === 0 && currentValue === 0));
+  const safeInvested = isPortfolioEmpty ? 0 : Math.max(0, investedValue);
+  const safeCurrent = isPortfolioEmpty ? 0 : Math.max(0, currentValue);
 
   // Return & P&L calculation strictly between Current Value and Invested Value (zero cash)
   const pnl = safeCurrent - safeInvested;

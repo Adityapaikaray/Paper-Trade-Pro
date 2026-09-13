@@ -18,7 +18,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 type SettingsTab = 'general' | 'demo-portfolio' | 'preferences' | 'notifications' | 'security';
 
 const SettingsView: React.FC = () => {
-  const { profile, resetAccount, marketContext, setMarketContext } = usePortfolio();
+  const { profile, resetAccount, marketContext, setMarketContext, summary } = usePortfolio();
   const { theme, toggleTheme } = useTheme();
   const { addToast, openModal } = useUI();
   const { stocks } = useMarketData();
@@ -32,23 +32,6 @@ const SettingsView: React.FC = () => {
 
   const isIndia = marketContext === 'IN';
   const currencySymbol = isIndia ? '₹' : '$';
-
-  // Derived live metrics
-  let holdingsValue = 0;
-  let totalCost = 0;
-  (profile?.holdings || []).forEach(h => {
-    const stock = stocks.find(s => s.symbol.toUpperCase() === h.symbol.toUpperCase());
-    if (stock && stock.currency === currencySymbol) {
-      holdingsValue += stock.price * h.shares;
-      totalCost += h.averagePrice * h.shares;
-    }
-  });
-  const currentCash = typeof profile?.balances?.[currencySymbol] === 'number' 
-    ? profile.balances[currencySymbol] 
-    : 1000000;
-  const totalPortfolioValue = currentCash + holdingsValue;
-  const totalPnL = holdingsValue - totalCost;
-  const totalPnLPct = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
 
   return (
     <div className="flex flex-col gap-6 max-w-5xl mx-auto py-6 px-4 md:px-6">
@@ -196,19 +179,19 @@ const SettingsView: React.FC = () => {
                   <div className="p-3.5 rounded-2xl bg-ui-surface-hover border border-ui-border">
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Available Cash</p>
                     <p className="text-sm font-mono font-bold text-text-main mt-1">
-                      {currencySymbol}{currentCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {currencySymbol}{summary.availableCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <div className="p-3.5 rounded-2xl bg-ui-surface-hover border border-ui-border">
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Invested Capital</p>
                     <p className="text-sm font-mono font-bold text-text-main mt-1">
-                      {currencySymbol}{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      {currencySymbol}{summary.investedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <div className="p-3.5 rounded-2xl bg-ui-surface-hover border border-ui-border">
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Total P&L</p>
-                    <p className={`text-sm font-mono font-bold mt-1 ${totalPnL >= 0 ? 'text-positive' : 'text-negative'}`}>
-                      {totalPnL >= 0 ? '+' : ''}{currencySymbol}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    <p className={`text-sm font-mono font-bold mt-1 ${summary.totalGain >= 0 ? 'text-positive' : 'text-negative'}`}>
+                      {summary.totalGain >= 0 ? '+' : ''}{currencySymbol}{summary.totalGain.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                   </div>
                   <div className="p-3.5 rounded-2xl bg-ui-surface-hover border border-ui-border">

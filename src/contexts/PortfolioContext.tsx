@@ -2,8 +2,9 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { UserProfile, Holding, Transaction, OrderItem, AppNotification, Stock, Currency, MarketRegion } from '../types.ts';
+import { useMarketData } from './MarketContext.tsx';
 
 const INITIAL_BALANCES = { '$': 1000000, '₹': 1000000 };
 
@@ -101,7 +102,7 @@ const DEFAULT_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'notif-3',
-    title: 'Watchlist Movement',
+    title: 'Market Alert',
     message: 'NVIDIA (NVDA) moved +4.2% in pre-market trading.',
     timestamp: Date.now() - 3600 * 1000 * 14,
     read: true,
@@ -110,10 +111,23 @@ const DEFAULT_NOTIFICATIONS: AppNotification[] = [
   },
 ];
 
+export interface PortfolioSummary {
+  investedValue: number;
+  currentValue: number;
+  totalGain: number;
+  returnPct: number;
+  availableCash: number;
+  startingCapital: number;
+  hasHoldings: boolean;
+  currencySymbol: string;
+  holdingsCount: number;
+}
+
 interface PortfolioContextType {
   profile: UserProfile;
   marketContext: MarketRegion | null;
   setMarketContext: (market: MarketRegion | null) => void;
+  summary: PortfolioSummary;
   executeTrade: (
     stock: Stock,
     quantity: number,
@@ -148,6 +162,7 @@ const PortfolioContext = createContext<PortfolioContextType | undefined>(undefin
 
 export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [marketContext, setMarketContext] = useState<MarketRegion | null>(() => (localStorage.getItem('papertrade_market') as MarketRegion | null) || null);
+  const { stocks } = useMarketData();
 
   useEffect(() => {
     if (marketContext) localStorage.setItem('papertrade_market', marketContext);
@@ -160,52 +175,31 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed?.isPortfolioReset || isReset) {
-          const cashUS = typeof parsed?.balances?.['$'] === 'number' && parsed.balances['$'] > 0 ? parsed.balances['$'] : 1000000;
-          const cashIN = typeof parsed?.balances?.['₹'] === 'number' && parsed.balances['₹'] > 0 ? parsed.balances['₹'] : 1000000;
+        if (parsed) {
+          const cashUS = typeof parsed?.balances?.['$'] === 'number' && parsed.balances['$'] >= 0 ? parsed.balances['$'] : 1000000;
+          const cashIN = typeof parsed?.balances?.['₹'] === 'number' && parsed.balances['₹'] >= 0 ? parsed.balances['₹'] : 1000000;
+          
+          let holdings = Array.isArray(parsed?.holdings) ? parsed.holdings : [];
+          // If reset was explicitly recorded, ensure holdings are empty
+          if (isReset || parsed.isPortfolioReset) {
+            holdings = [];
+          }
+
           return {
-            balances: {
-              '$': cashUS,
-              '₹': cashIN,
-            },
-            holdings: Array.isArray(parsed?.holdings) ? parsed.holdings : [],
+            ...parsed,
+            balances: { '$': cashUS, '₹': cashIN },
+            holdings,
             transactions: Array.isArray(parsed?.transactions) ? parsed.transactions : [],
             orders: Array.isArray(parsed?.orders) ? parsed.orders : [],
-            watchlist: Array.isArray(parsed?.watchlist) ? parsed.watchlist : ['RELIANCE', 'TCS', 'NVDA', 'AAPL', 'INFY'],
+            watchlist: Array.isArray(parsed?.watchlist) && parsed.watchlist.length > 0 ? parsed.watchlist : ['TITAN', 'AMD', 'RELIANCE', 'TCS', 'NVDA', 'AAPL', 'INFY'],
             alerts: Array.isArray(parsed?.alerts) ? parsed.alerts : [],
-            notifications: Array.isArray(parsed?.notifications) ? parsed.notifications : [
-              {
-                id: `notif-${Date.now()}`,
-                title: 'Portfolio Reset',
-                message: 'Your simulated portfolio has been reset with 1,000,000 in virtual cash.',
-                timestamp: Date.now(),
-                read: false,
-                type: 'system',
-              }
-            ],
+            notifications: Array.isArray(parsed?.notifications) && parsed.notifications.length > 0 ? parsed.notifications : DEFAULT_NOTIFICATIONS,
             history: Array.isArray(parsed?.history) ? parsed.history : [],
             targetAllocations: parsed?.targetAllocations || {},
             preferredCurrency: parsed?.preferredCurrency || DEFAULT_CURRENCY,
-            isPortfolioReset: true,
+            isPortfolioReset: isReset || holdings.length === 0,
           };
         }
-
-        const balances = parsed?.balances || INITIAL_BALANCES;
-        if (typeof balances['$'] !== 'number') balances['$'] = INITIAL_BALANCES['$'];
-        if (typeof balances['₹'] !== 'number') balances['₹'] = INITIAL_BALANCES['₹'];
-        
-        return {
-          ...parsed,
-          balances,
-          holdings: Array.isArray(parsed?.holdings) && parsed.holdings.length > 0 ? parsed.holdings : DEFAULT_HOLDINGS,
-          transactions: parsed?.transactions || [],
-          orders: Array.isArray(parsed?.orders) && parsed.orders.length > 0 ? parsed.orders : DEFAULT_ORDERS,
-          watchlist: Array.isArray(parsed?.watchlist) && parsed.watchlist.length > 0 ? parsed.watchlist : ['TITAN', 'AMD', 'RELIANCE', 'TCS', 'NVDA', 'AAPL', 'INFY'],
-          alerts: parsed?.alerts || [],
-          notifications: Array.isArray(parsed?.notifications) && parsed.notifications.length > 0 ? parsed.notifications : DEFAULT_NOTIFICATIONS,
-          history: parsed?.history || [],
-          targetAllocations: parsed?.targetAllocations || { TITAN: 55, AMD: 10, RELIANCE: 25 },
-        };
       } catch (err) {
         console.error('Failed to parse saved profile:', err);
       }
@@ -220,17 +214,69 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       notifications: DEFAULT_NOTIFICATIONS,
       history: [],
       targetAllocations: { TITAN: 55, AMD: 10, RELIANCE: 25 },
+      isPortfolioReset: false,
     };
   });
 
+  // Save profile to localStorage whenever it changes
   useEffect(() => {
     try {
       localStorage.setItem('papertrade_profile', JSON.stringify(profile));
-    } catch (e) {
-      console.error('Error saving profile to localStorage', e);
+    } catch (err) {
+      console.error('Failed to save profile to localStorage:', err);
     }
   }, [profile]);
 
+  const currencySymbol = marketContext === 'US' ? '$' : '₹';
+
+  // Centralized Single Source of Truth for Portfolio Summary Metrics
+  const summary = useMemo<PortfolioSummary>(() => {
+    const rawHoldings = profile.holdings || [];
+
+    // Filter holdings relevant to active currency/market
+    const relevantHoldings = rawHoldings.filter(h => {
+      if (!h || h.shares <= 0) return false;
+      const s = stocks.find(stock => stock.symbol.toUpperCase() === h.symbol.toUpperCase());
+      const stockCurrency = s?.currency || (['AMD', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL', 'META'].includes(h.symbol.toUpperCase()) ? '$' : '₹');
+      return stockCurrency === currencySymbol;
+    });
+
+    let invested = 0;
+    let current = 0;
+
+    relevantHoldings.forEach(h => {
+      const s = stocks.find(stock => stock.symbol.toUpperCase() === h.symbol.toUpperCase());
+      const currentPrice = s ? s.price : h.averagePrice;
+      invested += h.averagePrice * h.shares;
+      current += currentPrice * h.shares;
+    });
+
+    const hasHoldings = relevantHoldings.length > 0 && invested > 0;
+    const safeInvested = hasHoldings ? Number(invested.toFixed(2)) : 0;
+    const safeCurrent = hasHoldings ? Number(current.toFixed(2)) : 0;
+    const totalGain = hasHoldings ? Number((safeCurrent - safeInvested).toFixed(2)) : 0;
+    const returnPct = (hasHoldings && safeInvested > 0)
+      ? Number(((totalGain / safeInvested) * 100).toFixed(2))
+      : 0;
+
+    const availableCash = typeof profile?.balances?.[currencySymbol] === 'number'
+      ? profile.balances[currencySymbol]
+      : 1000000;
+
+    return {
+      investedValue: safeInvested,
+      currentValue: safeCurrent,
+      totalGain,
+      returnPct,
+      availableCash,
+      startingCapital: 1000000,
+      hasHoldings,
+      currencySymbol,
+      holdingsCount: relevantHoldings.length,
+    };
+  }, [profile.holdings, profile.balances, stocks, currencySymbol]);
+
+  // Notifications helpers
   const addNotification = useCallback((title: string, message: string, type: AppNotification['type'], symbol?: string) => {
     const newNotif: AppNotification = {
       id: `notif-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
@@ -312,7 +358,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         throw new Error(`Insufficient virtual balance (${currency}${currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}). Required: ${currency}${cost.toLocaleString(undefined, { minimumFractionDigits: 2 })}`);
       }
     } else {
-      const holding = (profile.holdings || []).find(h => h.symbol === stock.symbol);
+      const holding = (profile.holdings || []).find(h => h.symbol.toUpperCase() === stock.symbol.toUpperCase());
       const owned = holding ? holding.shares : 0;
       if (owned < quantity) {
         throw new Error(`Insufficient shares to sell. You own ${owned} shares of ${stock.symbol}.`);
@@ -322,7 +368,6 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const orderId = `ORD-${Math.floor(100000 + Math.random() * 900000)}`;
 
     if (orderType === 'Limit') {
-      // Create pending limit order
       const newOrder: OrderItem = {
         id: orderId,
         symbol: stock.symbol,
@@ -338,16 +383,23 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       };
 
       setProfile(prev => {
-        // For BUY limit orders, reserve the virtual cash
         const newBalances = { ...prev.balances };
         if (side === 'BUY') {
           newBalances[currency] = Math.max(0, (newBalances[currency] || 0) - cost);
         }
-        return {
+        const updated = {
           ...prev,
           balances: newBalances,
           orders: [newOrder, ...(prev.orders || [])],
+          isPortfolioReset: false,
         };
+        try {
+          localStorage.setItem('papertrade_profile', JSON.stringify(updated));
+          localStorage.removeItem('papertrade_portfolio_reset');
+        } catch (err) {
+          console.error('Failed to save profile after limit order', err);
+        }
+        return updated;
       });
 
       addNotification(
@@ -385,7 +437,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
 
     setProfile(prev => {
-      const existingHolding = (prev.holdings || []).find(h => h.symbol === stock.symbol);
+      const existingHolding = (prev.holdings || []).find(h => h.symbol.toUpperCase() === stock.symbol.toUpperCase());
       let newHoldings: Holding[];
 
       if (side === 'BUY') {
@@ -393,7 +445,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const totalShares = existingHolding.shares + quantity;
           const newAvg = (existingHolding.averagePrice * existingHolding.shares + cost) / totalShares;
           newHoldings = prev.holdings.map(h =>
-            h.symbol === stock.symbol
+            h.symbol.toUpperCase() === stock.symbol.toUpperCase()
               ? { ...h, shares: totalShares, averagePrice: newAvg }
               : h
           );
@@ -402,24 +454,34 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       } else {
         newHoldings = prev.holdings
-          .map(h => (h.symbol === stock.symbol ? { ...h, shares: h.shares - quantity } : h))
+          .map(h => (h.symbol.toUpperCase() === stock.symbol.toUpperCase() ? { ...h, shares: h.shares - quantity } : h))
           .filter(h => h.shares > 0);
       }
 
       const newBalances = {
         ...prev.balances,
         [currency]: side === 'BUY'
-          ? (prev.balances[currency] || 0) - cost
+          ? Math.max(0, (prev.balances[currency] || 0) - cost)
           : (prev.balances[currency] || 0) + cost,
       };
 
-      return {
+      const updated = {
         ...prev,
         balances: newBalances,
         holdings: newHoldings,
         transactions: [newTransaction, ...prev.transactions],
         orders: [filledOrder, ...(prev.orders || [])],
+        isPortfolioReset: false,
       };
+
+      try {
+        localStorage.setItem('papertrade_profile', JSON.stringify(updated));
+        localStorage.removeItem('papertrade_portfolio_reset');
+      } catch (err) {
+        console.error('Failed to save profile after market trade', err);
+      }
+
+      return updated;
     });
 
     addNotification(
@@ -452,23 +514,20 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const cancelOrder = useCallback((orderId: string): boolean => {
     let orderToCancel: OrderItem | undefined;
-
     setProfile(prev => {
-      const orders = prev.orders || [];
-      orderToCancel = orders.find(o => o.id === orderId && o.status === 'PENDING');
-      if (!orderToCancel) return prev;
+      const target = (prev.orders || []).find(o => o.id === orderId && o.status === 'PENDING');
+      if (!target) return prev;
+      orderToCancel = target;
 
-      const updatedOrders = orders.map(o =>
+      const newBalances = { ...prev.balances };
+      if (target.type === 'BUY') {
+        const refundedAmount = target.quantity * target.orderPrice;
+        newBalances[target.currency] = (newBalances[target.currency] || 0) + refundedAmount;
+      }
+
+      const updatedOrders = prev.orders.map(o =>
         o.id === orderId ? { ...o, status: 'CANCELLED' as const } : o
       );
-
-      // If it was a pending BUY, refund the reserved cash
-      const newBalances = { ...prev.balances };
-      if (orderToCancel.type === 'BUY') {
-        const refund = orderToCancel.orderPrice * orderToCancel.quantity;
-        const cur = orderToCancel.currency || '$';
-        newBalances[cur] = (newBalances[cur] || 0) + refund;
-      }
 
       return {
         ...prev,
@@ -479,8 +538,8 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     if (orderToCancel) {
       addNotification(
-        'Order Cancelled',
-        `Pending order ${orderId} for ${orderToCancel.symbol} was cancelled.`,
+        'Paper Order Cancelled',
+        `Pending ${orderToCancel.type} order for ${orderToCancel.quantity} shares of ${orderToCancel.symbol} was cancelled.`,
         'order',
         orderToCancel.symbol
       );
@@ -492,56 +551,63 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const modifyHoldingAllocation = useCallback((symbol: string, targetAllocation: number) => {
     setProfile(prev => {
       const updatedHoldings = (prev.holdings || []).map(h =>
-        h.symbol === symbol ? { ...h, targetAllocation } : h
+        h.symbol.toUpperCase() === symbol.toUpperCase()
+          ? { ...h, targetAllocation }
+          : h
       );
-      const updatedTargets = {
+      const updatedTargetAllocations = {
         ...(prev.targetAllocations || {}),
-        [symbol]: targetAllocation,
+        [symbol.toUpperCase()]: targetAllocation,
       };
       return {
         ...prev,
         holdings: updatedHoldings,
-        targetAllocations: updatedTargets,
+        targetAllocations: updatedTargetAllocations,
       };
     });
-
-    addNotification(
-      'Allocation Target Updated',
-      `Target allocation for ${symbol} set to ${targetAllocation.toFixed(1)}%.`,
-      'allocation',
-      symbol
-    );
-  }, [addNotification]);
+  }, []);
 
   const isWatchlisted = useCallback((symbol: string) => {
-    return (profile.watchlist || []).includes(symbol);
+    return (profile.watchlist || []).includes(symbol.toUpperCase());
   }, [profile.watchlist]);
 
   const toggleWatchlist = useCallback((symbol: string) => {
+    const s = symbol.toUpperCase();
     setProfile(prev => {
-      const currentList = prev.watchlist || [];
-      const isAlready = currentList.includes(symbol);
-      const nextList = isAlready
-        ? currentList.filter(s => s !== symbol)
-        : [...currentList, symbol];
-
-      return { ...prev, watchlist: nextList };
+      const exists = (prev.watchlist || []).includes(s);
+      const newWatchlist = exists
+        ? prev.watchlist.filter(item => item !== s)
+        : [...(prev.watchlist || []), s];
+      return { ...prev, watchlist: newWatchlist };
     });
   }, []);
 
   const addPriceAlert = useCallback((symbol: string, threshold: number, type: 'above' | 'below') => {
+    const newAlert = {
+      id: Math.random().toString(36).substr(2, 9),
+      symbol: symbol.toUpperCase(),
+      threshold,
+      type,
+      triggered: false,
+    };
     setProfile(prev => ({
       ...prev,
-      alerts: [...prev.alerts, { id: Math.random().toString(36).substr(2, 9), symbol, threshold, type, triggered: false }]
+      alerts: [...(prev.alerts || []), newAlert],
     }));
   }, []);
 
   const removePriceAlert = useCallback((id: string) => {
-    setProfile(prev => ({ ...prev, alerts: prev.alerts.filter(a => a.id !== id) }));
+    setProfile(prev => ({
+      ...prev,
+      alerts: (prev.alerts || []).filter(a => a.id !== id),
+    }));
   }, []);
 
   const markAlertTriggered = useCallback((id: string) => {
-    setProfile(prev => ({ ...prev, alerts: prev.alerts.map(a => a.id === id ? { ...a, triggered: true } : a) }));
+    setProfile(prev => ({
+      ...prev,
+      alerts: (prev.alerts || []).map(a => a.id === id ? { ...a, triggered: true } : a),
+    }));
   }, []);
 
   const setPreferredCurrency = useCallback((currency: Currency) => {
@@ -560,59 +626,38 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
   }, [addNotification]);
 
+  // Complete, clean portfolio reset adhering to prompt requirements:
+  // holdings = [], investedValue = 0, currentValue = 0, pnl = 0, returnPercent = 0
+  // availableCash = startingCapital (1,000,000)
   const resetAccount = useCallback((marketRegion?: MarketRegion) => {
-    if (!marketRegion) {
-      const resetState: UserProfile = {
-        balances: { '$': 1000000, '₹': 1000000 },
-        holdings: [],
-        transactions: [],
-        orders: [],
-        watchlist: ['RELIANCE', 'TCS', 'NVDA', 'AAPL', 'INFY'],
-        alerts: [],
-        notifications: [
-          {
-            id: `notif-${Date.now()}`,
-            title: 'Portfolio Reset',
-            message: 'Your simulated portfolio has been reset with 1,000,000 in virtual cash.',
-            timestamp: Date.now(),
-            read: false,
-            type: 'system',
-          }
-        ],
-        history: [],
-        targetAllocations: {},
-        preferredCurrency: profile.preferredCurrency || DEFAULT_CURRENCY,
-        isPortfolioReset: true,
-      };
-      setProfile(resetState);
-      try {
-        localStorage.setItem('papertrade_profile', JSON.stringify(resetState));
-        localStorage.setItem('papertrade_portfolio_reset', 'true');
-      } catch (err) {
-        console.error('Failed to save reset profile', err);
-      }
-    } else {
-      const targetCurrency = marketRegion === 'US' ? '$' : '₹';
-      setProfile(prev => {
-        const updated = {
-          ...prev,
-          balances: {
-            ...prev.balances,
-            [targetCurrency]: 1000000,
-          },
-          holdings: (prev.holdings || []).filter(h => {
-            const isUsStock = h.symbol === 'AMD' || h.symbol === 'NVDA' || h.symbol === 'AAPL' || h.symbol === 'MSFT';
-            return marketRegion === 'US' ? !isUsStock : isUsStock;
-          }),
-          isPortfolioReset: true,
-        };
-        try {
-          localStorage.setItem('papertrade_profile', JSON.stringify(updated));
-        } catch (err) {
-          console.error('Failed to save regional balance reset', err);
+    const resetState: UserProfile = {
+      balances: { '$': 1000000, '₹': 1000000 },
+      holdings: [],
+      transactions: [],
+      orders: [],
+      watchlist: ['RELIANCE', 'TCS', 'NVDA', 'AAPL', 'INFY'],
+      alerts: [],
+      notifications: [
+        {
+          id: `notif-${Date.now()}`,
+          title: 'Portfolio Reset',
+          message: 'Your simulated portfolio has been reset with 1,000,000 in virtual cash.',
+          timestamp: Date.now(),
+          read: false,
+          type: 'system',
         }
-        return updated;
-      });
+      ],
+      history: [],
+      targetAllocations: {},
+      preferredCurrency: profile.preferredCurrency || DEFAULT_CURRENCY,
+      isPortfolioReset: true,
+    };
+    setProfile(resetState);
+    try {
+      localStorage.setItem('papertrade_profile', JSON.stringify(resetState));
+      localStorage.setItem('papertrade_portfolio_reset', 'true');
+    } catch (err) {
+      console.error('Failed to save reset profile', err);
     }
   }, [profile.preferredCurrency]);
 
@@ -621,6 +666,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
        profile: { ...profile, preferredCurrency: profile.preferredCurrency || DEFAULT_CURRENCY }, 
        marketContext,
        setMarketContext,
+       summary,
        executeTrade,
        buyStock, 
        sellStock, 
@@ -652,4 +698,3 @@ export const usePortfolio = () => {
   if (!context) throw new Error('usePortfolio must be used within a PortfolioProvider');
   return context;
 };
-
