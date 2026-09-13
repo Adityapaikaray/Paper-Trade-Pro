@@ -300,7 +300,7 @@ app.get("/api/market-data", async (req, res) => {
         const chunkArray = Array.isArray(chunkQuotes) ? chunkQuotes : [chunkQuotes];
         quotes.push(...chunkArray);
       } catch(e) { 
-        console.warn(`Failed bulk fetch for chunk, falling back to individual:`, e.message);
+        console.log(`Failed bulk fetch for chunk, falling back to individual:`, e.message);
         // Fallback to individual with delay
         for (const t of chunk) {
           try {
@@ -308,7 +308,7 @@ app.get("/api/market-data", async (req, res) => {
             if (q) quotes.push(q);
             await new Promise(resolve => setTimeout(resolve, 200)); // Rate limit delay
           } catch(err) {
-            console.warn(`Failed individual fetch for ${t}:`, err.message);
+            console.log(`Failed individual fetch for ${t}:`, err.message);
           }
         }
       }
@@ -587,14 +587,14 @@ Keep tone objective, sharp, authoritative, and financial.`;
     let analysisText = "";
     try {
       const result = await ai.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-2.5-flash",
         contents: prompt,
       });
       analysisText = result.text || "";
     } catch (primaryErr: any) {
-      console.warn("Primary model gemini-3.8-flash failed, attempting fallback to gemini-3.1-flash-lite:", primaryErr?.message || primaryErr);
+      console.log("Primary model gemini-2.5-flash failed, attempting fallback to gemini-2.5-flash:", primaryErr?.message || primaryErr);
       const fallbackResult = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
+        model: "gemini-2.5-flash",
         contents: prompt,
       });
       analysisText = fallbackResult.text || "";
@@ -606,7 +606,7 @@ Keep tone objective, sharp, authoritative, and financial.`;
 
     res.json({ analysis: analysisText.trim() });
   } catch (err: any) {
-    console.error("Gemini Analysis Error in API route:", err);
+    console.log("Gemini Analysis Error in API route:", err);
     res.status(500).json({
       error: err?.message || "Failed to generate market intelligence",
       analysis: "AI analysis is momentarily experiencing high network demand. Core technical momentum remains within standard deviation boundaries."
@@ -829,7 +829,7 @@ CRITICAL: Return ONLY raw JSON without markdown code fences or backticks.`;
     let responseText = "";
     try {
       const response = await ai.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
           systemInstruction,
@@ -838,9 +838,9 @@ CRITICAL: Return ONLY raw JSON without markdown code fences or backticks.`;
       });
       responseText = response.text || "";
     } catch (primaryErr: any) {
-      console.warn("Primary model gemini-3.8-flash failed, attempting fallback to gemini-3.1-flash-lite:", primaryErr?.message || primaryErr);
+      console.log("Primary model gemini-2.5-flash failed, attempting fallback to gemini-2.5-flash:", primaryErr?.message || primaryErr);
       const fallbackResponse = await ai.models.generateContent({
-        model: "gemini-3.1-flash-lite",
+        model: "gemini-2.5-flash",
         contents: prompt,
         config: {
           systemInstruction,
@@ -868,7 +868,7 @@ CRITICAL: Return ONLY raw JSON without markdown code fences or backticks.`;
         return res.json(parsed);
       }
     } catch (jsonErr) {
-      console.warn("Could not parse AI JSON output, falling back to smart extractor:", jsonErr);
+      console.log("Could not parse AI JSON output, falling back to smart extractor:", jsonErr);
     }
 
     // If AI output wasn't structured JSON, inspect if user intended to trade
@@ -879,7 +879,7 @@ CRITICAL: Return ONLY raw JSON without markdown code fences or backticks.`;
 
     res.json({ text: responseText || fallbackResult.text, trade: null });
   } catch (err: any) {
-    console.warn("Copilot API Warning, executing smart rule fallback:", err?.message || err);
+    console.log("Copilot API Warning, executing smart rule fallback:", err?.message || err);
     const fallbackResult = parseSmartTradeFallback(prompt, context);
     res.json(fallbackResult);
   }
