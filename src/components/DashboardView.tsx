@@ -476,63 +476,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
             </div>
           </motion.div>
         </div>
-      
-      {/* 8. Bottom Market Ticker */}
-      <div className="fixed bottom-0 left-0 right-0 h-10 bg-ui-sidebar border-t border-ui-border z-50 flex items-center overflow-hidden">
-        <div className="flex items-center h-full px-4 border-r border-ui-border shrink-0 bg-ui-bg z-10 relative">
-          <div className="w-2 h-2 rounded-full bg-positive animate-pulse mr-2" />
-          <span className="text-[11px] font-bold text-text-main uppercase tracking-widest">Live Markets</span>
-        </div>
-        
-        {/* Ticker Animation Container */}
-        <div className="flex items-center h-full flex-1 relative overflow-hidden">
-          <div className="flex items-center gap-10 whitespace-nowrap animate-[ticker_30s_linear_infinite] pl-10 hover:[animation-play-state:paused]">
-            
-            <div className="flex-1 min-w-0 flex items-center gap-3">
-              <span className="text-[11px] font-bold text-text-main">NIFTY 50</span>
-              <span className="text-[11px] font-mono text-text-main">24,716.30</span>
-              <span className="text-[11px] font-mono font-bold text-positive">+0.82%</span>
-            </div>
-            
-            <div className="flex-1 min-w-0 flex items-center gap-3">
-              <span className="text-[11px] font-bold text-text-main">SENSEX</span>
-              <span className="text-[11px] font-mono text-text-main">81,123.45</span>
-              <span className="text-[11px] font-mono font-bold text-positive">+0.76%</span>
-            </div>
-
-            <div className="flex-1 min-w-0 flex items-center gap-3">
-              <span className="text-[11px] font-bold text-text-main">NASDAQ</span>
-              <span className="text-[11px] font-mono text-text-main">17,623.91</span>
-              <span className="text-[11px] font-mono font-bold text-positive">+1.14%</span>
-            </div>
-            
-            <div className="flex-1 min-w-0 flex items-center gap-3">
-              <span className="text-[11px] font-bold text-text-main">S&P 500</span>
-              <span className="text-[11px] font-mono text-text-main">5,487.21</span>
-              <span className="text-[11px] font-mono font-bold text-positive">+0.67%</span>
-            </div>
-            
-            <div className="flex-1 min-w-0 flex items-center gap-3">
-              <span className="text-[11px] font-bold text-text-main">RELIANCE</span>
-              <span className="text-[11px] font-mono text-text-main">2,840.75</span>
-              <span className="text-[11px] font-mono font-bold text-negative">-0.61%</span>
-            </div>
-
-            <div className="flex-1 min-w-0 flex items-center gap-3">
-              <span className="text-[11px] font-bold text-text-main">TCS</span>
-              <span className="text-[11px] font-mono text-text-main">4,120.50</span>
-              <span className="text-[11px] font-mono font-bold text-positive">+2.40%</span>
-            </div>
-
-            {/* Duplicate for seamless scrolling */}
-            <div className="flex-1 min-w-0 flex items-center gap-3">
-              <span className="text-[11px] font-bold text-text-main">NIFTY 50</span>
-              <span className="text-[11px] font-mono text-text-main">24,716.30</span>
-              <span className="text-[11px] font-mono font-bold text-positive">+0.82%</span>
-            </div>
-          </div>
-        </div>
-      </div>
 
       {/* Interactive Modals */}
       {detailsSymbol && (

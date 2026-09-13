@@ -2,51 +2,216 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import React from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
 
-export const BottomMarketTicker: React.FC = () => {
-  const tickerItems = [
-    { symbol: 'NIFTY 50', price: '24,716.30', change: '+0.82%', isPositive: true },
-    { symbol: 'SENSEX', price: '81,123.45', change: '+0.76%', isPositive: true },
-    { symbol: 'NASDAQ', price: '17,623.91', change: '+1.14%', isPositive: true },
-    { symbol: 'S&P 500', price: '5,487.21', change: '+0.67%', isPositive: true },
-    { symbol: 'RELIANCE', price: '2,840.75', change: '-0.61%', isPositive: false },
-    { symbol: 'TCS', price: '4,120.50', change: '+2.40%', isPositive: true },
-  ];
+import React, { useMemo } from 'react';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import { useMarketData } from '../contexts/MarketContext.tsx';
+import { Stock } from '../types.ts';
+
+interface BottomMarketTickerProps {
+  onTrade?: (stock: Stock) => void;
+}
+
+interface TickerDisplayItem {
+  id: string;
+  symbol: string;
+  name?: string;
+  currency: string;
+  price: number;
+  change: number;
+  percentChange: number;
+  isPositive: boolean;
+  tick?: 'up' | 'down' | null;
+  stockRef?: Stock;
+  isIndex?: boolean;
+}
+
+export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade }) => {
+  const { stocks, indices, priceTicks, indexTicks, isLive } = useMarketData();
+
+  // Combine real-time indices and highlighted market stocks
+  const tickerItems = useMemo<TickerDisplayItem[]>(() => {
+    const list: TickerDisplayItem[] = [];
+
+    // 1. Major global and domestic indices
+    indices.forEach(idx => {
+      const isPos = (idx.percentChange ?? 0) >= 0;
+      list.push({
+        id: `idx-${idx.key}`,
+        symbol: idx.displaySymbol || idx.symbol || idx.name,
+        name: idx.name,
+        currency: idx.currency || (idx.region === 'India' ? '₹' : '$'),
+        price: idx.price,
+        change: idx.change,
+        percentChange: idx.percentChange,
+        isPositive: isPos,
+        tick: indexTicks[idx.key],
+        isIndex: true,
+      });
+    });
+
+    // 2. Actively traded stocks
+    const prioritySymbols = [
+      'RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'TITAN', 'TATAMOTORS',
+      'AMD', 'NVDA', 'AAPL', 'TSLA', 'MSFT', 'GOOGL'
+    ];
+
+    stocks.forEach(stock => {
+      if (prioritySymbols.includes(stock.symbol.toUpperCase())) {
+        const isPos = (stock.changePercent ?? 0) >= 0;
+        list.push({
+          id: `stock-${stock.symbol}`,
+          symbol: stock.symbol,
+          name: stock.name,
+          currency: stock.currency || (stock.country === 'India' ? '₹' : '$'),
+          price: stock.price,
+          change: stock.change,
+          percentChange: stock.changePercent,
+          isPositive: isPos,
+          tick: priceTicks[stock.symbol],
+          stockRef: stock,
+          isIndex: false,
+        });
+      }
+    });
+
+    return list;
+  }, [stocks, indices, priceTicks, indexTicks]);
+
+  const formatPrice = (val: number, curr: string) => {
+    if (val === undefined || isNaN(val)) return '—';
+    return `${curr}${val.toLocaleString('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  const formatPercent = (pct: number) => {
+    if (pct === undefined || isNaN(pct)) return '0.00%';
+    const sign = pct >= 0 ? '+' : '';
+    return `${sign}${pct.toFixed(2)}%`;
+  };
+
+  const renderItem = (item: TickerDisplayItem, keyPrefix: string) => {
+    const hasTick = !!item.tick;
+    const isTickUp = item.tick === 'up';
+
+    // Tailored styling for crisp contrast on white backgrounds
+    const baseChipClass = item.stockRef
+      ? 'cursor-pointer hover:bg-slate-100 hover:border-slate-300 dark:hover:bg-slate-800 dark:hover:border-slate-700'
+      : 'hover:bg-slate-50 dark:hover:bg-slate-800/40';
+
+    const tickClass = hasTick
+      ? isTickUp
+        ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-600/50 dark:text-emerald-300 shadow-xs'
+        : 'bg-rose-50 border-rose-300 text-rose-800 dark:bg-rose-950/40 dark:border-rose-600/50 dark:text-rose-300 shadow-xs'
+      : 'bg-slate-50/90 border-slate-200/90 text-slate-800 dark:bg-slate-900/40 dark:border-slate-800/90 dark:text-slate-200';
+
+    return (
+      <div
+        key={`${keyPrefix}-${item.id}`}
+        onClick={() => {
+          if (item.stockRef && onTrade) {
+            onTrade(item.stockRef);
+          }
+        }}
+        title={item.stockRef ? `Click to trade ${item.symbol} (${formatPrice(item.price, item.currency)})` : item.name}
+        className={`flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-mono border transition-all duration-200 shrink-0 select-none ${baseChipClass} ${tickClass}`}
+      >
+        {/* Symbol badge */}
+        <span className="font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1">
+          {item.symbol}
+          {item.isIndex && (
+            <span className="text-[8.5px] font-sans font-bold px-1 py-0.2 rounded bg-slate-200/80 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+              IDX
+            </span>
+          )}
+        </span>
+
+        {/* Real-time Price */}
+        <span
+          className={`font-semibold tabular-nums transition-colors duration-200 ${
+            hasTick
+              ? isTickUp
+                ? 'text-emerald-700 dark:text-emerald-300 font-bold'
+                : 'text-rose-700 dark:text-rose-300 font-bold'
+              : 'text-slate-800 dark:text-slate-200'
+          }`}
+        >
+          {formatPrice(item.price, item.currency)}
+        </span>
+
+        {/* Percentage change */}
+        <span
+          className={`font-bold flex items-center text-[11px] tabular-nums ${
+            item.isPositive ? 'text-[#00875A] dark:text-[#00D084]' : 'text-[#D32F2F] dark:text-[#FF5C5C]'
+          }`}
+        >
+          {item.isPositive ? (
+            <TrendingUp size={11} strokeWidth={2.5} className="mr-0.5" />
+          ) : (
+            <TrendingDown size={11} strokeWidth={2.5} className="mr-0.5" />
+          )}
+          {formatPercent(item.percentChange)}
+        </span>
+
+        {/* Active flash tick pill */}
+        {hasTick && (
+          <span
+            className={`text-[9px] font-bold px-1 rounded uppercase tracking-wider ${
+              isTickUp
+                ? 'bg-emerald-200/70 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
+                : 'bg-rose-200/70 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
+            }`}
+          >
+            {isTickUp ? '▲' : '▼'}
+          </span>
+        )}
+      </div>
+    );
+  };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-10 bg-white dark:bg-[#0B1728] border-t border-ui-border z-40 flex items-center px-4 md:px-6 shadow-sm overflow-hidden select-none">
-      {/* Live Indicator */}
-      <div className="flex items-center gap-2 pr-4 border-r border-ui-border shrink-0">
-        <span className="w-2 h-2 rounded-full bg-[#00A878] animate-pulse" />
-        <span className="text-[11px] font-bold uppercase tracking-wider text-text-main">
-          LIVE MARKETS
-        </span>
+    <aside
+      aria-label="Live Market Ticker"
+      className="fixed bottom-16 md:bottom-0 left-0 right-0 h-10 bg-white/95 dark:bg-[#080E1A]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-40 flex items-center shadow-[0_-2px_10px_rgba(0,0,0,0.03)] overflow-hidden select-none"
+    >
+      {/* Real-time Status Anchor */}
+      <div className="flex items-center h-full px-3 md:px-4 border-r border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-[#080E1A] z-20 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
+        <div className="flex items-center gap-2">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00B887] opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00B887]" />
+          </span>
+          <span className="text-[10px] font-mono font-bold tracking-widest text-slate-800 dark:text-slate-200 uppercase">
+            LIVE
+          </span>
+          <span className="hidden sm:inline-flex text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 uppercase tracking-tight">
+            {isLive ? 'STREAMING' : 'CONNECTING'}
+          </span>
+        </div>
       </div>
 
-      {/* Ticker Stream */}
-      <div className="flex-1 flex items-center gap-6 overflow-x-auto no-scrollbar pl-4 text-xs font-mono">
-        {tickerItems.map((item) => (
-          <div key={item.symbol} className="flex items-center gap-2 shrink-0">
-            <span className="font-bold text-text-main">{item.symbol}</span>
-            <span className="text-text-muted">{item.price}</span>
-            <span
-              className={`font-bold flex items-center gap-0.5 ${
-                item.isPositive ? 'text-positive' : 'text-negative'
-              }`}
-            >
-              {item.isPositive ? (
-                <TrendingUp size={11} strokeWidth={2.5} />
-              ) : (
-                <TrendingDown size={11} strokeWidth={2.5} />
-              )}
-              {item.change}
-            </span>
+      {/* Ticker Continuous Marquee Track */}
+      <div className="flex-1 flex items-center h-full overflow-hidden relative group">
+        {/* Soft edge gradients with clean white-point fade */}
+        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-[#080E1A] dark:via-[#080E1A]/80 dark:to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-white via-white/80 to-transparent dark:from-[#080E1A] dark:via-[#080E1A]/80 dark:to-transparent z-10 pointer-events-none" />
+
+        {/* Marquee Animation Stream - 2 identical tracks for mathematically seamless loop */}
+        <div className="flex items-center shrink-0 animate-[ticker_40s_linear_infinite] hover:[animation-play-state:paused] will-change-transform">
+          {/* Primary Track */}
+          <div className="flex items-center gap-2.5 pr-2.5 shrink-0">
+            {tickerItems.map(item => renderItem(item, 'primary'))}
           </div>
-        ))}
+
+          {/* Seamless Duplicate Track for Infinite Continuous Marquee */}
+          <div className="flex items-center gap-2.5 pr-2.5 shrink-0" aria-hidden="true">
+            {tickerItems.map(item => renderItem(item, 'duplicate'))}
+          </div>
+        </div>
       </div>
-    </div>
+    </aside>
   );
 };
 

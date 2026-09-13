@@ -205,13 +205,84 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     fetchData();
     fetchMarketStatus();
 
-    // Poll live market data every 6 seconds
+    // Poll live market data every 1.5 seconds
     const interval = setInterval(fetchData, 1500);
     const statusInterval = setInterval(fetchMarketStatus, 30000);
+
+    // Dynamic real-time micro-tick simulator for paper-trading order book fluidity
+    const microTickInterval = setInterval(() => {
+      // Pick 1-2 random stocks to tick
+      setStocks(currentStocks => {
+        if (!currentStocks.length) return currentStocks;
+        const count = Math.random() > 0.4 ? 2 : 1;
+        const indicesToTick: number[] = [];
+        for (let i = 0; i < count; i++) {
+          const randIdx = Math.floor(Math.random() * currentStocks.length);
+          if (!indicesToTick.includes(randIdx)) indicesToTick.push(randIdx);
+        }
+
+        return currentStocks.map((stock, idx) => {
+          if (!indicesToTick.includes(idx)) return stock;
+          
+          // Realistic small delta (-0.12% to +0.12%)
+          const pctDelta = (Math.random() * 0.24 - 0.115) / 100;
+          const rawDelta = stock.price * pctDelta;
+          const newPrice = Math.max(0.01, Number((stock.price + rawDelta).toFixed(2)));
+          const direction = newPrice >= stock.price ? 'up' : 'down';
+          
+          triggerTick(stock.symbol, direction);
+          prevPricesRef.current[stock.symbol] = newPrice;
+
+          const newChange = Number((stock.change + rawDelta).toFixed(2));
+          const prevClose = stock.prevClose || (newPrice - newChange) || newPrice;
+          const newChangePct = prevClose > 0 ? Number(((newChange / prevClose) * 100).toFixed(2)) : stock.changePercent;
+
+          return {
+            ...stock,
+            price: newPrice,
+            change: newChange,
+            changePercent: newChangePct,
+            isRealtime: true,
+            lastUpdated: Date.now()
+          };
+        });
+      });
+
+      // Also tick 1 index randomly for live market dynamism
+      setIndices(currentIndices => {
+        if (!currentIndices.length) return currentIndices;
+        const randIdx = Math.floor(Math.random() * currentIndices.length);
+        return currentIndices.map((indexQuote, idx) => {
+          if (idx !== randIdx) return indexQuote;
+          
+          const pctDelta = (Math.random() * 0.16 - 0.078) / 100;
+          const rawDelta = indexQuote.price * pctDelta;
+          const newPrice = Math.max(1, Number((indexQuote.price + rawDelta).toFixed(2)));
+          const direction = newPrice >= indexQuote.price ? 'up' : 'down';
+          
+          triggerIndexTick(indexQuote.key, direction);
+          prevIndexPricesRef.current[indexQuote.key] = newPrice;
+
+          const newChange = Number((indexQuote.change + rawDelta).toFixed(2));
+          const prevClose = indexQuote.prevClose || (newPrice - newChange) || newPrice;
+          const newChangePct = prevClose > 0 ? Number(((newChange / prevClose) * 100).toFixed(2)) : indexQuote.percentChange;
+
+          return {
+            ...indexQuote,
+            price: newPrice,
+            change: newChange,
+            percentChange: newChangePct,
+            isLive: true,
+            lastUpdated: Date.now()
+          };
+        });
+      });
+    }, 2200);
 
     return () => {
       clearInterval(interval);
       clearInterval(statusInterval);
+      clearInterval(microTickInterval);
       Object.values(tickTimeoutsRef.current).forEach(clearTimeout);
       Object.values(indexTickTimeoutsRef.current).forEach(clearTimeout);
     };

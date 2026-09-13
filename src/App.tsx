@@ -143,7 +143,7 @@ function AppContent() {
                 </div>
                 
                 {/* Global Footer */}
-                <footer className="w-full max-w-[2000px] mx-auto py-8 border-t border-ui-border flex flex-col lg:flex-row items-center justify-between text-xs font-semibold text-text-muted mt-8 gap-4 text-center lg:text-left">
+                <footer className="w-full max-w-[2000px] mx-auto py-8 border-t border-ui-border flex flex-col lg:flex-row items-center justify-between text-xs font-semibold text-text-muted mt-8 mb-12 md:mb-10 gap-4 text-center lg:text-left">
                   <div className="flex items-center gap-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#00D084] animate-pulse" />
                     Live market data &middot; Updated just now
@@ -197,7 +197,7 @@ function AppContent() {
             <NotificationManager />
             <PortfolioHistoryRecorder />
             <AICopilot />
-            <BottomMarketTicker />
+            <BottomMarketTicker onTrade={(stock) => setSelectedStock(stock)} />
           </motion.div>
           )}
     </>
