@@ -8,6 +8,10 @@ import { Plus, ChevronDown, List, Grid, MoreVertical, TrendingUp, TrendingDown, 
 import { Stock } from '../types.ts';
 import PortfolioGraph from './PortfolioGraph.tsx';
 import PremiumPerformanceCard from './PremiumPerformanceCard.tsx';
+import { PositionCard } from './PositionCard.tsx';
+import { PositionDetailsModal } from './PositionDetailsModal.tsx';
+import { ModifyAllocationModal } from './ModifyAllocationModal.tsx';
+import { QuickTradePanel } from './QuickTradePanel.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useMarketData } from '../hooks/useMarketData.ts';
@@ -28,6 +32,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
   const [sortOpen, setSortOpen] = useState(false);
   const [sortMode, setSortMode] = useState('Value (High → Low)');
   const [moversType, setMoversType] = useState<'gainers'|'losers'>('gainers');
+  const [detailsSymbol, setDetailsSymbol] = useState<string | null>(null);
+  const [modifySymbol, setModifySymbol] = useState<string | null>(null);
 
   
   const { profile, marketContext, addFunds } = usePortfolio();
@@ -145,276 +151,188 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
         
         {/* Total Portfolio Value */}
-        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-sm flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex items-center gap-3 mb-4">
             <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border">
               <Briefcase size={14} className="text-primary" />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Total Portfolio Value</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Portfolio Value</p>
           </div>
-          <p className="text-2xl xl:text-[28px] font-serif font-black text-text-main leading-none mb-2">₹1,487,026.83</p>
-          <p className="text-[13px] font-bold text-positive flex items-center gap-1">
-            <TrendingUp size={14} /> +₹7,435.13 (+0.50%)
+          <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">₹15,78,420.25</p>
+          <p className="text-xs font-mono font-bold text-positive flex items-center gap-1">
+            <TrendingUp size={13} /> +₹54,820.40 (+3.58%) today
           </p>
         </motion.div>
 
-        {/* Today's P/L */}
-        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00D084]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        {/* Invested Capital */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-sm flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border shadow-[0_0_10px_rgba(0,208,132,0.1)]">
-              <Activity size={14} className="text-positive" />
+            <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border">
+              <Activity size={14} className="text-primary" />
             </div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Today's P/L</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Invested</p>
           </div>
-          <p className="text-2xl xl:text-[28px] font-serif font-black text-text-main leading-none mb-2">+₹612.38</p>
-          <p className="text-[13px] font-bold text-positive flex items-center gap-1">
-            <TrendingUp size={14} /> (+4.03%)
+          <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">₹14,35,740.00</p>
+          <p className="text-xs font-sans font-medium text-text-muted">
+            Total capital invested across assets
           </p>
         </motion.div>
 
-        {/* Cash Balance */}
-        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.2 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        {/* Total P&L */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.2 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-sm flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-positive/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-positive/10 flex items-center justify-center shrink-0 border border-positive/30">
+              <TrendingUp size={14} className="text-positive" />
+            </div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Total P&L</p>
+          </div>
+          <p className="text-2xl xl:text-[28px] font-mono font-bold text-positive leading-none mb-2">+₹1,42,680.25</p>
+          <p className="text-xs font-mono font-bold text-positive flex items-center gap-1">
+            <span className="px-2 py-0.5 rounded-full bg-positive/10 border border-positive/20">+9.94% overall return</span>
+          </p>
+        </motion.div>
+
+        {/* Available Cash */}
+        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.3 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-sm flex flex-col justify-between relative overflow-hidden group">
+          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 min-w-0 flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border">
                 <span className="text-text-muted font-bold text-xs">₹</span>
               </div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Cash Balance</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Available Cash</p>
             </div>
             <button onClick={() => addFunds(isIndia ? 1000000 : 10000, currencySymbol)} className="text-primary hover:bg-ui-surface-hover p-1.5 rounded-lg transition-colors border border-transparent hover:border-primary/30" title="Add virtual funds">
               <Plus size={14} strokeWidth={3} />
             </button>
           </div>
-          <p className="text-2xl xl:text-[28px] font-serif font-black text-text-main leading-none">₹10,774.33</p>
-        </motion.div>
-
-        {/* Portfolio Health */}
-        <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.3 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00D084]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          <div className="relative z-10 flex items-center justify-between h-full">
-            <div className="flex flex-col justify-between h-full">
-              <div className="flex-1 min-w-0 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border shadow-[0_0_10px_rgba(0,208,132,0.1)]">
-                  <ShieldAlert size={14} className="text-positive" />
-                </div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Portfolio Health</p>
-              </div>
-              <div>
-                <p className="text-2xl xl:text-[28px] font-serif font-black text-text-main leading-none mb-1">86 <span className="text-sm text-text-muted font-sans font-medium">/ 100</span></p>
-                <p className="text-[13px] font-bold text-positive">Strong</p>
-              </div>
-            </div>
-            
-            {/* Circular Progress Gauge */}
-            <div className="w-[72px] h-[72px] relative shrink-0">
-              <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--ui-border)" strokeWidth="8" />
-                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--color-positive)" strokeWidth="8" strokeDasharray={`${251.2 * 0.86} 251.2`} strokeLinecap="round" style={{ filter: 'drop-shadow(0 0 4px rgba(0,208,132,0.5))' }} />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-2.5 h-2.5 rounded-full bg-primary" />
-              </div>
-            </div>
-          </div>
+          <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">₹10,774.33</p>
+          <p className="text-xs font-sans font-medium text-text-muted">
+            Purchasing power available for trading
+          </p>
         </motion.div>
       </div>
-      <div className="flex flex-col xl:flex-row gap-8">
-        
-        {/* LEFT MAIN CONTENT */}
-        <div className="flex-1 space-y-8 min-w-0">
-          
-          {/* Portfolio Performance & Navigation */}
-          <PremiumPerformanceCard activeTab={activeTab} setActiveTab={setActiveTab} />
+      {/* Portfolio Performance & Navigation */}
+      <PremiumPerformanceCard activeTab={activeTab} setActiveTab={setActiveTab} />
 
-          {/* Active Positions Content */}
+      {/* Active Positions Content - FULL MAIN CONTENT WIDTH */}
+      <div className="w-full space-y-6">
+        <div className="flex items-center justify-between gap-3">
           <div>
-            <div className="flex items-center justify-between gap-3 mb-6">
-              <h3 className="text-lg font-serif font-bold text-text-main">Active Positions</h3>
-              <div className="flex items-center gap-2">
-                <button 
-                  onClick={() => setViewMode('list')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-ui-surface text-text-main border border-ui-border' : 'text-text-muted hover:text-text-main'}`}
-                >
-                  <List size={16} />
-                </button>
-                <button 
-                  onClick={() => setViewMode('grid')}
-                  className={`p-1.5 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-ui-surface text-text-main border border-ui-border' : 'text-text-muted hover:text-text-main'}`}
-                >
-                  <Grid size={16} />
-                </button>
-              </div>
-            </div>
-            <div className="space-y-4">
-              {/* TITAN CARD */}
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-5 group">
-                <div className="flex flex-col sm:flex-row justify-between gap-4 mb-5 border-b border-ui-border pb-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#1A1F29] border border-ui-border flex items-center justify-center font-bold text-lg text-text-main">
-                      TI
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-text-main leading-tight">TITAN</h4>
-                      <p className="text-xs text-text-muted">Titan Company Ltd.</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-ui-bg border border-ui-border text-text-muted">Equity</span>
-                        <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-ui-bg border border-ui-border text-text-muted">Consumer Cyclical</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <p className="text-[10px] uppercase font-bold text-text-muted mb-1">Current Price</p>
-                    <p className="text-xl font-mono font-black text-text-main">₹3,650.45</p>
-                    <p className="text-sm font-mono font-bold text-positive truncate">+₹42.30 (+1.17%)</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row flex-wrap xl:flex-nowrap gap-4 mb-5 w-full">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Quantity</p>
-                    <p className="text-sm font-mono font-bold text-text-main truncate">245</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Avg. Cost</p>
-                    <p className="text-sm font-mono font-bold text-text-main truncate">₹3,645.60</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Market Value</p>
-                    <p className="text-sm font-mono font-bold text-text-main truncate">₹894,360.25</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Unrealized P/L</p>
-                    <p className="text-sm font-mono font-bold text-positive truncate">+₹1,188.25 <span className="text-[10px]">(+0.13%)</span></p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Today's Change</p>
-                    <p className="text-sm font-mono font-bold text-positive truncate">+₹10,357.50 <span className="text-[10px]">(+1.17%)</span></p>
-                  </div>
-                  <div className="flex-1 min-w-0 flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Allocation</p>
-                      <p className="text-sm font-mono font-bold text-text-main truncate">56.6%</p>
-                    </div>
-                    <div className="w-8 h-8 rounded-full conic-gradient-titan shrink-0 shadow-sm" style={{ background: 'conic-gradient(#D4AF37 0% 56.6%, var(--ui-bg) 56.6% 100%)', borderRadius: '50%' }} />
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-3">
-                  <button onClick={() => addToast('Viewing TITAN details', 'info')} className="px-4 py-2 text-xs font-bold rounded-lg bg-ui-bg border border-ui-border text-text-main hover:bg-ui-surface-hover transition-colors">View Details</button>
-                  <button onClick={() => addToast('Modify allocation workflow', 'info')} className="px-4 py-2 text-xs font-bold rounded-lg bg-ui-bg border border-ui-border text-text-main hover:bg-ui-surface-hover transition-colors">Modify Allocation</button>
-                  <button className="w-8 h-8 rounded-lg bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-text-main ml-auto"><MoreVertical size={14} /></button>
-                </div>
-              </motion.div>
-
-              {/* AMD CARD */}
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="vibrant-card p-5 group">
-                <div className="flex flex-col sm:flex-row justify-between gap-4 mb-5 border-b border-ui-border pb-5">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-[#1A1F29] border border-ui-border flex items-center justify-center font-bold text-lg text-text-main">
-                      AM
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-text-main leading-tight">AMD</h4>
-                      <p className="text-xs text-text-muted">Advanced Micro Devices, Inc.</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-ui-bg border border-ui-border text-text-muted">Equity</span>
-                        <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded bg-ui-bg border border-ui-border text-text-muted">Semiconductors</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-left sm:text-right">
-                    <p className="text-[10px] uppercase font-bold text-text-muted mb-1">Current Price</p>
-                    <p className="text-xl font-mono font-black text-text-main">$503.60</p>
-                    <p className="text-sm font-mono font-bold text-positive truncate">+$12.48 (+2.54%)</p>
-                  </div>
-                </div>
-
-                <div className="flex flex-col md:flex-row flex-wrap xl:flex-nowrap gap-4 mb-5 w-full">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Quantity</p>
-                    <p className="text-sm font-mono font-bold text-text-main truncate">10</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Avg. Cost</p>
-                    <p className="text-sm font-mono font-bold text-text-main truncate">$175.77</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Market Value</p>
-                    <p className="text-sm font-mono font-bold text-text-main truncate">$5,036.60</p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Unrealized P/L</p>
-                    <p className="text-sm font-mono font-bold text-positive truncate">+$3,278.30 <span className="text-[10px]">(+186.51%)</span></p>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Today's Change</p>
-                    <p className="text-sm font-mono font-bold text-positive truncate">+$124.80 <span className="text-[10px]">(+2.54%)</span></p>
-                  </div>
-                  <div className="flex-1 min-w-0 flex items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Allocation</p>
-                      <p className="text-sm font-mono font-bold text-text-main truncate">31.9%</p>
-                    </div>
-                    <div className="w-8 h-8 rounded-full conic-gradient-amd shrink-0 shadow-sm" style={{ background: 'conic-gradient(#00A878 0% 31.9%, var(--ui-bg) 31.9% 100%)', borderRadius: '50%' }} />
-                  </div>
-                </div>
-                
-                <div className="flex flex-wrap items-center gap-3">
-                  <button onClick={() => addToast('Viewing AMD details', 'info')} className="px-4 py-2 text-xs font-bold rounded-lg bg-ui-bg border border-ui-border text-text-main hover:bg-ui-surface-hover transition-colors">View Details</button>
-                  <button onClick={() => addToast('Modify allocation workflow', 'info')} className="px-4 py-2 text-xs font-bold rounded-lg bg-ui-bg border border-ui-border text-text-main hover:bg-ui-surface-hover transition-colors">Modify Allocation</button>
-                  <button className="w-8 h-8 rounded-lg bg-ui-bg border border-ui-border flex items-center justify-center text-text-muted hover:text-text-main ml-auto"><MoreVertical size={14} /></button>
-                </div>
-              </motion.div>
-            </div>
+            <h3 className="text-xl font-bold font-sans text-text-main tracking-tight">Active Positions</h3>
+            <p className="text-xs text-text-muted mt-0.5">Real-time equities and portfolio allocation</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setViewMode('list')}
+              className={`p-2 rounded-xl transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-[#1A1F29] text-text-main border border-ui-border shadow-sm' : 'text-text-muted hover:text-text-main'}`}
+              title="List View"
+            >
+              <List size={16} />
+            </button>
+            <button 
+              onClick={() => setViewMode('grid')}
+              className={`p-2 rounded-xl transition-colors ${viewMode === 'grid' ? 'bg-white dark:bg-[#1A1F29] text-text-main border border-ui-border shadow-sm' : 'text-text-muted hover:text-text-main'}`}
+              title="Grid View"
+            >
+              <Grid size={16} />
+            </button>
           </div>
         </div>
 
-        {/* RIGHT INTELLIGENCE PANEL */}
-        <div className="w-full xl:w-[380px] shrink-0 space-y-6">
-          
-          {/* AI Portfolio Copilot Card */}
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }} className="bg-ui-surface rounded-[32px] p-8 lg:p-10 border border-ui-border shadow-2xl relative overflow-hidden group flex flex-col justify-between">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#D4AF37]/5 to-transparent rounded-bl-full pointer-events-none" />
-            
-            <div className="flex items-start gap-5 mb-8 relative z-10">
-               <div className="w-14 h-14 rounded-2xl bg-ui-surface-hover border border-ui-border flex items-center justify-center shadow-[0_5px_15px_rgba(0,0,0,0.5)] shrink-0">
-                 <Bot size={28} className="text-primary" strokeWidth={1.5} />
-               </div>
-               <div>
-                 <div className="flex items-center gap-2">
-                   <h3 className="text-[17px] font-sans font-bold text-text-main">AI Portfolio Copilot</h3>
-                   <span className="text-[8px] font-bold uppercase tracking-widest bg-ui-surface-hover border border-primary text-primary px-1.5 py-0.5 rounded-sm shadow-[0_0_8px_rgba(212,175,55,0.2)]">Beta</span>
-                 </div>
-                 <p className="text-[13px] text-text-muted mt-1 leading-relaxed">Get intelligent insights, ask questions and make better decisions.</p>
-               </div>
-            </div>
+        <div className="space-y-5 w-full">
+          {/* TITAN CARD */}
+          <PositionCard
+            symbol="TITAN"
+            name="Titan Company Ltd."
+            tags={['EQUITY', 'CONSUMER CYCLICAL']}
+            currentPrice={3650.45}
+            currencySymbol="₹"
+            change={42.30}
+            changePercent={1.17}
+            quantity={245}
+            avgBuyPrice={3394.60}
+            costOfPurchase={831677.00}
+            currentValue={894363.25}
+            pnl={62686.25}
+            pnlPercent={7.54}
+            allocation={56.6}
+            pieColor="#D4A72C"
+            onViewDetails={() => setDetailsSymbol('TITAN')}
+            onModifyAllocation={() => setModifySymbol('TITAN')}
+          />
 
-            <button 
-               onClick={() => setIsCopilotOpen(true)}
-               className="w-full py-3.5 bg-gradient-to-r from-[#D4AF37] to-[#A6822B] text-[#000000] font-bold rounded-xl hover:shadow-[0_4px_20px_rgba(212,175,55,0.4)] transition-all flex items-center justify-center gap-2 mb-6 relative z-10"
-            >
-              Ask AI Copilot <ArrowRight size={16} strokeWidth={2} />
-            </button>
-
-            <div className="space-y-2.5 relative z-10">
-              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3 rounded-xl bg-ui-surface-hover border border-ui-border text-[13px] font-medium text-text-main hover:border-primary/50 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all flex items-center justify-between group">
-                "Why is my portfolio up today?" <ArrowRight size={14} className="text-text-muted group-hover:text-primary transition-colors" />
-              </button>
-              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3 rounded-xl bg-ui-surface-hover border border-ui-border text-[13px] font-medium text-text-main hover:border-primary/50 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all flex items-center justify-between group">
-                "What are my biggest risks?" <ArrowRight size={14} className="text-text-muted group-hover:text-primary transition-colors" />
-              </button>
-              <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3 rounded-xl bg-ui-surface-hover border border-ui-border text-[13px] font-medium text-text-main hover:border-primary/50 hover:shadow-[0_0_10px_rgba(212,175,55,0.1)] transition-all flex items-center justify-between group">
-                "Suggest next investment opportunities" <ArrowRight size={14} className="text-text-muted group-hover:text-primary transition-colors" />
-              </button>
-            </div>
-          </motion.div>
+          {/* AMD CARD */}
+          <PositionCard
+            symbol="AMD"
+            name="Advanced Micro Devices, Inc."
+            tags={['EQUITY', 'SEMICONDUCTORS']}
+            currentPrice={503.60}
+            currencySymbol="$"
+            change={12.48}
+            changePercent={2.54}
+            quantity={245}
+            avgBuyPrice={460.10}
+            costOfPurchase={112324.50}
+            currentValue={123382.00}
+            pnl={11057.50}
+            pnlPercent={9.84}
+            allocation={7.8}
+            pieColor="#00B887"
+            onViewDetails={() => setDetailsSymbol('AMD')}
+            onModifyAllocation={() => setModifySymbol('AMD')}
+          />
         </div>
+      </div>
 
-        {/* Market Sentiment and Ticker Wrapper */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+      {/* Intelligence and Sentiment Panels */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+        {/* AI Portfolio Copilot Card */}
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.1, ease: 'easeOut' }} className="bg-ui-surface rounded-[24px] p-8 lg:p-10 border border-ui-border shadow-sm relative overflow-hidden group flex flex-col justify-between">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#C9A227]/5 to-transparent rounded-bl-full pointer-events-none" />
+          
+          <div className="flex items-start gap-5 mb-8 relative z-10">
+              <div className="w-14 h-14 rounded-2xl bg-ui-surface-hover border border-ui-border flex items-center justify-center shadow-sm shrink-0">
+                <Bot size={28} className="text-[#C9A227]" strokeWidth={1.5} />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-sans font-bold text-text-main">AI Portfolio Copilot</h3>
+                  <span className="text-[8px] font-bold uppercase tracking-widest bg-ui-surface-hover border border-[#C9A227] text-[#C9A227] px-1.5 py-0.5 rounded-sm">Beta</span>
+                </div>
+                <p className="text-xs text-text-muted mt-1 leading-relaxed">Get intelligent insights, ask questions and make better decisions.</p>
+              </div>
+          </div>
+
+          <button 
+              onClick={() => setIsCopilotOpen(true)}
+              className="w-full py-3.5 bg-gradient-to-r from-[#C9A227] to-[#A6822B] text-white font-bold rounded-xl shadow-sm hover:opacity-95 transition-all flex items-center justify-center gap-2 mb-6 relative z-10"
+          >
+            Ask AI Copilot <ArrowRight size={16} strokeWidth={2} />
+          </button>
+
+          <div className="space-y-2.5 relative z-10">
+            <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3.5 rounded-xl bg-ui-bg border border-ui-border text-xs font-medium text-text-main hover:border-[#C9A227]/50 transition-all flex items-center justify-between group">
+              "Why is my portfolio up today?" <ArrowRight size={14} className="text-text-muted group-hover:text-[#C9A227] transition-colors" />
+            </button>
+            <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3.5 rounded-xl bg-ui-bg border border-ui-border text-xs font-medium text-text-main hover:border-[#C9A227]/50 transition-all flex items-center justify-between group">
+              "What are my biggest risks?" <ArrowRight size={14} className="text-text-muted group-hover:text-[#C9A227] transition-colors" />
+            </button>
+            <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3.5 rounded-xl bg-ui-bg border border-ui-border text-xs font-medium text-text-main hover:border-[#C9A227]/50 transition-all flex items-center justify-between group">
+              "Suggest next investment opportunities" <ArrowRight size={14} className="text-text-muted group-hover:text-[#C9A227] transition-colors" />
+            </button>
+          </div>
+        </motion.div>
+
+        {/* Quick Trade Panel */}
+        <QuickTradePanel />
+      </div>
+
+      {/* Market Sentiment and Ticker Wrapper */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
           
           {/* Market Sentiment */}
           <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.4, ease: 'easeOut' }} className="bg-ui-surface rounded-[32px] border border-ui-border shadow-2xl overflow-hidden flex flex-col">
@@ -558,7 +476,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
             </div>
           </motion.div>
         </div>
-      </div>
       
       {/* 8. Bottom Market Ticker */}
       <div className="fixed bottom-0 left-0 right-0 h-10 bg-ui-sidebar border-t border-ui-border z-50 flex items-center overflow-hidden">
@@ -616,6 +533,35 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
           </div>
         </div>
       </div>
+
+      {/* Interactive Modals */}
+      {detailsSymbol && (
+        <PositionDetailsModal
+          isOpen={!!detailsSymbol}
+          onClose={() => setDetailsSymbol(null)}
+          stock={stocks.find(s => s.symbol.toUpperCase() === detailsSymbol.toUpperCase()) || stocks[0]}
+          holding={profile?.holdings?.find(h => h.symbol.toUpperCase() === detailsSymbol.toUpperCase())}
+          onQuickTrade={(s) => onTrade && onTrade(s)}
+          onModifyAllocation={(sym) => {
+            setDetailsSymbol(null);
+            setModifySymbol(sym);
+          }}
+        />
+      )}
+
+      {modifySymbol && (
+        <ModifyAllocationModal
+          isOpen={!!modifySymbol}
+          onClose={() => setModifySymbol(null)}
+          symbol={modifySymbol}
+          name={stocks.find(s => s.symbol.toUpperCase() === modifySymbol.toUpperCase())?.name || modifySymbol}
+          currentAllocation={modifySymbol === 'TITAN' ? 56.6 : (modifySymbol === 'AMD' ? 7.8 : 10)}
+          onSave={(newAlloc) => {
+            addToast(`Updated allocation for ${modifySymbol} to ${newAlloc}%`, 'success');
+            setModifySymbol(null);
+          }}
+        />
+      )}
     </div>
   );
 };

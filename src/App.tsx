@@ -7,11 +7,17 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar.tsx';
 import BottomNav from './components/BottomNav.tsx';
 import TopBar from './components/TopBar.tsx';
+import BottomMarketTicker from './components/BottomMarketTicker.tsx';
 import DashboardView from './components/DashboardView.tsx';
 import MarketView from './components/MarketView.tsx';
 import KeyIndexView from './components/KeyIndexView.tsx';
 import PortfolioView from './components/PortfolioView.tsx';
 import HistoryView from './components/HistoryView.tsx';
+import { WatchlistView } from './components/WatchlistView.tsx';
+import { OrdersView } from './components/OrdersView.tsx';
+import { AnalyticsView } from './components/AnalyticsView.tsx';
+import { ResearchView } from './components/ResearchView.tsx';
+import { ToolsView } from './components/ToolsView.tsx';
 import NewsView from './components/NewsView.tsx';
 import SettingsView from './components/SettingsView.tsx';
 import HelpSupportView from './components/HelpSupportView.tsx';
@@ -79,8 +85,18 @@ function AppContent() {
         return <MarketView onTrade={setSelectedStock} />;
       case 'portfolio':
         return <PortfolioView onTrade={setSelectedStock} />;
+      case 'watchlist':
+        return <WatchlistView onTrade={setSelectedStock} />;
+      case 'orders':
+        return <OrdersView />;
+      case 'analytics':
+        return <AnalyticsView />;
+      case 'research':
+        return <ResearchView onTrade={setSelectedStock} />;
+      case 'tools':
+        return <ToolsView />;
       case 'history':
-        return <HistoryView />;
+        return <OrdersView />;
       case 'news':
         return <NewsView />;
       case 'settings':
@@ -103,14 +119,14 @@ function AppContent() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 1.2, delay: 1.5, ease: "easeInOut" }}
-            className="flex h-screen bg-ui-bg text-text-main overflow-hidden transition-colors duration-500"
+            className="flex h-screen bg-ui-bg text-text-main overflow-hidden transition-colors duration-500 border-t-2 border-[#1A1F29]"
           >
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
             
-            <main className="flex-1 flex flex-col min-w-0 pb-16 lg:pb-0 relative">
+            <main className="flex-1 flex flex-col min-w-0 pb-10 relative">
               <TopBar onSearchFocus={() => setIsCommandPaletteOpen(true)} onNavigate={setActiveTab} />
               
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar">
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar pb-12">
                 <div className="w-full max-w-[2000px] mx-auto pb-4">
                   <AnimatePresence mode="wait">
                     <motion.div
@@ -181,6 +197,7 @@ function AppContent() {
             <NotificationManager />
             <PortfolioHistoryRecorder />
             <AICopilot />
+            <BottomMarketTicker />
           </motion.div>
           )}
     </>

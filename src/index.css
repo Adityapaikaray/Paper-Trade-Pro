@@ -3,28 +3,28 @@
 
 @layer base {
   :root {
-    /* Light Mode Variables (Default) */
-    --color-primary: #C9A227; /* Gold */
-    --color-primary-light: #D9B338; 
-    --color-primary-dark: #A88720;
+    /* Light Mode Variables (Default TradePro Design Tokens) */
+    --color-primary: #D4A72C; /* Gold */
+    --color-primary-light: #E5BE4A; 
+    --color-primary-dark: #B88E1F;
     
-    --ui-bg: #F5F2EA; /* App background */
-    --ui-sidebar: #FCFBF8; /* Sidebar could use elevated surface */
-    --ui-surface: #FFFFFF; /* Cards */
-    --ui-surface-hover: #FCFBF8; /* Elevated */
+    --ui-bg: #F7F5EF; /* Warm ivory / off-white application background */
+    --ui-sidebar: #FBFAF7; /* Elevated soft surface */
+    --ui-surface: #FFFFFF; /* Pure white content cards */
+    --ui-surface-hover: #F6F4ED; /* Subtle hover */
     
-    --ui-border: #E6E0D5;
+    --ui-border: #E5E0D6; /* Very subtle gray-beige borders */
     
-    --text-main: #0B1728; /* Primary text */
-    --text-dark: #000000;
-    --text-muted: #64748B; /* Secondary text */
+    --text-main: #17243A; /* Deep navy / charcoal typography */
+    --text-dark: #0D1624;
+    --text-muted: #6E7C90; /* Secondary muted text */
     
-    --color-positive: #00A878; /* Emerald */
-    --color-positive-dark: #008760;
-    --color-negative: #D95454; /* Negative */
+    --color-positive: #00B887; /* Emerald green */
+    --color-positive-dark: #00966D;
+    --color-negative: #E15B5B; /* Muted red */
     
     --glass-opacity: 0;
-    --shadow-color: rgba(0, 0, 0, 0.05);
+    --shadow-color: rgba(23, 36, 58, 0.04);
   }
 
   :root.dark {

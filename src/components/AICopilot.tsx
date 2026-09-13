@@ -58,9 +58,10 @@ export const AICopilot = () => {
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
             onClick={() => setIsCopilotOpen(true)}
-            className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-ui-surface-hover text-primary shadow-[0_5px_15px_rgba(0,0,0,0.8)] flex items-center justify-center hover:scale-105 active:scale-95 transition-transform z-50 border border-primary/50"
+            className="fixed bottom-14 right-6 w-12 h-12 rounded-full bg-white dark:bg-[#1A1F29] text-text-main shadow-lg flex items-center justify-center hover:scale-105 active:scale-95 transition-all z-50 border border-ui-border"
+            title="Chat / Support"
           >
-            <MessageSquare size={24} />
+            <MessageSquare size={20} strokeWidth={1.8} />
           </motion.button>
         )}
       </AnimatePresence>
@@ -72,7 +73,7 @@ export const AICopilot = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="fixed bottom-6 right-6 w-80 md:w-96 h-[500px] max-h-[80vh] bg-ui-bg text-text-main rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.9)] border border-ui-border flex flex-col z-50 overflow-hidden"
+            className="fixed bottom-14 right-6 w-80 md:w-96 h-[500px] max-h-[80vh] bg-ui-bg text-text-main rounded-[24px] shadow-2xl border border-ui-border flex flex-col z-50 overflow-hidden"
           >
             {/* Header */}
             <div className="bg-ui-surface px-5 py-4 border-b border-ui-border flex justify-between items-center shrink-0">
