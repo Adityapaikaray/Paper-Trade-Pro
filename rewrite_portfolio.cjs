@@ -1,4 +1,6 @@
-/**
+const fs = require('fs');
+
+const content = `/**
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
@@ -61,11 +63,11 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
 
   return (
     <div className="space-y-12">
-      <header className="max-w-5xl mx-auto w-full">
-        <h2 className="text-[32px] md:text-[40px] font-bold text-white leading-none">Positions</h2>
+      <header>
+        <h2 className="text-4xl font-bold text-text-main leading-none">Positions</h2>
       </header>
 
-      <div className="flex flex-col gap-8 max-w-5xl mx-auto">
+      <div className="flex flex-col gap-6">
         {holdingsWithData.map((pos, i) => {
           const allocation = (pos.valueInPreferred / totalValue) * 100;
           
@@ -75,11 +77,11 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.1, duration: 0.5 }}
               key={pos.symbol}
-              className="flex flex-col md:flex-row bg-black rounded-[32px] border border-[#242424] p-2 gap-6 overflow-hidden shadow-2xl transition-colors"
+              className="flex flex-col md:flex-row bg-ui-surface rounded-[32px] border border-ui-border p-2 gap-6 overflow-hidden shadow-sm hover:border-primary/30 transition-colors"
             >
               {/* Left Timeline Sidebar */}
-              <div className="flex w-16 md:w-20 rounded-[24px] bg-gradient-to-b from-[#111111] to-transparent border border-[#242424] flex-col items-center py-4 md:py-6 relative shrink-0">
-                 <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-[#242424] z-0" />
+              <div className="hidden md:flex w-20 rounded-[24px] bg-gradient-to-b from-ui-surface-hover to-transparent border border-ui-border flex-col items-center py-6 relative shrink-0">
+                 <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-px bg-ui-border z-0" />
                  
                  {/* Icon */}
                  <div className="w-12 h-12 rounded-full bg-[#1e3a8a] border border-[#1d4ed8] flex items-center justify-center text-white font-bold text-lg z-10 relative shadow-[0_0_15px_rgba(30,58,138,0.5)]">
@@ -89,29 +91,29 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
                  <div className="flex-1" />
 
                  {/* 3 dot menu */}
-                 <button className="w-10 h-14 rounded-full bg-black border border-[#242424] flex flex-col items-center justify-center gap-1.5 z-10 relative hover:bg-[#111111] transition-colors shadow-sm">
-                    <div className="w-1 h-1 rounded-full bg-[#8C8C8C]" />
-                    <div className="w-1 h-1 rounded-full bg-[#8C8C8C]" />
-                    <div className="w-1 h-1 rounded-full bg-[#8C8C8C]" />
+                 <button className="w-10 h-14 rounded-full bg-ui-bg border border-ui-border flex flex-col items-center justify-center gap-1.5 z-10 relative hover:bg-ui-surface-hover transition-colors shadow-sm">
+                    <div className="w-1 h-1 rounded-full bg-text-muted" />
+                    <div className="w-1 h-1 rounded-full bg-text-muted" />
+                    <div className="w-1 h-1 rounded-full bg-text-muted" />
                  </button>
               </div>
 
               {/* Main Position Section */}
-              <div className="flex-1 flex flex-col py-4 md:py-6 pr-4 md:pr-10 pl-0 md:pl-2 min-w-0">
+              <div className="flex-1 flex flex-col py-6 pr-6 md:pr-10 pl-4 md:pl-2">
                  <div className="flex flex-col md:flex-row justify-between items-start mb-12 gap-6">
                     {/* Left Side */}
                     <div>
-                       <h2 className="text-[32px] md:text-[40px] font-bold text-white leading-none mb-1">{pos.symbol}</h2>
-                       <p className="text-[15px] font-medium text-[#8C8C8C] mb-5">{pos.stock?.name || pos.symbol + ' Company Ltd.'}</p>
-                       <div className="flex flex-wrap items-center gap-2">
-                          <span className="px-3 py-1 rounded-full border border-[#333333] text-[10px] font-bold text-[#8C8C8C] uppercase tracking-widest bg-transparent">Equity</span>
-                          <span className="px-3 py-1 rounded-full border border-[#333333] text-[10px] font-bold text-[#8C8C8C] uppercase tracking-widest bg-transparent">{pos.stock?.sector || 'CONSUMER CYCLICAL'}</span>
+                       <h2 className="text-[40px] font-bold text-text-main leading-none mb-1">{pos.symbol}</h2>
+                       <p className="text-[15px] font-medium text-text-muted mb-5">{pos.stock?.name || pos.symbol + ' Company Ltd.'}</p>
+                       <div className="flex items-center gap-2">
+                          <span className="px-3 py-1 rounded-full border border-ui-border text-[10px] font-bold text-text-muted uppercase tracking-widest bg-ui-bg/50">Equity</span>
+                          <span className="px-3 py-1 rounded-full border border-ui-border text-[10px] font-bold text-text-muted uppercase tracking-widest bg-ui-bg/50">{pos.stock?.sector || 'CONSUMER CYCLICAL'}</span>
                        </div>
                     </div>
                     {/* Right Side */}
-                    <div className="text-left md:text-right mt-4 md:mt-0 shrink-0">
-                       <p className="text-[11px] font-bold text-[#8C8C8C] uppercase tracking-widest mb-2">Current Price</p>
-                       <p className="text-[24px] md:text-[32px] font-mono font-bold text-white mb-1.5 leading-none">
+                    <div className="text-left md:text-right">
+                       <p className="text-[11px] font-bold text-text-muted uppercase tracking-widest mb-2">Current Price</p>
+                       <p className="text-[32px] font-mono font-bold text-text-main mb-1.5 leading-none">
                           {pos.stock?.currency || '$'}{pos.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                        </p>
                        <div className="flex items-center md:justify-end gap-2 text-positive font-mono font-bold text-[15px]">
@@ -121,50 +123,46 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
                     </div>
                  </div>
 
-                 {/* Metrics Section - Flexbox for robust cross-browser layout */}
-                 <div className="flex flex-col gap-10 mb-12 w-full">
+                 {/* Metrics Grid */}
+                 <div className="grid grid-cols-2 md:grid-cols-3 gap-y-10 gap-x-6 mb-12">
                     {/* Row 1 */}
-                    <div className="flex flex-col md:flex-row gap-8 md:gap-4 justify-between w-full">
-                       <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-[#8C8C8C] uppercase tracking-[0.15em] mb-2 truncate">Quantity</p>
-                          <p className="text-[18px] md:text-[22px] font-mono font-bold text-white truncate">{pos.shares}</p>
-                       </div>
-                       <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-[#8C8C8C] uppercase tracking-[0.15em] mb-2 truncate">Average Buy Price</p>
-                          <p className="text-[18px] md:text-[22px] font-mono font-bold text-white truncate">{pos.stock?.currency || '$'}{pos.averagePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                       </div>
-                       <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-[#8C8C8C] uppercase tracking-[0.15em] mb-2 truncate">Current Value</p>
-                          <p className="text-[18px] md:text-[22px] font-mono font-bold text-white truncate">{pos.stock?.currency || '$'}{pos.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
-                       </div>
+                    <div>
+                       <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2">Quantity</p>
+                       <p className="text-[22px] font-mono font-bold text-text-main">{pos.shares}</p>
+                    </div>
+                    <div>
+                       <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2">Average Buy Price</p>
+                       <p className="text-[22px] font-mono font-bold text-text-main">{pos.stock?.currency || '$'}{pos.averagePrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                    <div>
+                       <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2">Current Value</p>
+                       <p className="text-[22px] font-mono font-bold text-text-main">{pos.stock?.currency || '$'}{pos.value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                     </div>
                     
                     {/* Row 2 */}
-                    <div className="flex flex-col md:flex-row gap-8 md:gap-4 justify-between w-full">
-                       <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-[#8C8C8C] uppercase tracking-[0.15em] mb-2 truncate">Cost of Purchase</p>
-                          <p className="text-[18px] md:text-[22px] font-mono font-bold text-white truncate">{pos.stock?.currency || '$'}{(pos.averagePrice * pos.shares).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    <div>
+                       <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2">Cost of Purchase</p>
+                       <p className="text-[22px] font-mono font-bold text-text-main">{pos.stock?.currency || '$'}{(pos.averagePrice * pos.shares).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+                    </div>
+                    <div>
+                       <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2">P&L</p>
+                       <div className={\`flex items-baseline gap-2 font-mono font-bold \${pos.profit >= 0 ? 'text-positive' : 'text-negative'}\`}>
+                          <span className="text-[22px] leading-none">{pos.profit >= 0 ? '+' : ''}{pos.stock?.currency || '$'}{Math.abs(pos.profit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                          <span className="text-[14px]">({pos.profitPercent >= 0 ? '+' : ''}{pos.profitPercent.toFixed(2)}%)</span>
                        </div>
-                       <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-[#8C8C8C] uppercase tracking-[0.15em] mb-2 truncate">P&L</p>
-                          <div className={`flex items-baseline gap-2 font-mono font-bold ${pos.profit >= 0 ? 'text-positive' : 'text-negative'} truncate`}>
-                             <span className="text-[18px] md:text-[22px] leading-none truncate">{pos.profit >= 0 ? '+' : ''}{pos.stock?.currency || '$'}{Math.abs(pos.profit).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                             <span className="text-[14px]">({pos.profitPercent >= 0 ? '+' : ''}{pos.profitPercent.toFixed(2)}%)</span>
-                          </div>
-                       </div>
-                       <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-bold text-[#8C8C8C] uppercase tracking-[0.15em] mb-2 truncate">Allocation</p>
-                          <div className="flex items-center gap-3">
-                             <p className="text-[18px] md:text-[22px] font-mono font-bold text-white leading-none">
-                                {allocation.toFixed(1)}%
-                             </p>
-                             {/* Small Pie Chart */}
-                             <div 
-                                className="w-[26px] h-[26px] rounded-full bg-[#111111] overflow-hidden flex shrink-0 items-center justify-center border border-[#333333] shadow-sm" 
-                                style={{ background: `conic-gradient(#D4AF37 0% ${allocation}%, #242424 ${allocation}% 100%)` }}
-                             >
-                                <div className="w-3.5 h-3.5 bg-black rounded-full" />
-                             </div>
+                    </div>
+                    <div>
+                       <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] mb-2">Allocation</p>
+                       <div className="flex items-center gap-3">
+                          <p className="text-[22px] font-mono font-bold text-text-main leading-none">
+                             {allocation.toFixed(1)}%
+                          </p>
+                          {/* Small Pie Chart */}
+                          <div 
+                             className="w-[26px] h-[26px] rounded-full bg-ui-surface-hover overflow-hidden flex items-center justify-center border border-ui-border shadow-sm" 
+                             style={{ background: \`conic-gradient(var(--color-primary) 0% \${allocation}%, var(--ui-border) \${allocation}% 100%)\` }}
+                          >
+                             <div className="w-3.5 h-3.5 bg-ui-surface rounded-full" />
                           </div>
                        </div>
                     </div>
@@ -192,3 +190,6 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
 };
 
 export default PortfolioView;
+`;
+
+fs.writeFileSync('src/components/PortfolioView.tsx', content);

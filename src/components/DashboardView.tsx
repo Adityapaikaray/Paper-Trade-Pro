@@ -178,7 +178,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
         <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.2 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-[0_10px_30px_rgba(0,0,0,0.8)] flex flex-col justify-between relative overflow-hidden group">
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="flex justify-between items-start mb-4">
-            <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border">
                 <span className="text-text-muted font-bold text-xs">₹</span>
               </div>
@@ -196,7 +196,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
           <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#00D084]/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
           <div className="relative z-10 flex items-center justify-between h-full">
             <div className="flex flex-col justify-between h-full">
-              <div className="flex items-center gap-3">
+              <div className="flex-1 min-w-0 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border shadow-[0_0_10px_rgba(0,208,132,0.1)]">
                   <ShieldAlert size={14} className="text-positive" />
                 </div>
@@ -268,35 +268,35 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                   <div className="text-left sm:text-right">
                     <p className="text-[10px] uppercase font-bold text-text-muted mb-1">Current Price</p>
                     <p className="text-xl font-mono font-black text-text-main">₹3,650.45</p>
-                    <p className="text-sm font-mono font-bold text-positive">+₹42.30 (+1.17%)</p>
+                    <p className="text-sm font-mono font-bold text-positive truncate">+₹42.30 (+1.17%)</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-5">
-                  <div>
+                <div className="flex flex-col md:flex-row flex-wrap xl:flex-nowrap gap-4 mb-5 w-full">
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Quantity</p>
-                    <p className="text-sm font-mono font-bold text-text-main">245</p>
+                    <p className="text-sm font-mono font-bold text-text-main truncate">245</p>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Avg. Cost</p>
-                    <p className="text-sm font-mono font-bold text-text-main">₹3,645.60</p>
+                    <p className="text-sm font-mono font-bold text-text-main truncate">₹3,645.60</p>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Market Value</p>
-                    <p className="text-sm font-mono font-bold text-text-main">₹894,360.25</p>
+                    <p className="text-sm font-mono font-bold text-text-main truncate">₹894,360.25</p>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Unrealized P/L</p>
-                    <p className="text-sm font-mono font-bold text-positive">+₹1,188.25 <span className="text-[10px]">(+0.13%)</span></p>
+                    <p className="text-sm font-mono font-bold text-positive truncate">+₹1,188.25 <span className="text-[10px]">(+0.13%)</span></p>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Today's Change</p>
-                    <p className="text-sm font-mono font-bold text-positive">+₹10,357.50 <span className="text-[10px]">(+1.17%)</span></p>
+                    <p className="text-sm font-mono font-bold text-positive truncate">+₹10,357.50 <span className="text-[10px]">(+1.17%)</span></p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Allocation</p>
-                      <p className="text-sm font-mono font-bold text-text-main">56.6%</p>
+                  <div className="flex-1 min-w-0 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Allocation</p>
+                      <p className="text-sm font-mono font-bold text-text-main truncate">56.6%</p>
                     </div>
                     <div className="w-8 h-8 rounded-full conic-gradient-titan shrink-0 shadow-sm" style={{ background: 'conic-gradient(#D4AF37 0% 56.6%, var(--ui-bg) 56.6% 100%)', borderRadius: '50%' }} />
                   </div>
@@ -328,35 +328,35 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                   <div className="text-left sm:text-right">
                     <p className="text-[10px] uppercase font-bold text-text-muted mb-1">Current Price</p>
                     <p className="text-xl font-mono font-black text-text-main">$503.60</p>
-                    <p className="text-sm font-mono font-bold text-positive">+$12.48 (+2.54%)</p>
+                    <p className="text-sm font-mono font-bold text-positive truncate">+$12.48 (+2.54%)</p>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-5">
-                  <div>
+                <div className="flex flex-col md:flex-row flex-wrap xl:flex-nowrap gap-4 mb-5 w-full">
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Quantity</p>
-                    <p className="text-sm font-mono font-bold text-text-main">10</p>
+                    <p className="text-sm font-mono font-bold text-text-main truncate">10</p>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Avg. Cost</p>
-                    <p className="text-sm font-mono font-bold text-text-main">$175.77</p>
+                    <p className="text-sm font-mono font-bold text-text-main truncate">$175.77</p>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Market Value</p>
-                    <p className="text-sm font-mono font-bold text-text-main">$5,036.60</p>
+                    <p className="text-sm font-mono font-bold text-text-main truncate">$5,036.60</p>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Unrealized P/L</p>
-                    <p className="text-sm font-mono font-bold text-positive">+$3,278.30 <span className="text-[10px]">(+186.51%)</span></p>
+                    <p className="text-sm font-mono font-bold text-positive truncate">+$3,278.30 <span className="text-[10px]">(+186.51%)</span></p>
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Today's Change</p>
-                    <p className="text-sm font-mono font-bold text-positive">+$124.80 <span className="text-[10px]">(+2.54%)</span></p>
+                    <p className="text-sm font-mono font-bold text-positive truncate">+$124.80 <span className="text-[10px]">(+2.54%)</span></p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Allocation</p>
-                      <p className="text-sm font-mono font-bold text-text-main">31.9%</p>
+                  <div className="flex-1 min-w-0 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                    <p className="text-[10px] uppercase tracking-wider text-text-muted font-bold mb-1">Allocation</p>
+                      <p className="text-sm font-mono font-bold text-text-main truncate">31.9%</p>
                     </div>
                     <div className="w-8 h-8 rounded-full conic-gradient-amd shrink-0 shadow-sm" style={{ background: 'conic-gradient(#00A878 0% 31.9%, var(--ui-bg) 31.9% 100%)', borderRadius: '50%' }} />
                   </div>
@@ -511,7 +511,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                     </div>
                   </div>
                   <div className="mt-5 pt-5 border-t border-ui-border flex items-center justify-between">
-                     <div className="flex items-center gap-3">
+                     <div className="flex-1 min-w-0 flex items-center gap-3">
                        <div className="w-9 h-9 rounded-full bg-ui-surface-hover border border-ui-border flex items-center justify-center font-bold text-[12px] text-primary">TCS</div>
                        <div className="flex flex-col">
                          <span className="text-[15px] font-bold text-text-main leading-none mb-1">₹4,120.50</span>
@@ -538,7 +538,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                     </div>
                   </div>
                   <div className="mt-5 pt-5 border-t border-ui-border flex items-center justify-between">
-                     <div className="flex items-center gap-3">
+                     <div className="flex-1 min-w-0 flex items-center gap-3">
                        <div className="w-9 h-9 rounded-full bg-ui-surface-hover border border-ui-border flex items-center justify-center font-bold text-[12px] text-primary">HDFC</div>
                        <div className="flex flex-col">
                          <span className="text-[15px] font-bold text-text-main leading-none mb-1">₹1,680.10</span>
@@ -571,44 +571,44 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
         <div className="flex items-center h-full flex-1 relative overflow-hidden">
           <div className="flex items-center gap-10 whitespace-nowrap animate-[ticker_30s_linear_infinite] pl-10 hover:[animation-play-state:paused]">
             
-            <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
               <span className="text-[11px] font-bold text-text-main">NIFTY 50</span>
               <span className="text-[11px] font-mono text-text-main">24,716.30</span>
               <span className="text-[11px] font-mono font-bold text-positive">+0.82%</span>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
               <span className="text-[11px] font-bold text-text-main">SENSEX</span>
               <span className="text-[11px] font-mono text-text-main">81,123.45</span>
               <span className="text-[11px] font-mono font-bold text-positive">+0.76%</span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
               <span className="text-[11px] font-bold text-text-main">NASDAQ</span>
               <span className="text-[11px] font-mono text-text-main">17,623.91</span>
               <span className="text-[11px] font-mono font-bold text-positive">+1.14%</span>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
               <span className="text-[11px] font-bold text-text-main">S&P 500</span>
               <span className="text-[11px] font-mono text-text-main">5,487.21</span>
               <span className="text-[11px] font-mono font-bold text-positive">+0.67%</span>
             </div>
             
-            <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
               <span className="text-[11px] font-bold text-text-main">RELIANCE</span>
               <span className="text-[11px] font-mono text-text-main">2,840.75</span>
               <span className="text-[11px] font-mono font-bold text-negative">-0.61%</span>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
               <span className="text-[11px] font-bold text-text-main">TCS</span>
               <span className="text-[11px] font-mono text-text-main">4,120.50</span>
               <span className="text-[11px] font-mono font-bold text-positive">+2.40%</span>
             </div>
 
             {/* Duplicate for seamless scrolling */}
-            <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0 flex items-center gap-3">
               <span className="text-[11px] font-bold text-text-main">NIFTY 50</span>
               <span className="text-[11px] font-mono text-text-main">24,716.30</span>
               <span className="text-[11px] font-mono font-bold text-positive">+0.82%</span>
