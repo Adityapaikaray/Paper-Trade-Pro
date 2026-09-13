@@ -205,24 +205,19 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     fetchData();
     fetchMarketStatus();
 
-    // Poll live market data every 1.5 seconds
-    const interval = setInterval(fetchData, 1500);
-    const statusInterval = setInterval(fetchMarketStatus, 30000);
+    // Poll live market data every 3.5 seconds to balance live responsiveness and CPU efficiency
+    const interval = setInterval(fetchData, 3500);
+    const statusInterval = setInterval(fetchMarketStatus, 60000);
 
     // Dynamic real-time micro-tick simulator for paper-trading order book fluidity
     const microTickInterval = setInterval(() => {
-      // Pick 1-2 random stocks to tick
+      // Pick 1 random stock to tick smoothly
       setStocks(currentStocks => {
         if (!currentStocks.length) return currentStocks;
-        const count = Math.random() > 0.4 ? 2 : 1;
-        const indicesToTick: number[] = [];
-        for (let i = 0; i < count; i++) {
-          const randIdx = Math.floor(Math.random() * currentStocks.length);
-          if (!indicesToTick.includes(randIdx)) indicesToTick.push(randIdx);
-        }
+        const targetIdx = Math.floor(Math.random() * currentStocks.length);
 
         return currentStocks.map((stock, idx) => {
-          if (!indicesToTick.includes(idx)) return stock;
+          if (idx !== targetIdx) return stock;
           
           // Realistic small delta (-0.12% to +0.12%)
           const pctDelta = (Math.random() * 0.24 - 0.115) / 100;
@@ -277,7 +272,7 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
           };
         });
       });
-    }, 2200);
+    }, 3500);
 
     return () => {
       clearInterval(interval);
@@ -314,3 +309,5 @@ export const useMarketData = () => {
   }
   return context;
 };
+
+export const useMarket = useMarketData;

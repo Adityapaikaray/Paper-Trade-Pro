@@ -9,7 +9,8 @@ import { PositionDetailsModal } from './PositionDetailsModal.tsx';
 import { useUI } from '../contexts/UIContext.tsx';
 
 interface PortfolioViewProps {
-  onTrade: (stock: Stock) => void;
+  onTrade?: (stock: Stock) => void;
+  onNavigate?: (tab: string) => void;
 }
 
 interface DisplayPosition {
@@ -32,7 +33,7 @@ interface DisplayPosition {
   stockObject?: Stock;
 }
 
-export const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
+export const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade, onNavigate }) => {
   const { profile, marketContext } = usePortfolio();
   const { stocks } = useMarketData();
   const { addToast } = useUI();
@@ -56,202 +57,61 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
     currentAllocation: 0,
   });
 
-  // Base 8 holdings matching the prompt's institutional portfolio:
-  // "8 holdings · ₹15,78,420.25 current value"
-  const defaultPositions: DisplayPosition[] = useMemo(() => {
-    const isUS = marketContext === 'US';
-    const currency = isUS ? '$' : '₹';
+  const currencySymbol = marketContext === 'US' ? '$' : '₹';
 
-    return [
-      {
-        symbol: 'TITAN',
-        name: 'Titan Company Ltd.',
-        category: 'Stocks',
-        tags: ['EQUITY', 'CONSUMER CYCLICAL'],
-        currentPrice: 3650.45,
-        currencySymbol: '₹',
-        change: 42.30,
-        changePercent: 1.17,
-        quantity: 245,
-        avgBuyPrice: 3394.60,
-        costOfPurchase: 831677.00,
-        currentValue: 894363.25,
-        pnl: 62686.25,
-        pnlPercent: 7.54,
-        allocation: 56.6,
-        pieColor: '#D4A72C',
-      },
-      {
-        symbol: 'AMD',
-        name: 'Advanced Micro Devices, Inc.',
-        category: 'Stocks',
-        tags: ['EQUITY', 'SEMICONDUCTORS'],
-        currentPrice: 503.60,
-        currencySymbol: '$',
-        change: 12.48,
-        changePercent: 2.54,
-        quantity: 245,
-        avgBuyPrice: 460.10,
-        costOfPurchase: 112324.50,
-        currentValue: 123382.00,
-        pnl: 11057.50,
-        pnlPercent: 9.84,
-        allocation: 7.8,
-        pieColor: '#00B887',
-      },
-      {
-        symbol: 'RELIANCE',
-        name: 'Reliance Industries Ltd.',
-        category: 'Stocks',
-        tags: ['EQUITY', 'ENERGY & TELECOM'],
-        currentPrice: 2940.50,
-        currencySymbol: '₹',
-        change: 18.20,
-        changePercent: 0.62,
-        quantity: 80,
-        avgBuyPrice: 2750.00,
-        costOfPurchase: 220000.00,
-        currentValue: 235240.00,
-        pnl: 15240.00,
-        pnlPercent: 6.93,
-        allocation: 14.9,
-        pieColor: '#3B82F6',
-      },
-      {
-        symbol: 'TCS',
-        name: 'Tata Consultancy Services',
-        category: 'Stocks',
-        tags: ['EQUITY', 'INFORMATION TECH'],
-        currentPrice: 4190.80,
-        currencySymbol: '₹',
-        change: 35.10,
-        changePercent: 0.84,
-        quantity: 35,
-        avgBuyPrice: 3950.00,
-        costOfPurchase: 138250.00,
-        currentValue: 146678.00,
-        pnl: 8428.00,
-        pnlPercent: 6.10,
-        allocation: 9.3,
-        pieColor: '#8B5CF6',
-      },
-      {
-        symbol: 'NIFTYBEES',
-        name: 'Nippon India Nifty 50 ETF',
-        category: 'ETFs',
-        tags: ['ETF', 'LARGE CAP INDEX'],
-        currentPrice: 268.40,
-        currencySymbol: '₹',
-        change: 2.10,
-        changePercent: 0.79,
-        quantity: 350,
-        avgBuyPrice: 248.00,
-        costOfPurchase: 86800.00,
-        currentValue: 93940.00,
-        pnl: 7140.00,
-        pnlPercent: 8.23,
-        allocation: 6.0,
-        pieColor: '#F59E0B',
-      },
-      {
-        symbol: 'NVDA',
-        name: 'NVIDIA Corporation',
-        category: 'Stocks',
-        tags: ['EQUITY', 'ARTIFICIAL INTELLIGENCE'],
-        currentPrice: 128.50,
-        currencySymbol: '$',
-        change: 4.20,
-        changePercent: 3.38,
-        quantity: 40,
-        avgBuyPrice: 112.00,
-        costOfPurchase: 4480.00,
-        currentValue: 5140.00,
-        pnl: 660.00,
-        pnlPercent: 14.73,
-        allocation: 2.7,
-        pieColor: '#10B981',
-      },
-      {
-        symbol: 'MON100',
-        name: 'Motilal Oswal Nasdaq 100 ETF',
-        category: 'ETFs',
-        tags: ['ETF', 'GLOBAL TECH'],
-        currentPrice: 162.30,
-        currencySymbol: '₹',
-        change: 1.80,
-        changePercent: 1.12,
-        quantity: 180,
-        avgBuyPrice: 145.00,
-        costOfPurchase: 26100.00,
-        currentValue: 29214.00,
-        pnl: 3114.00,
-        pnlPercent: 11.93,
-        allocation: 1.9,
-        pieColor: '#EC4899',
-      },
-      {
-        symbol: 'BTC-INR',
-        name: 'Bitcoin Simulated Exposure',
-        category: 'Crypto',
-        tags: ['CRYPTO', 'DIGITAL ASSET'],
-        currentPrice: 54300.00,
-        currencySymbol: '₹',
-        change: -420.00,
-        changePercent: -0.77,
-        quantity: 0.35,
-        avgBuyPrice: 51000.00,
-        costOfPurchase: 17850.00,
-        currentValue: 19005.00,
-        pnl: 1155.00,
-        pnlPercent: 6.47,
-        allocation: 1.2,
-        pieColor: '#F97316',
-      },
-    ];
-  }, [marketContext]);
+  // Positions dynamically derived solely from actual profile holdings
+  const positions: DisplayPosition[] = useMemo(() => {
+    if (profile?.isPortfolioReset || !profile?.holdings || profile.holdings.length === 0) {
+      return [];
+    }
 
-  // Merge any dynamically purchased user holdings
-  const mergedPositions: DisplayPosition[] = useMemo(() => {
-    const list = [...defaultPositions];
+    const totalHoldingVal = profile.holdings.reduce((sum, h) => {
+      const s = stocks.find((st) => st.symbol.toUpperCase() === h.symbol.toUpperCase());
+      const p = s ? s.price : h.averagePrice;
+      return sum + p * h.shares;
+    }, 0);
 
-    (profile?.holdings || []).forEach((holding) => {
-      // If holding is not in list, append it
-      if (!list.find((p) => p.symbol.toLowerCase() === holding.symbol.toLowerCase())) {
-        const foundStock = stocks.find((s) => s.symbol === holding.symbol);
-        const price = foundStock?.price || holding.averagePrice;
-        const curValue = price * holding.shares;
-        const cost = holding.averagePrice * holding.shares;
-        const pnl = curValue - cost;
-        const pnlPercent = cost > 0 ? (pnl / cost) * 100 : 0;
+    return profile.holdings.map((holding) => {
+      const foundStock = stocks.find((s) => s.symbol.toUpperCase() === holding.symbol.toUpperCase());
+      const currentPrice = foundStock?.price || holding.averagePrice;
+      const curValue = currentPrice * holding.shares;
+      const cost = holding.averagePrice * holding.shares;
+      const pnl = curValue - cost;
+      const pnlPercent = cost > 0 ? (pnl / cost) * 100 : 0;
+      const allocation = totalHoldingVal > 0 ? (curValue / totalHoldingVal) * 100 : 0;
 
-        list.push({
-          symbol: holding.symbol,
-          name: foundStock?.name || holding.symbol,
-          category: 'Stocks',
-          tags: ['EQUITY', foundStock?.sector || 'MARKET'],
-          currentPrice: price,
-          currencySymbol: foundStock?.currency || '₹',
-          change: foundStock?.change || 0,
-          changePercent: foundStock?.changePercent || 0,
-          quantity: holding.shares,
-          avgBuyPrice: holding.averagePrice,
-          costOfPurchase: cost,
-          currentValue: curValue,
-          pnl,
-          pnlPercent,
-          allocation: 1.5,
-          pieColor: '#D4A72C',
-          stockObject: foundStock,
-        });
+      let category: 'Stocks' | 'ETFs' | 'Crypto' = 'Stocks';
+      if (holding.symbol.includes('BEES') || holding.symbol.includes('100') || holding.symbol.includes('ETF')) {
+        category = 'ETFs';
+      } else if (holding.symbol.includes('BTC') || holding.symbol.includes('ETH')) {
+        category = 'Crypto';
       }
-    });
 
-    return list;
-  }, [defaultPositions, profile?.holdings, stocks]);
+      return {
+        symbol: holding.symbol,
+        name: foundStock?.name || holding.symbol,
+        category,
+        tags: ['EQUITY', foundStock?.sector || 'MARKET'],
+        currentPrice,
+        currencySymbol: foundStock?.currency || currencySymbol,
+        change: foundStock?.change || 0,
+        changePercent: foundStock?.changePercent || 0,
+        quantity: holding.shares,
+        avgBuyPrice: holding.averagePrice,
+        costOfPurchase: cost,
+        currentValue: curValue,
+        pnl,
+        pnlPercent,
+        allocation: Number(allocation.toFixed(1)),
+        pieColor: pnl >= 0 ? '#00B887' : '#E15B5B',
+        stockObject: foundStock,
+      };
+    });
+  }, [profile?.isPortfolioReset, profile?.holdings, stocks, currencySymbol]);
 
   // Filter and sort
   const filteredPositions = useMemo(() => {
-    let result = mergedPositions.filter((pos) => {
+    let result = positions.filter((pos) => {
       // Category filter
       if (activeCategory !== 'All' && pos.category !== activeCategory) {
         return false;
@@ -285,9 +145,16 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
     });
 
     return result;
-  }, [mergedPositions, activeCategory, searchQuery, sortOption]);
+  }, [positions, activeCategory, searchQuery, sortOption]);
 
-  const totalValueFormatted = '₹15,78,420.25';
+  const totalValue = useMemo(() => {
+    return positions.reduce((acc, pos) => acc + pos.currentValue, 0);
+  }, [positions]);
+
+  const totalValueFormatted = `${currencySymbol}${totalValue.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
 
   const handleOpenDetails = (pos: DisplayPosition) => {
     const stockObj: Stock = pos.stockObject || {
@@ -326,7 +193,7 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
             Positions
           </h2>
           <p className="text-xs md:text-sm text-text-muted mt-1 font-medium">
-            {mergedPositions.length} holdings · {totalValueFormatted} current value
+            {positions.length} holdings · {totalValueFormatted} current value
           </p>
         </div>
 
@@ -423,27 +290,34 @@ export const PortfolioView: React.FC<PortfolioViewProps> = ({ onTrade }) => {
           <div className="w-12 h-12 rounded-full bg-ui-bg text-text-muted mx-auto flex items-center justify-center">
             <Filter size={20} />
           </div>
-          <h3 className="text-base font-bold text-text-main">No positions found</h3>
+          <h3 className="text-base font-bold text-text-main">
+            {positions.length === 0 ? 'No holdings yet' : 'No positions found'}
+          </h3>
           <p className="text-xs text-text-muted max-w-sm mx-auto">
-            {searchQuery
+            {positions.length === 0
+              ? 'Your portfolio is currently empty. Start your first paper trade to build your portfolio.'
+              : searchQuery
               ? `No holdings matching "${searchQuery}". Try clearing your search.`
-              : 'Start your first paper trade and your holdings will appear here.'}
+              : 'No holdings found for the selected category.'}
           </p>
-          {searchQuery ? (
+          {positions.length === 0 ? (
+            <button
+              onClick={() => {
+                if (onNavigate) onNavigate('market');
+                else addToast('Opening markets catalog', 'info');
+              }}
+              className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-95 shadow-sm active:scale-95 transition-all"
+            >
+              Explore Markets
+            </button>
+          ) : searchQuery ? (
             <button
               onClick={() => setSearchQuery('')}
               className="px-4 py-2 rounded-xl border border-ui-border text-xs font-bold text-text-main hover:bg-ui-surface-hover"
             >
               Clear Search
             </button>
-          ) : (
-            <button
-              onClick={() => addToast('Opening markets catalog', 'info')}
-              className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-95 shadow-sm"
-            >
-              Explore Markets
-            </button>
-          )}
+          ) : null}
         </div>
       ) : (
         <div className="space-y-5 w-full">

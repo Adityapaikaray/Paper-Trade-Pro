@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import Sidebar from './components/Sidebar.tsx';
 import BottomNav from './components/BottomNav.tsx';
 import TopBar from './components/TopBar.tsx';
@@ -12,15 +12,18 @@ import DashboardView from './components/DashboardView.tsx';
 import MarketView from './components/MarketView.tsx';
 import KeyIndexView from './components/KeyIndexView.tsx';
 import PortfolioView from './components/PortfolioView.tsx';
-import HistoryView from './components/HistoryView.tsx';
 import { WatchlistView } from './components/WatchlistView.tsx';
 import { OrdersView } from './components/OrdersView.tsx';
-import { AnalyticsView } from './components/AnalyticsView.tsx';
-import { ResearchView } from './components/ResearchView.tsx';
-import { ToolsView } from './components/ToolsView.tsx';
-import NewsView from './components/NewsView.tsx';
 import SettingsView from './components/SettingsView.tsx';
-import HelpSupportView from './components/HelpSupportView.tsx';
+
+// Code-split heavy analytical and auxiliary views
+const AnalyticsView = lazy(() => import('./components/AnalyticsView.tsx').then(m => ({ default: m.AnalyticsView })));
+const ResearchView = lazy(() => import('./components/ResearchView.tsx').then(m => ({ default: m.ResearchView })));
+const ToolsView = lazy(() => import('./components/ToolsView.tsx').then(m => ({ default: m.ToolsView })));
+const HistoryView = lazy(() => import('./components/HistoryView.tsx'));
+const NewsView = lazy(() => import('./components/NewsView.tsx'));
+const HelpSupportView = lazy(() => import('./components/HelpSupportView.tsx'));
+
 import TradeModal from './components/TradeModal.tsx';
 import NotificationManager from './components/NotificationManager.tsx';
 import PortfolioHistoryRecorder from './components/PortfolioHistoryRecorder.tsx';
@@ -88,7 +91,7 @@ function AppContent() {
       case 'watchlist':
         return <WatchlistView onTrade={setSelectedStock} />;
       case 'orders':
-        return <OrdersView />;
+        return <OrdersView onTrade={setSelectedStock} />;
       case 'analytics':
         return <AnalyticsView />;
       case 'research':
@@ -96,7 +99,7 @@ function AppContent() {
       case 'tools':
         return <ToolsView />;
       case 'history':
-        return <OrdersView />;
+        return <HistoryView onTrade={setSelectedStock} />;
       case 'news':
         return <NewsView />;
       case 'settings':
@@ -118,8 +121,8 @@ function AppContent() {
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ duration: 1.2, delay: 1.5, ease: "easeInOut" }}
-            className="flex h-screen bg-ui-bg text-text-main overflow-hidden transition-colors duration-500 border-t-2 border-[#1A1F29]"
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="flex h-screen bg-ui-bg text-text-main overflow-hidden transition-colors duration-300 border-t-2 border-[#1A1F29]"
           >
             <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
             
@@ -137,7 +140,14 @@ function AppContent() {
                       transition={{ duration: 0.25, ease: "easeOut" }}
                       className="w-full"
                     >
-                      {renderView()}
+                      <Suspense fallback={
+                        <div className="w-full h-80 flex flex-col items-center justify-center gap-3">
+                          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                          <span className="text-xs font-mono font-semibold text-text-muted">Loading module...</span>
+                        </div>
+                      }>
+                        {renderView()}
+                      </Suspense>
                     </motion.div>
                   </AnimatePresence>
                 </div>
@@ -169,7 +179,7 @@ function AppContent() {
               <BottomNav 
                 activeTab={activeTab} 
                 setActiveTab={setActiveTab} 
-                onOpenMenu={() => {}} 
+                onOpenMenu={() => setIsCommandPaletteOpen(true)} 
               />
             </main>
 
@@ -196,7 +206,10 @@ function AppContent() {
             <UIManager />
             <NotificationManager />
             <PortfolioHistoryRecorder />
-            <AICopilot />
+            <AICopilot 
+              onNavigate={setActiveTab}
+              onOpenTrade={(stock) => setSelectedStock(stock)}
+            />
             <BottomMarketTicker onTrade={(stock) => setSelectedStock(stock)} />
           </motion.div>
           )}

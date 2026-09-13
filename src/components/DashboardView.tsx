@@ -3,10 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Plus, ChevronDown, List, Grid, MoreVertical, TrendingUp, TrendingDown, Bot, ArrowRight, Play, CheckCircle2, ChevronRight, Activity, Zap, ShieldAlert, PieChart, BarChart3, Newspaper, LineChart, Info, Briefcase } from 'lucide-react';
 import { Stock } from '../types.ts';
-import PortfolioGraph from './PortfolioGraph.tsx';
 import PremiumPerformanceCard from './PremiumPerformanceCard.tsx';
 import { PositionCard } from './PositionCard.tsx';
 import { PositionDetailsModal } from './PositionDetailsModal.tsx';
@@ -14,18 +13,19 @@ import { ModifyAllocationModal } from './ModifyAllocationModal.tsx';
 import { QuickTradePanel } from './QuickTradePanel.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
-import { useMarketData } from '../hooks/useMarketData.ts';
+import { useMarketData } from '../contexts/MarketContext.tsx';
 import { useUI } from '../contexts/UIContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface DashboardViewProps {
   onTrade?: (stock: Stock) => void;
+  onNavigate?: (tab: string) => void;
 }
 
 const TABS = ['Active Positions', 'Watchlist', 'Orders', 'Performance', 'Allocation', 'History'];
 const FILTERS = ['1D', '1W', '1M', '3M', '6M', '1Y', 'ALL'];
 
-const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
+const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) => {
   const [activeTab, setActiveTab] = useState(TABS[0]);
   const [activeFilter, setActiveFilter] = useState('1M');
   const [viewMode, setViewMode] = useState<'grid'|'list'>('list');
@@ -36,74 +36,87 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
   const [modifySymbol, setModifySymbol] = useState<string | null>(null);
 
   
-  const { profile, marketContext, addFunds } = usePortfolio();
+  const { profile, marketContext, addFunds, modifyHoldingAllocation } = usePortfolio();
   const { theme } = useTheme();
   const isIndia = marketContext === 'IN';
   const currencySymbol = isIndia ? '₹' : '$';
   const { stocks } = useMarketData();
   
-  let currentHoldingsValue = 0;
-  let totalCost = 0;
-  
-  (profile?.holdings || []).forEach(holding => {
-    const stock = stocks.find(s => s.symbol === holding.symbol);
-    if (stock && stock.currency === currencySymbol) {
-      currentHoldingsValue += stock.price * holding.shares;
-      totalCost += holding.averagePrice * holding.shares;
-    }
-  });
+  const { stocksMap } = useMemo(() => {
+    const map = new Map<string, Stock>();
+    stocks.forEach(s => map.set(s.symbol.toUpperCase(), s));
+    return { stocksMap: map };
+  }, [stocks]);
 
-  const cashBalance = profile?.balances?.[currencySymbol] || 0;
+  const { currentHoldingsValue, totalCost } = useMemo(() => {
+    let holdingsVal = 0;
+    let cost = 0;
+    (profile?.holdings || []).forEach(holding => {
+      const stock = stocksMap.get(holding.symbol.toUpperCase());
+      if (stock && stock.currency === currencySymbol) {
+        holdingsVal += stock.price * holding.shares;
+        cost += holding.averagePrice * holding.shares;
+      }
+    });
+    return { currentHoldingsValue: holdingsVal, totalCost: cost };
+  }, [profile?.holdings, stocksMap, currencySymbol]);
+
+  const cashBalance = typeof profile?.balances?.[currencySymbol] === 'number'
+    ? profile.balances[currencySymbol] 
+    : 0;
   const portfolioValue = cashBalance + currentHoldingsValue;
   
   const unrealizedReturn = currentHoldingsValue - totalCost;
   const unrealizedReturnPct = totalCost > 0 ? (unrealizedReturn / totalCost) * 100 : 0;
 
-  const holdingsWithData = (profile?.holdings || [])
-    .map(holding => {
-      const stock = stocks.find(s => s.symbol === holding.symbol);
-      return { holding, stock };
-    })
-    .filter(h => h.stock && h.stock.currency === currencySymbol)
-    .map(h => {
-      const currentPrice = h.stock.price;
-      const avgCost = h.holding.averagePrice;
-      const quantity = h.holding.shares;
-      const marketValue = currentPrice * quantity;
-      const costValue = avgCost * quantity;
-      const unrealizedPL = marketValue - costValue;
-      const unrealizedPLPct = (currentPrice / avgCost - 1) * 100;
-      const todayChange = h.stock.change * quantity;
-      const todayChangePct = h.stock.changePercent;
-      const allocation = portfolioValue > 0 ? (marketValue / portfolioValue) * 100 : 0;
-      
-      return {
-        ...h.holding,
-        stock: h.stock,
-        currentPrice,
-        marketValue,
-        unrealizedPL,
-        unrealizedPLPct,
-        todayChange,
-        todayChangePct,
-        allocation
-      };
-    });
+  const holdingsWithData = useMemo(() => {
+    return (profile?.holdings || [])
+      .map(holding => {
+        const stock = stocksMap.get(holding.symbol.toUpperCase());
+        return { holding, stock };
+      })
+      .filter((h): h is { holding: typeof h.holding; stock: Stock } => !!h.stock && h.stock.currency === currencySymbol)
+      .map(h => {
+        const currentPrice = h.stock.price;
+        const avgCost = h.holding.averagePrice;
+        const quantity = h.holding.shares;
+        const marketValue = currentPrice * quantity;
+        const costValue = avgCost * quantity;
+        const unrealizedPL = marketValue - costValue;
+        const unrealizedPLPct = avgCost > 0 ? (currentPrice / avgCost - 1) * 100 : 0;
+        const todayChange = h.stock.change * quantity;
+        const todayChangePct = h.stock.changePercent;
+        const allocation = portfolioValue > 0 ? (marketValue / portfolioValue) * 100 : 0;
+        
+        return {
+          ...h.holding,
+          stock: h.stock,
+          currentPrice,
+          marketValue,
+          unrealizedPL,
+          unrealizedPLPct,
+          todayChange,
+          todayChangePct,
+          allocation
+        };
+      });
+  }, [profile?.holdings, stocksMap, currencySymbol, portfolioValue]);
 
-  
   // Day return mock based on portfolio size
   const todayReturn = portfolioValue > 0 ? (portfolioValue * (isIndia ? 0.005 : 0.012)) : 0;
   const todayReturnPct = portfolioValue > 0 ? (todayReturn / portfolioValue) * 100 : 0;
 
-  const { openModal, addToast, setIsCopilotOpen } = useUI();
+  const { openModal, addToast, setIsCopilotOpen, openCopilotWithPrompt } = useUI();
 
   const contextCountry = marketContext === 'IN' ? 'India' : (marketContext === 'US' ? 'USA' : 'All');
   
-  const topMovers = stocks
-    .filter(s => contextCountry === 'All' || s.country === contextCountry)
-    .sort((a, b) => moversType === 'gainers' ? b.changePercent - a.changePercent : a.changePercent - b.changePercent)
-    .slice(0, 5)
-    .map(s => ({ s: s.symbol, v: (s.changePercent >= 0 ? '+' : '') + s.changePercent.toFixed(2) + '%' }));
+  const topMovers = useMemo(() => {
+    return stocks
+      .filter(s => contextCountry === 'All' || s.country === contextCountry)
+      .sort((a, b) => moversType === 'gainers' ? b.changePercent - a.changePercent : a.changePercent - b.changePercent)
+      .slice(0, 5)
+      .map(s => ({ s: s.symbol, v: (s.changePercent >= 0 ? '+' : '') + s.changePercent.toFixed(2) + '%' }));
+  }, [stocks, contextCountry, moversType]);
 
 
   return (
@@ -159,9 +172,12 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
             </div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Portfolio Value</p>
           </div>
-          <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">₹15,78,420.25</p>
-          <p className="text-xs font-mono font-bold text-positive flex items-center gap-1">
-            <TrendingUp size={13} /> +₹54,820.40 (+3.58%) today
+          <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">
+            {currencySymbol}{portfolioValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p className={`text-xs font-mono font-bold flex items-center gap-1 ${unrealizedReturn >= 0 ? 'text-positive' : 'text-negative'}`}>
+            {unrealizedReturn >= 0 ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+            {unrealizedReturn >= 0 ? '+' : ''}{currencySymbol}{unrealizedReturn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ({unrealizedReturnPct >= 0 ? '+' : ''}{unrealizedReturnPct.toFixed(2)}%)
           </p>
         </motion.div>
 
@@ -174,24 +190,30 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
             </div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Invested</p>
           </div>
-          <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">₹14,35,740.00</p>
+          <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">
+            {currencySymbol}{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
           <p className="text-xs font-sans font-medium text-text-muted">
-            Total capital invested across assets
+            Total capital invested across {holdingsWithData.length} asset{holdingsWithData.length === 1 ? '' : 's'}
           </p>
         </motion.div>
 
         {/* Total P&L */}
         <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: 0.2 }} className="bg-ui-surface rounded-[20px] p-6 border border-ui-border shadow-sm flex flex-col justify-between relative overflow-hidden group">
-          <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-positive/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className={`absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent ${unrealizedReturn >= 0 ? 'via-positive/20' : 'via-negative/20'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity`} />
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-8 h-8 rounded-full bg-positive/10 flex items-center justify-center shrink-0 border border-positive/30">
-              <TrendingUp size={14} className="text-positive" />
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border ${unrealizedReturn >= 0 ? 'bg-positive/10 border-positive/30' : 'bg-negative/10 border-negative/30'}`}>
+              {unrealizedReturn >= 0 ? <TrendingUp size={14} className="text-positive" /> : <TrendingDown size={14} className="text-negative" />}
             </div>
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Total P&L</p>
           </div>
-          <p className="text-2xl xl:text-[28px] font-mono font-bold text-positive leading-none mb-2">+₹1,42,680.25</p>
-          <p className="text-xs font-mono font-bold text-positive flex items-center gap-1">
-            <span className="px-2 py-0.5 rounded-full bg-positive/10 border border-positive/20">+9.94% overall return</span>
+          <p className={`text-2xl xl:text-[28px] font-mono font-bold leading-none mb-2 ${unrealizedReturn >= 0 ? 'text-positive' : 'text-negative'}`}>
+            {unrealizedReturn >= 0 ? '+' : ''}{currencySymbol}{unrealizedReturn.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
+          <p className={`text-xs font-mono font-bold flex items-center gap-1 ${unrealizedReturn >= 0 ? 'text-positive' : 'text-negative'}`}>
+            <span className={`px-2 py-0.5 rounded-full ${unrealizedReturn >= 0 ? 'bg-positive/10 border border-positive/20' : 'bg-negative/10 border border-negative/20'}`}>
+              {unrealizedReturnPct >= 0 ? '+' : ''}{unrealizedReturnPct.toFixed(2)}% overall return
+            </span>
           </p>
         </motion.div>
 
@@ -201,7 +223,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
           <div className="flex justify-between items-start mb-4">
             <div className="flex-1 min-w-0 flex items-center gap-3">
               <div className="w-8 h-8 rounded-full bg-ui-surface-hover flex items-center justify-center shrink-0 border border-ui-border">
-                <span className="text-text-muted font-bold text-xs">₹</span>
+                <span className="text-text-muted font-bold text-xs">{currencySymbol}</span>
               </div>
               <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-muted">Available Cash</p>
             </div>
@@ -209,7 +231,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
               <Plus size={14} strokeWidth={3} />
             </button>
           </div>
-          <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">₹10,774.33</p>
+          <p className="text-2xl xl:text-[28px] font-mono font-bold text-text-main leading-none mb-2">
+            {currencySymbol}{cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+          </p>
           <p className="text-xs font-sans font-medium text-text-muted">
             Purchasing power available for trading
           </p>
@@ -223,9 +247,15 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h3 className="text-xl font-bold font-sans text-text-main tracking-tight">Active Positions</h3>
-            <p className="text-xs text-text-muted mt-0.5">Real-time equities and portfolio allocation</p>
+            <p className="text-xs text-text-muted mt-0.5">Real-time equities and portfolio allocation ({holdingsWithData.length})</p>
           </div>
           <div className="flex items-center gap-2">
+            <button 
+              onClick={() => openModal('add-position')}
+              className="px-3 py-1.5 rounded-xl bg-primary text-ui-bg text-xs font-bold hover:bg-primary-light transition-all flex items-center gap-1.5 mr-2"
+            >
+              <Plus size={14} strokeWidth={2.5} /> Add Position
+            </button>
             <button 
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-xl transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-[#1A1F29] text-text-main border border-ui-border shadow-sm' : 'text-text-muted hover:text-text-main'}`}
@@ -243,49 +273,55 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
           </div>
         </div>
 
-        <div className="space-y-5 w-full">
-          {/* TITAN CARD */}
-          <PositionCard
-            symbol="TITAN"
-            name="Titan Company Ltd."
-            tags={['EQUITY', 'CONSUMER CYCLICAL']}
-            currentPrice={3650.45}
-            currencySymbol="₹"
-            change={42.30}
-            changePercent={1.17}
-            quantity={245}
-            avgBuyPrice={3394.60}
-            costOfPurchase={831677.00}
-            currentValue={894363.25}
-            pnl={62686.25}
-            pnlPercent={7.54}
-            allocation={56.6}
-            pieColor="#D4A72C"
-            onViewDetails={() => setDetailsSymbol('TITAN')}
-            onModifyAllocation={() => setModifySymbol('TITAN')}
-          />
-
-          {/* AMD CARD */}
-          <PositionCard
-            symbol="AMD"
-            name="Advanced Micro Devices, Inc."
-            tags={['EQUITY', 'SEMICONDUCTORS']}
-            currentPrice={503.60}
-            currencySymbol="$"
-            change={12.48}
-            changePercent={2.54}
-            quantity={245}
-            avgBuyPrice={460.10}
-            costOfPurchase={112324.50}
-            currentValue={123382.00}
-            pnl={11057.50}
-            pnlPercent={9.84}
-            allocation={7.8}
-            pieColor="#00B887"
-            onViewDetails={() => setDetailsSymbol('AMD')}
-            onModifyAllocation={() => setModifySymbol('AMD')}
-          />
-        </div>
+        {holdingsWithData.length === 0 ? (
+          <div className="p-8 rounded-2xl border border-dashed border-ui-border bg-ui-surface/40 text-center flex flex-col items-center justify-center space-y-3">
+            <div className="w-12 h-12 rounded-full bg-ui-bg text-text-muted flex items-center justify-center">
+              <Briefcase size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-text-main mb-1">
+                {profile?.holdings?.length === 0 ? 'No holdings yet' : `No active positions in ${isIndia ? 'Indian (₹)' : 'US ($)'} market`}
+              </p>
+              <p className="text-xs text-text-muted max-w-sm mx-auto">
+                {profile?.holdings?.length === 0
+                  ? 'Your portfolio is currently empty. Start your first paper trade to build your portfolio.'
+                  : 'Place a paper trade using the quick trade panel, search bar, or tap below to add your first position.'}
+              </p>
+            </div>
+            <button 
+              onClick={() => (onNavigate ? onNavigate('market') : openModal('add-position'))}
+              className="px-5 py-2.5 rounded-xl bg-primary text-white text-xs font-bold hover:opacity-95 active:scale-95 transition-all shadow-sm"
+            >
+              Explore Markets
+            </button>
+          </div>
+        ) : (
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 xl:grid-cols-2 gap-5 w-full' : 'space-y-5 w-full'}>
+            {holdingsWithData.map((pos) => (
+              <PositionCard
+                key={pos.symbol}
+                symbol={pos.symbol}
+                name={pos.stock.name}
+                tags={[pos.stock.sector || 'EQUITY', pos.stock.country || 'MARKET']}
+                currentPrice={pos.currentPrice}
+                currencySymbol={pos.stock.currency || currencySymbol}
+                change={pos.stock.change}
+                changePercent={pos.stock.changePercent}
+                quantity={pos.shares}
+                avgBuyPrice={pos.averagePrice}
+                costOfPurchase={pos.averagePrice * pos.shares}
+                currentValue={pos.marketValue}
+                pnl={pos.unrealizedPL}
+                pnlPercent={pos.unrealizedPLPct}
+                allocation={pos.allocation}
+                pieColor={pos.unrealizedPL >= 0 ? '#00D084' : '#FF4D4D'}
+                onViewDetails={() => setDetailsSymbol(pos.symbol)}
+                onModifyAllocation={() => setModifySymbol(pos.symbol)}
+                onOptions={() => onTrade && onTrade(pos.stock)}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Intelligence and Sentiment Panels */}
@@ -309,20 +345,41 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
 
           <button 
               onClick={() => setIsCopilotOpen(true)}
-              className="w-full py-3.5 bg-gradient-to-r from-[#C9A227] to-[#A6822B] text-white font-bold rounded-xl shadow-sm hover:opacity-95 transition-all flex items-center justify-center gap-2 mb-6 relative z-10"
+              className="w-full py-3.5 bg-gradient-to-r from-[#C9A227] to-[#A6822B] text-white font-bold rounded-xl shadow-sm hover:opacity-95 transition-all flex items-center justify-center gap-2 mb-4 relative z-10 text-xs"
           >
-            Ask AI Copilot <ArrowRight size={16} strokeWidth={2} />
+            Launch AI Trading Terminal <ArrowRight size={16} strokeWidth={2} />
           </button>
 
           <div className="space-y-2.5 relative z-10">
-            <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3.5 rounded-xl bg-ui-bg border border-ui-border text-xs font-medium text-text-main hover:border-[#C9A227]/50 transition-all flex items-center justify-between group">
-              "Why is my portfolio up today?" <ArrowRight size={14} className="text-text-muted group-hover:text-[#C9A227] transition-colors" />
+            <button 
+              onClick={() => openCopilotWithPrompt(isIndia ? "Buy 10 shares of Reliance (RELIANCE)" : "Buy 10 shares of Apple (AAPL)")} 
+              className="w-full text-left p-3 rounded-xl bg-ui-bg border border-ui-border text-xs font-medium text-text-main hover:border-[#C9A227]/50 transition-all flex items-center justify-between group"
+            >
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                {isIndia ? '"Buy 10 shares of Reliance"' : '"Buy 10 shares of Apple (AAPL)"'}
+              </span>
+              <ArrowRight size={14} className="text-text-muted group-hover:text-[#C9A227] transition-colors" />
             </button>
-            <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3.5 rounded-xl bg-ui-bg border border-ui-border text-xs font-medium text-text-main hover:border-[#C9A227]/50 transition-all flex items-center justify-between group">
-              "What are my biggest risks?" <ArrowRight size={14} className="text-text-muted group-hover:text-[#C9A227] transition-colors" />
+            <button 
+              onClick={() => openCopilotWithPrompt(isIndia ? "Buy 5 shares of TCS" : "Buy 5 shares of NVIDIA (NVDA)")} 
+              className="w-full text-left p-3 rounded-xl bg-ui-bg border border-ui-border text-xs font-medium text-text-main hover:border-[#C9A227]/50 transition-all flex items-center justify-between group"
+            >
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                {isIndia ? '"Buy 5 shares of TCS"' : '"Buy 5 shares of NVIDIA (NVDA)"'}
+              </span>
+              <ArrowRight size={14} className="text-text-muted group-hover:text-[#C9A227] transition-colors" />
             </button>
-            <button onClick={() => setIsCopilotOpen(true)} className="w-full text-left p-3.5 rounded-xl bg-ui-bg border border-ui-border text-xs font-medium text-text-main hover:border-[#C9A227]/50 transition-all flex items-center justify-between group">
-              "Suggest next investment opportunities" <ArrowRight size={14} className="text-text-muted group-hover:text-[#C9A227] transition-colors" />
+            <button 
+              onClick={() => openCopilotWithPrompt("Analyze portfolio risks & suggest trades")} 
+              className="w-full text-left p-3 rounded-xl bg-ui-bg border border-ui-border text-xs font-medium text-text-main hover:border-[#C9A227]/50 transition-all flex items-center justify-between group"
+            >
+              <span className="flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-primary" />
+                "Analyze portfolio risk & opportunities"
+              </span>
+              <ArrowRight size={14} className="text-text-muted group-hover:text-[#C9A227] transition-colors" />
             </button>
           </div>
         </motion.div>
@@ -463,14 +520,26 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
                          <span className="text-[13px] font-bold text-positive flex items-center leading-none"><span className="text-[10px] mr-0.5">▲</span> +1.8%</span>
                        </div>
                      </div>
-                     <button className="text-[13px] font-bold bg-ui-surface-hover border border-ui-border px-4 py-2 rounded-xl text-text-main hover:bg-primary hover:text-[#000000] hover:border-primary transition-colors flex items-center gap-1.5 shadow-sm">
+                     <button 
+                       onClick={() => {
+                         const s = stocks.find(st => st.symbol === 'HDFCBANK' || st.symbol === 'HDFC');
+                         if (s && onTrade) onTrade(s);
+                         else openModal('trade', { symbol: 'HDFCBANK' });
+                       }}
+                       className="text-[13px] font-bold bg-ui-surface-hover border border-ui-border px-4 py-2 rounded-xl text-text-main hover:bg-primary hover:text-[#000000] hover:border-primary transition-colors flex items-center gap-1.5 shadow-sm"
+                     >
                         Trade <ChevronRight size={14} strokeWidth={2.5} />
                      </button>
                   </div>
                 </div>
               </div>
               
-              <button className="w-full mt-8 py-4 border border-ui-border text-text-main font-bold text-[14px] rounded-2xl hover:bg-ui-surface-hover hover:border-ui-border transition-colors flex items-center justify-center gap-2 shadow-sm">
+              <button 
+                onClick={() => {
+                  addToast('Displaying curated real-time financial market intelligence', 'info');
+                }}
+                className="w-full mt-8 py-4 border border-ui-border text-text-main font-bold text-[14px] rounded-2xl hover:bg-ui-surface-hover hover:border-ui-border transition-colors flex items-center justify-center gap-2 shadow-sm"
+              >
                 View All Market News <ArrowRight size={16} strokeWidth={2} />
               </button>
             </div>
@@ -498,9 +567,13 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
           onClose={() => setModifySymbol(null)}
           symbol={modifySymbol}
           name={stocks.find(s => s.symbol.toUpperCase() === modifySymbol.toUpperCase())?.name || modifySymbol}
-          currentAllocation={modifySymbol === 'TITAN' ? 56.6 : (modifySymbol === 'AMD' ? 7.8 : 10)}
+          currentAllocation={
+            profile?.targetAllocations?.[modifySymbol] ?? 
+            Math.round(holdingsWithData.find(h => h.symbol === modifySymbol)?.allocation || 10)
+          }
           onSave={(newAlloc) => {
-            addToast(`Updated allocation for ${modifySymbol} to ${newAlloc}%`, 'success');
+            modifyHoldingAllocation(modifySymbol, newAlloc);
+            addToast(`Updated target allocation for ${modifySymbol} to ${newAlloc}%`, 'success');
             setModifySymbol(null);
           }}
         />
@@ -509,4 +582,4 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade }) => {
   );
 };
 
-export default DashboardView;
+export default React.memo(DashboardView);

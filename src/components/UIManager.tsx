@@ -5,6 +5,7 @@ import { useUI } from '../contexts/UIContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import StockChart from './StockChart.tsx';
+import ResetPortfolioModal from './ResetPortfolioModal.tsx';
 
 // --- TOAST COMPONENT ---
 const ToastContainer = () => {
@@ -25,23 +26,32 @@ const ToastContainer = () => {
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 8, scale: 0.95 }}
               transition={{ duration: 0.2, ease: "easeOut" }}
-              className={`pointer-events-auto flex items-center gap-3 p-4 rounded-xl shadow-xl border ${
+              className={`pointer-events-auto flex items-start gap-3 p-4 rounded-xl shadow-xl border ${
                 isSuccess ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-500' :
                 isError ? 'bg-rose-500/10 border-rose-500/30 text-rose-500' :
                 isWarning ? 'bg-amber-500/10 border-amber-500/30 text-amber-500' :
                 'bg-ui-surface border-ui-border text-text-main'
               } backdrop-blur-md`}
             >
-              {isSuccess && <CheckCircle size={18} />}
-              {isError && <AlertCircle size={18} />}
-              {isWarning && <AlertTriangle size={18} />}
-              {toast.type === 'info' && <Info size={18} className="text-primary" />}
+              <div className="mt-0.5 shrink-0">
+                {isSuccess && <CheckCircle size={18} />}
+                {isError && <AlertCircle size={18} />}
+                {isWarning && <AlertTriangle size={18} />}
+                {toast.type === 'info' && <Info size={18} className="text-primary" />}
+              </div>
               
-              <p className="text-sm font-semibold flex-1">{toast.message}</p>
+              <div className="flex-1 min-w-0">
+                {toast.title && (
+                  <p className="text-xs font-bold text-text-main leading-tight mb-0.5">
+                    {toast.title}
+                  </p>
+                )}
+                <p className="text-xs font-medium opacity-90 leading-relaxed">{toast.message}</p>
+              </div>
               
               <button 
                 onClick={() => removeToast(toast.id)}
-                className="opacity-50 hover:opacity-100 transition-opacity"
+                className="opacity-50 hover:opacity-100 transition-opacity mt-0.5 shrink-0"
               >
                 <X size={16} />
               </button>
@@ -130,6 +140,10 @@ const UpgradeModal = () => {
 // --- ADD POSITION MODAL ---
 const AddPositionModal = () => {
   const { activeModal, closeModal, addToast } = useUI();
+  const { executeTrade, marketContext } = usePortfolio();
+  const [ticker, setTicker] = useState('');
+  const [quantity, setQuantity] = useState('');
+  const [price, setPrice] = useState('');
   const [loading, setLoading] = useState(false);
   
   if (activeModal !== 'add-position') return null;
@@ -137,11 +151,36 @@ const AddPositionModal = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    const shares = parseFloat(quantity);
+    const p = parseFloat(price);
+    if (!ticker.trim() || isNaN(shares) || shares <= 0 || isNaN(p) || p <= 0) {
       setLoading(false);
+      addToast('Please enter valid position details', 'error');
+      return;
+    }
+
+    const cur = marketContext === 'IN' ? '₹' : '$';
+    const mockStock: any = {
+      symbol: ticker.trim().toUpperCase(),
+      name: `${ticker.trim().toUpperCase()} Corp`,
+      price: p,
+      change: 0,
+      changePercent: 0,
+      volume: '100K',
+      marketCap: '1B',
+      currency: cur,
+      country: marketContext === 'IN' ? 'India' : 'USA',
+    };
+
+    const success = executeTrade(mockStock, shares, 'BUY', 'Market');
+    setLoading(false);
+    if (success) {
       closeModal();
-      addToast('Position added successfully', 'success');
-    }, 800);
+      setTicker('');
+      setQuantity('');
+      setPrice('');
+      addToast(`Added position: ${shares} shares of ${ticker.toUpperCase()} at ${cur}${p.toFixed(2)}`, 'success');
+    }
   };
 
   return (
@@ -164,28 +203,49 @@ const AddPositionModal = () => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1">
             <label className="text-[10px] font-black uppercase text-text-muted tracking-wider">Asset Ticker</label>
-            <input required type="text" placeholder="e.g. AAPL" className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-primary outline-none uppercase transition-colors" />
+            <input 
+              required 
+              type="text" 
+              placeholder="e.g. AAPL or RELIANCE" 
+              value={ticker}
+              onChange={(e) => setTicker(e.target.value)}
+              className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-primary outline-none uppercase transition-colors" 
+            />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-text-muted tracking-wider">Quantity</label>
-              <input required type="number" min="0" step="any" placeholder="0.00" className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-primary outline-none transition-colors" />
+              <input 
+                required 
+                type="number" 
+                min="0.01" 
+                step="any" 
+                placeholder="10" 
+                value={quantity}
+                onChange={(e) => setQuantity(e.target.value)}
+                className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-primary outline-none transition-colors" 
+              />
             </div>
             <div className="space-y-1">
               <label className="text-[10px] font-black uppercase text-text-muted tracking-wider">Avg Price</label>
-              <input required type="number" min="0" step="any" placeholder="0.00" className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-primary outline-none transition-colors" />
+              <input 
+                required 
+                type="number" 
+                min="0.01" 
+                step="any" 
+                placeholder="150.00" 
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full bg-ui-bg border border-ui-border rounded-lg p-2.5 text-sm focus:border-primary outline-none transition-colors" 
+              />
             </div>
           </div>
           <div className="pt-4 flex gap-3">
             <button type="button" onClick={closeModal} className="flex-1 py-2.5 rounded-lg border border-ui-border text-text-main hover:bg-ui-surface-hover transition-colors text-sm font-bold">
               Cancel
             </button>
-            <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg bg-primary text-ui-bg hover:bg-primary-light transition-colors text-sm font-bold flex items-center justify-center">
-              {loading ? (
-                <span className="w-4 h-4 rounded-full border-2 border-ui-bg border-t-transparent animate-spin" />
-              ) : (
-                'Add Position'
-              )}
+            <button type="submit" disabled={loading} className="flex-1 py-2.5 rounded-lg bg-primary text-ui-bg hover:bg-primary-light font-bold text-sm transition-all flex items-center justify-center">
+              {loading ? <span className="w-4 h-4 rounded-full border-2 border-ui-bg border-t-transparent animate-spin" /> : 'Confirm Position'}
             </button>
           </div>
         </form>
@@ -334,11 +394,12 @@ const AssetDetailsDrawer = () => {
 // --- MODIFY ALLOCATION MODAL ---
 const ModifyAllocationModal = () => {
   const { activeModal, modalData, closeModal, addToast } = useUI();
+  const { modifyHoldingAllocation } = usePortfolio();
   const [allocation, setAllocation] = useState(0);
   const [loading, setLoading] = useState(false);
   
   useEffect(() => {
-    if (modalData?.currentAllocation) {
+    if (modalData?.currentAllocation !== undefined) {
       setAllocation(modalData.currentAllocation);
     }
   }, [modalData]);
@@ -348,11 +409,15 @@ const ModifyAllocationModal = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const sym = modalData?.stock?.symbol || modalData?.symbol;
+    if (sym) {
+      modifyHoldingAllocation(sym, allocation);
+    }
     setTimeout(() => {
       setLoading(false);
       closeModal();
-      addToast('Allocation updated successfully', 'success');
-    }, 800);
+      addToast(`Target allocation for ${sym || 'Asset'} updated to ${allocation}%`, 'success');
+    }, 400);
   };
 
   const currentAllocation = modalData?.currentAllocation || 0;
@@ -461,6 +526,7 @@ export const UIManager = () => {
         {activeModal === 'add-position' && <AddPositionModal key="add-pos" />}
         {activeModal === 'asset-details' && <AssetDetailsDrawer key="asset-details" />}
         {activeModal === 'modify-allocation' && <ModifyAllocationModal key="modify-allocation" />}
+        {activeModal === 'reset-portfolio' && <ResetPortfolioModal key="reset-portfolio" />}
       </AnimatePresence>
     </>
   );

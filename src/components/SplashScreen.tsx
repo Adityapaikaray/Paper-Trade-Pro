@@ -20,8 +20,8 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onComplete, 800); // Wait for exit animation to finish
-    }, 1500);
+      setTimeout(onComplete, 300); // Quick transition
+    }, 700);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
@@ -33,8 +33,12 @@ const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
           key="splash"
           initial={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.6, ease: "easeInOut" }}
-          className="fixed inset-0 z-[99999] flex flex-col items-center justify-between text-text-main overflow-hidden"
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          onClick={() => {
+            setIsVisible(false);
+            onComplete();
+          }}
+          className="fixed inset-0 z-[99999] flex flex-col items-center justify-between text-text-main overflow-hidden cursor-pointer"
           style={{
             background: theme === 'light' 
               ? 'linear-gradient(to bottom, var(--ui-bg), #F5F2EB)' 

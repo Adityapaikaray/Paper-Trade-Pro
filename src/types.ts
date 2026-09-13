@@ -29,6 +29,7 @@ export interface Holding {
   symbol: string;
   shares: number;
   averagePrice: number;
+  targetAllocation?: number;
 }
 
 export interface Transaction {
@@ -38,6 +39,30 @@ export interface Transaction {
   shares: number;
   price: number;
   timestamp: number;
+}
+
+export interface OrderItem {
+  id: string;
+  symbol: string;
+  companyName: string;
+  type: 'BUY' | 'SELL';
+  quantity: number;
+  orderPrice: number;
+  executionPrice: number;
+  currency: string;
+  status: 'FILLED' | 'PENDING' | 'CANCELLED';
+  timestamp: number;
+  orderType: 'Market' | 'Limit' | 'Stop-Loss';
+}
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  timestamp: number;
+  read: boolean;
+  type: 'order' | 'allocation' | 'price' | 'milestone' | 'watchlist' | 'system';
+  symbol?: string;
 }
 
 export interface PriceAlert {
@@ -50,7 +75,9 @@ export interface PriceAlert {
 
 export interface HistoryPoint {
   timestamp: number;
-  value: number;
+  investedValue: number;
+  currentValue: number;
+  value?: number;
 }
 
 export interface Currency {
@@ -83,10 +110,14 @@ export interface UserProfile {
   balances: { [currency: string]: number };
   holdings: Holding[];
   transactions: Transaction[];
+  orders: OrderItem[];
   watchlist: string[];
   alerts: PriceAlert[];
+  notifications: AppNotification[];
   history: HistoryPoint[];
+  targetAllocations?: { [symbol: string]: number };
   preferredCurrency?: Currency;
+  isPortfolioReset?: boolean;
 }
 export interface NewsArticle {
   uuid: string;

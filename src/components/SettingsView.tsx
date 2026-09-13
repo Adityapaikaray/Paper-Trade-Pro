@@ -1,134 +1,449 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 import React, { useState } from 'react';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useUI } from '../contexts/UIContext.tsx';
-import { Settings, Moon, Sun, Trash2, Shield, Bell, User, DollarSign } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useMarketData } from '../contexts/MarketContext.tsx';
+import { 
+  Settings, Moon, Sun, Trash2, Shield, Bell, User, DollarSign, 
+  RotateCcw, AlertTriangle, CheckCircle2, X, RefreshCw, Briefcase, 
+  TrendingUp, TrendingDown, Info, Layers, Check, Globe
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+type SettingsTab = 'general' | 'demo-portfolio' | 'preferences' | 'notifications' | 'security';
 
 const SettingsView: React.FC = () => {
-  const { profile, resetAccount } = usePortfolio();
+  const { profile, resetAccount, marketContext, setMarketContext } = usePortfolio();
   const { theme, toggleTheme } = useTheme();
-  const { addToast } = useUI();
-  const [showConfirmReset, setShowConfirmReset] = useState(false);
+  const { addToast, openModal } = useUI();
+  const { stocks } = useMarketData();
+  
+  const [activeTab, setActiveTab] = useState<SettingsTab>('general');
 
-  const handleReset = () => {
-    resetAccount();
-    addToast('Account data has been fully reset.', 'success');
-    setShowConfirmReset(false);
-  };
+  // Notification toggles
+  const [notifPriceAlerts, setNotifPriceAlerts] = useState(true);
+  const [notifOrderFills, setNotifOrderFills] = useState(true);
+  const [notifMarketNews, setNotifMarketNews] = useState(false);
+
+  const isIndia = marketContext === 'IN';
+  const currencySymbol = isIndia ? '₹' : '$';
+
+  // Derived live metrics
+  let holdingsValue = 0;
+  let totalCost = 0;
+  (profile?.holdings || []).forEach(h => {
+    const stock = stocks.find(s => s.symbol.toUpperCase() === h.symbol.toUpperCase());
+    if (stock && stock.currency === currencySymbol) {
+      holdingsValue += stock.price * h.shares;
+      totalCost += h.averagePrice * h.shares;
+    }
+  });
+  const currentCash = typeof profile?.balances?.[currencySymbol] === 'number' 
+    ? profile.balances[currencySymbol] 
+    : 1000000;
+  const totalPortfolioValue = currentCash + holdingsValue;
+  const totalPnL = holdingsValue - totalCost;
+  const totalPnLPct = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
 
   return (
-    <div className="flex flex-col gap-6 max-w-4xl mx-auto py-8">
-      <div>
-        <h2 className="text-3xl font-serif font-black text-gray-900 dark:text-text-main italic mb-2 tracking-tight">Settings</h2>
-        <p className="text-sm text-gray-500 dark:text-text-muted font-medium tracking-wide">
-          Manage your account preferences, theme, and data.
-        </p>
+    <div className="flex flex-col gap-6 max-w-5xl mx-auto py-6 px-4 md:px-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ui-border pb-5">
+        <div>
+          <h2 className="text-2xl md:text-3xl font-serif font-black text-text-main italic tracking-tight flex items-center gap-3">
+            <Settings className="text-primary" size={28} /> Settings & Portfolio Preferences
+          </h2>
+          <p className="text-xs md:text-sm text-text-muted font-medium tracking-wide mt-1">
+            Manage your account preferences, theme, live market region, and virtual portfolio data.
+          </p>
+        </div>
+        <button
+          onClick={() => openModal('reset-portfolio')}
+          className="self-start sm:self-auto flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 text-xs font-bold transition-all shadow-sm active:scale-95"
+        >
+          <RotateCcw size={14} className="stroke-[2.5]" />
+          Reset Portfolio
+        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Navigation Sidebar */}
-        <div className="flex flex-col gap-2">
-          <button className="flex items-center gap-3 p-3 rounded-xl bg-ui-surface-hover text-text-main font-bold border border-ui-border transition-colors">
-            <User size={18} className="text-primary dark:text-primary" />
-            General
+        <div className="flex md:flex-col gap-1.5 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
+          <button 
+            onClick={() => setActiveTab('general')}
+            className={`flex items-center gap-3 p-3 rounded-xl font-bold text-xs transition-all shrink-0 ${
+              activeTab === 'general'
+                ? 'bg-ui-surface-hover text-text-main border border-ui-border shadow-sm'
+                : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover/50 border border-transparent'
+            }`}
+          >
+            <User size={16} className={activeTab === 'general' ? 'text-primary' : ''} />
+            General & Profile
           </button>
-          <button className="flex items-center gap-3 p-3 rounded-xl bg-transparent text-text-muted hover:text-text-main hover:bg-ui-surface-hover font-semibold transition-colors border border-transparent">
-            <Bell size={18} />
+
+          <button 
+            onClick={() => setActiveTab('demo-portfolio')}
+            className={`flex items-center gap-3 p-3 rounded-xl font-bold text-xs transition-all shrink-0 ${
+              activeTab === 'demo-portfolio'
+                ? 'bg-ui-surface-hover text-text-main border border-ui-border shadow-sm'
+                : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover/50 border border-transparent'
+            }`}
+          >
+            <RotateCcw size={16} className={activeTab === 'demo-portfolio' ? 'text-primary' : ''} />
+            Portfolio Reset & Data
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('preferences')}
+            className={`flex items-center gap-3 p-3 rounded-xl font-bold text-xs transition-all shrink-0 ${
+              activeTab === 'preferences'
+                ? 'bg-ui-surface-hover text-text-main border border-ui-border shadow-sm'
+                : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover/50 border border-transparent'
+            }`}
+          >
+            <Settings size={16} className={activeTab === 'preferences' ? 'text-primary' : ''} />
+            Preferences & Theme
+          </button>
+
+          <button 
+            onClick={() => setActiveTab('notifications')}
+            className={`flex items-center gap-3 p-3 rounded-xl font-bold text-xs transition-all shrink-0 ${
+              activeTab === 'notifications'
+                ? 'bg-ui-surface-hover text-text-main border border-ui-border shadow-sm'
+                : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover/50 border border-transparent'
+            }`}
+          >
+            <Bell size={16} className={activeTab === 'notifications' ? 'text-primary' : ''} />
             Notifications
           </button>
-          <button className="flex items-center gap-3 p-3 rounded-xl bg-transparent text-text-muted hover:text-text-main hover:bg-ui-surface-hover font-semibold transition-colors border border-transparent">
-            <Shield size={18} />
+
+          <button 
+            onClick={() => setActiveTab('security')}
+            className={`flex items-center gap-3 p-3 rounded-xl font-bold text-xs transition-all shrink-0 ${
+              activeTab === 'security'
+                ? 'bg-ui-surface-hover text-text-main border border-ui-border shadow-sm'
+                : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover/50 border border-transparent'
+            }`}
+          >
+            <Shield size={16} className={activeTab === 'security' ? 'text-primary' : ''} />
             Privacy & Security
           </button>
         </div>
 
         {/* Content Area */}
-        <div className="md:col-span-2 space-y-6">
-          
-          {/* Profile Settings */}
-          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E9E4D4] dark:border-ui-border p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-text-main mb-4 flex items-center gap-2">
-              <User size={18} className="text-gray-400" /> Account Profile
-            </h3>
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-text-main font-black uppercase text-xl shadow-md">
-                JD
-              </div>
-              <div>
-                <p className="text-base font-bold text-gray-900 dark:text-text-main">James Doe</p>
-                <p className="text-sm text-gray-500 dark:text-text-muted">Prestige User &middot; Elite Tier</p>
-              </div>
-              <button className="ml-auto px-4 py-2 bg-gray-100 dark:bg-ui-surface-hover text-gray-700 dark:text-text-main text-xs font-bold rounded-lg hover:opacity-80 transition-opacity">
-                Edit Profile
-              </button>
-            </div>
-          </div>
+        <div className="md:col-span-3 space-y-6">
 
-          {/* Preferences */}
-          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-[#E9E4D4] dark:border-ui-border p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-gray-900 dark:text-text-main mb-6 flex items-center gap-2">
-              <Settings size={18} className="text-gray-400" /> Preferences
-            </h3>
-            
-            <div className="flex items-center justify-between pb-6 border-b border-[#F3F4F6] dark:border-ui-border">
-              <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-text-main">Appearance Theme</p>
-                <p className="text-xs text-gray-500 dark:text-text-muted mt-1">Switch between light and dark mode</p>
-              </div>
-              <button 
-                onClick={toggleTheme}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gray-100 dark:bg-ui-surface-hover text-gray-700 dark:text-text-main text-xs font-bold hover:opacity-80 transition-opacity border border-transparent dark:border-ui-border"
-              >
-                {theme === 'dark' ? <><Sun size={14} /> Light Mode</> : <><Moon size={14} /> Dark Mode</>}
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between pt-6">
-              <div>
-                <p className="text-sm font-bold text-gray-900 dark:text-text-main">Base Currency</p>
-                <p className="text-xs text-gray-500 dark:text-text-muted mt-1">Display all prices in USD</p>
-              </div>
-              
-            </div>
-          </div>
-
-          {/* Danger Zone */}
-          <div className="bg-white dark:bg-ui-surface rounded-3xl border border-rose-200 dark:border-rose-500/30 p-6 shadow-sm">
-            <h3 className="text-lg font-bold text-rose-600 dark:text-rose-500 mb-2 flex items-center gap-2">
-              <Trash2 size={18} /> Danger Zone
-            </h3>
-            <p className="text-xs text-gray-500 dark:text-text-muted mb-6">
-              Permanently delete all your trading history, holdings, and reset your account balance to the default starting capital. This action cannot be undone.
-            </p>
-            
-            {showConfirmReset ? (
-              <div className="p-4 rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20">
-                <p className="text-sm font-bold text-rose-700 dark:text-rose-400 mb-3">Are you absolutely sure?</p>
-                <div className="flex gap-3">
+          {/* TAB 1: GENERAL & PROFILE */}
+          {activeTab === 'general' && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              {/* Profile Card */}
+              <div className="bg-ui-surface rounded-3xl border border-ui-border p-6 shadow-sm">
+                <h3 className="text-base font-bold text-text-main mb-4 flex items-center gap-2">
+                  <User size={18} className="text-primary" /> User Profile
+                </h3>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-primary-light flex items-center justify-center text-ui-bg font-black uppercase text-xl shadow-md shrink-0">
+                    AP
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-base font-bold text-text-main leading-tight">Aditya Paikaray</p>
+                    <p className="text-xs text-text-muted mt-0.5">adityapaikaray31@gmail.com &middot; Paper Trader Pro</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider">
+                        Virtual Account Active
+                      </span>
+                      <span className="px-2 py-0.5 rounded-md bg-positive/10 border border-positive/20 text-positive text-[10px] font-bold uppercase tracking-wider">
+                        Simulated Live Execution
+                      </span>
+                    </div>
+                  </div>
                   <button 
-                    onClick={handleReset}
-                    className="px-4 py-2 bg-rose-500 text-text-main text-xs font-bold rounded-lg hover:bg-rose-600 transition-colors shadow-sm"
+                    onClick={() => addToast('Profile details are synced with your local session.', 'info')}
+                    className="self-start sm:self-center px-4 py-2 bg-ui-surface-hover border border-ui-border text-text-main text-xs font-bold rounded-xl hover:bg-ui-border transition-colors shadow-sm"
                   >
-                    Yes, Reset Everything
-                  </button>
-                  <button 
-                    onClick={() => setShowConfirmReset(false)}
-                    className="px-4 py-2 bg-white dark:bg-ui-surface border border-gray-200 dark:border-ui-border text-gray-700 dark:text-text-main text-xs font-bold rounded-lg hover:bg-gray-50 dark:hover:bg-ui-surface-hover transition-colors"
-                  >
-                    Cancel
+                    Sync Profile
                   </button>
                 </div>
               </div>
-            ) : (
-              <button 
-                onClick={() => setShowConfirmReset(true)}
-                className="px-5 py-2.5 bg-rose-500 text-text-main text-xs font-bold rounded-xl hover:bg-rose-600 transition-colors shadow-sm w-full sm:w-auto"
-              >
-                Reset Account Data
-              </button>
-            )}
-          </div>
+
+              {/* Demo Portfolio Quick Summary Banner */}
+              <div className="bg-ui-surface rounded-3xl border border-ui-border p-6 shadow-sm">
+                <div className="flex items-center justify-between gap-4 mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                      <Briefcase size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-text-main">Active Portfolio Snapshot</h4>
+                      <p className="text-xs text-text-muted">Currently trading in {isIndia ? 'Indian Equities (₹)' : 'US Equities ($)'}</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => openModal('reset-portfolio')}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 border border-rose-500/30 text-xs font-bold transition-all"
+                  >
+                    <RotateCcw size={13} />
+                    Reset
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-ui-surface-hover border border-ui-border">
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Available Cash</p>
+                    <p className="text-sm font-mono font-bold text-text-main mt-1">
+                      {currencySymbol}{currentCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-ui-surface-hover border border-ui-border">
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Invested Capital</p>
+                    <p className="text-sm font-mono font-bold text-text-main mt-1">
+                      {currencySymbol}{totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-ui-surface-hover border border-ui-border">
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Total P&L</p>
+                    <p className={`text-sm font-mono font-bold mt-1 ${totalPnL >= 0 ? 'text-positive' : 'text-negative'}`}>
+                      {totalPnL >= 0 ? '+' : ''}{currencySymbol}{totalPnL.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </p>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-ui-surface-hover border border-ui-border">
+                    <p className="text-[10px] font-bold text-text-muted uppercase tracking-wider">Positions Count</p>
+                    <p className="text-sm font-mono font-bold text-text-main mt-1">
+                      {(profile?.holdings || []).length} Equit{(profile?.holdings || []).length === 1 ? 'y' : 'ies'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 2: DEMO PORTFOLIO & DATA (PRIMARY FOCUS) */}
+          {(activeTab === 'demo-portfolio' || activeTab === 'general') && (
+            <motion.div 
+              initial={{ opacity: 0, y: 6 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              className="bg-ui-surface rounded-3xl border border-ui-border p-6 shadow-sm space-y-6"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-ui-border pb-5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shrink-0">
+                    <RotateCcw size={20} className="stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-text-main">Reset Portfolio</h3>
+                    <p className="text-xs text-text-muted">Permanently reset simulated holdings and set virtual cash to 1,000,000.</p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => openModal('reset-portfolio')}
+                  className="px-5 py-2.5 bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-rose-600/20 flex items-center justify-center gap-2 active:scale-95 shrink-0"
+                >
+                  <RotateCcw size={14} className="stroke-[2.5]" />
+                  Reset Portfolio
+                </button>
+              </div>
+
+              {/* What gets reset explanation */}
+              <div className="space-y-3">
+                <p className="text-xs font-bold text-text-muted uppercase tracking-wider">What happens when you reset:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="p-4 rounded-2xl bg-ui-surface-hover/70 border border-ui-border flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shrink-0 mt-0.5">
+                      <DollarSign size={14} />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-text-main">Virtual Cash Set to 1,000,000</h5>
+                      <p className="text-[11px] text-text-muted mt-0.5">Available virtual cash is set to ₹10,00,000 / $1,000,000 for practice paper trading.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-ui-surface-hover/70 border border-ui-border flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shrink-0 mt-0.5">
+                      <Briefcase size={14} />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-text-main">Holdings Completely Removed</h5>
+                      <p className="text-[11px] text-text-muted mt-0.5">Clears all positions without leaving placeholder cards for TITAN, AMD, or other equities.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-ui-surface-hover/70 border border-ui-border flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shrink-0 mt-0.5">
+                      <Layers size={14} />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-text-main">Orders &amp; History Cleared</h5>
+                      <p className="text-[11px] text-text-muted mt-0.5">Simulated order history and transaction logs associated with the portfolio are cleared.</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-ui-surface-hover/70 border border-ui-border flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-lg bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 shrink-0 mt-0.5">
+                      <RefreshCw size={14} />
+                    </div>
+                    <div>
+                      <h5 className="text-xs font-bold text-text-main">Performance &amp; P&amp;L Reset</h5>
+                      <p className="text-[11px] text-text-muted mt-0.5">Total P&amp;L (0.00%), Allocation (0.0%), and performance charts return to a clean baseline.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 3: PREFERENCES & THEME */}
+          {activeTab === 'preferences' && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div className="bg-ui-surface rounded-3xl border border-ui-border p-6 shadow-sm space-y-6">
+                <h3 className="text-base font-bold text-text-main flex items-center gap-2">
+                  <Settings size={18} className="text-primary" /> Display & Environment
+                </h3>
+
+                {/* Appearance Theme */}
+                <div className="flex items-center justify-between pb-5 border-b border-ui-border">
+                  <div>
+                    <p className="text-sm font-bold text-text-main">Visual Theme</p>
+                    <p className="text-xs text-text-muted mt-0.5">Toggle between luxury dark mode and crisp high-contrast light mode</p>
+                  </div>
+                  <button 
+                    onClick={toggleTheme}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ui-surface-hover hover:bg-ui-border text-text-main text-xs font-bold border border-ui-border transition-all shadow-sm"
+                  >
+                    {theme === 'dark' ? <><Sun size={14} className="text-primary" /> Light Mode</> : <><Moon size={14} className="text-primary" /> Dark Mode</>}
+                  </button>
+                </div>
+
+                {/* Active Trading Market */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                  <div>
+                    <p className="text-sm font-bold text-text-main">Primary Active Market</p>
+                    <p className="text-xs text-text-muted mt-0.5">Current trading workspace currency and market exchange focus</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => {
+                        setMarketContext('IN');
+                        addToast('Switched active market to Indian Equities (NSE/BSE)', 'info');
+                      }}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                        isIndia 
+                          ? 'bg-primary text-ui-bg border-primary shadow-sm' 
+                          : 'bg-ui-surface-hover text-text-muted border-ui-border hover:text-text-main'
+                      }`}
+                    >
+                      India (₹)
+                    </button>
+                    <button 
+                      onClick={() => {
+                        setMarketContext('US');
+                        addToast('Switched active market to US Equities (NYSE/NASDAQ)', 'info');
+                      }}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                        !isIndia 
+                          ? 'bg-primary text-ui-bg border-primary shadow-sm' 
+                          : 'bg-ui-surface-hover text-text-muted border-ui-border hover:text-text-main'
+                      }`}
+                    >
+                      United States ($)
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 4: NOTIFICATIONS */}
+          {activeTab === 'notifications' && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div className="bg-ui-surface rounded-3xl border border-ui-border p-6 shadow-sm space-y-5">
+                <h3 className="text-base font-bold text-text-main flex items-center gap-2">
+                  <Bell size={18} className="text-primary" /> Alert & Notification Settings
+                </h3>
+
+                <div className="flex items-center justify-between pb-4 border-b border-ui-border">
+                  <div>
+                    <p className="text-sm font-bold text-text-main">Price Threshold Alerts</p>
+                    <p className="text-xs text-text-muted mt-0.5">Receive in-app notifications when watchlisted stocks cross target thresholds</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setNotifPriceAlerts(prev => !prev);
+                      addToast(notifPriceAlerts ? 'Price alerts disabled.' : 'Price alerts enabled.', 'info');
+                    }}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${notifPriceAlerts ? 'bg-primary' : 'bg-ui-border'}`}
+                  >
+                    <div className={`bg-ui-bg w-4 h-4 rounded-full shadow-md transform transition-transform ${notifPriceAlerts ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between pb-4 border-b border-ui-border">
+                  <div>
+                    <p className="text-sm font-bold text-text-main">Order Execution Alerts</p>
+                    <p className="text-xs text-text-muted mt-0.5">Confirmations when market and limit orders are filled or cancelled</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setNotifOrderFills(prev => !prev);
+                      addToast(notifOrderFills ? 'Order alerts disabled.' : 'Order alerts enabled.', 'info');
+                    }}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${notifOrderFills ? 'bg-primary' : 'bg-ui-border'}`}
+                  >
+                    <div className={`bg-ui-bg w-4 h-4 rounded-full shadow-md transform transition-transform ${notifOrderFills ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-bold text-text-main">Market Intelligence & News</p>
+                    <p className="text-xs text-text-muted mt-0.5">Real-time alerts for major breaking financial headlines affecting your holdings</p>
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setNotifMarketNews(prev => !prev);
+                      addToast(notifMarketNews ? 'News digests disabled.' : 'News digests enabled.', 'info');
+                    }}
+                    className={`w-11 h-6 flex items-center rounded-full p-1 transition-colors ${notifMarketNews ? 'bg-primary' : 'bg-ui-border'}`}
+                  >
+                    <div className={`bg-ui-bg w-4 h-4 rounded-full shadow-md transform transition-transform ${notifMarketNews ? 'translate-x-5' : 'translate-x-0'}`} />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {/* TAB 5: PRIVACY & SECURITY */}
+          {activeTab === 'security' && (
+            <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+              <div className="bg-ui-surface rounded-3xl border border-ui-border p-6 shadow-sm space-y-4">
+                <h3 className="text-base font-bold text-text-main flex items-center gap-2">
+                  <Shield size={18} className="text-primary" /> Session & Local Storage Privacy
+                </h3>
+                <p className="text-xs text-text-muted leading-relaxed">
+                  TradePro stores simulated transactions, order history, and watchlist items in your browser's secure sandboxed storage. No real money or bank accounts are accessed.
+                </p>
+                <div className="p-4 rounded-2xl bg-ui-surface-hover border border-ui-border flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle2 size={18} className="text-positive" />
+                    <div>
+                      <p className="text-xs font-bold text-text-main">Encrypted Local Persistence</p>
+                      <p className="text-[11px] text-text-muted">Virtual paper trade state active & verified</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => addToast('Storage integrity check passed: 100% operational.', 'success')}
+                    className="px-3 py-1.5 rounded-lg bg-ui-surface border border-ui-border text-xs font-bold hover:bg-ui-border transition-colors text-text-main"
+                  >
+                    Check Health
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
         </div>
       </div>

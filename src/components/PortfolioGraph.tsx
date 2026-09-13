@@ -3,253 +3,397 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useMemo, useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import {
-  AreaChart,
+  ResponsiveContainer,
+  ComposedChart,
   Area,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-  Brush,
 } from 'recharts';
 import { HistoryPoint } from '../types.ts';
-import { motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext.tsx';
+import { TrendingUp, TrendingDown, Inbox } from 'lucide-react';
 
-interface PortfolioGraphProps {
-  history: HistoryPoint[];
-  currentValue?: number; // In USD
+export interface PortfolioGraphProps {
+  investedValue?: number;
+  currentValue?: number;
+  history?: HistoryPoint[];
   currencySymbol?: string;
-  currencyRate?: number;
-  baseline?: number; // In USD
+  timeRange?: string;
+  onTimeRangeChange?: (range: string) => void;
+  isReset?: boolean;
   premiumMode?: boolean;
 }
 
-const PortfolioGraph: React.FC<PortfolioGraphProps> = ({ history, currentValue, currencySymbol = '$', currencyRate = 1, baseline = 112000, premiumMode = false }) => {
-  const [timeRange, setTimeRange] = useState<'1m' | '5m' | '15m' | 'ALL'>('ALL');
+const FILTERS = ['1D', '1W', '1M', '3M', '6M', '1Y', 'ALL'];
+
+interface ChartDataPoint {
+  timestamp: number;
+  time: string;
+  fullDate: string;
+  investedValue: number;
+  currentValue: number;
+}
+
+export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
+  investedValue = 0,
+  currentValue = 0,
+  history = [],
+  currencySymbol = '₹',
+  timeRange = '1M',
+  onTimeRangeChange,
+  isReset = false,
+  premiumMode = false,
+}) => {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const [now, setNow] = useState(Date.now());
 
-  // Force a re-render every second to keep the "live" point moving on the x-axis
-  useEffect(() => {
-    const timer = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+  const safeInvested = Math.max(0, isReset ? 0 : investedValue);
+  const safeCurrent = Math.max(0, isReset ? 0 : currentValue);
+  const isPortfolioEmpty = isReset || (safeInvested === 0 && safeCurrent === 0);
 
-  const filteredData = useMemo(() => {
-    let data = [...history];
-    
-    // Add real-time point if provided
-    if (currentValue !== undefined) {
-      data.push({ timestamp: now, value: currentValue });
+  // Return & P&L calculation strictly between Current Value and Invested Value (zero cash)
+  const pnl = safeCurrent - safeInvested;
+  const returnPct = safeInvested > 0 ? (pnl / safeInvested) * 100 : 0;
+  const isGain = pnl >= 0;
+
+  // Format currency with standard commas and two decimal places
+  const formatCurrency = (val: number) => {
+    return `${currencySymbol}${val.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  };
+
+  // Format date strictly matching the user prompt standard: "13 Sept 2026"
+  const formatDateLabel = (ts: number, includeTime = false) => {
+    const d = new Date(ts);
+    const day = d.getDate();
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'];
+    const month = months[d.getMonth()];
+    const year = d.getFullYear();
+    if (includeTime) {
+      const hours = d.getHours().toString().padStart(2, '0');
+      const mins = d.getMinutes().toString().padStart(2, '0');
+      return `${day} ${month} ${year}, ${hours}:${mins}`;
+    }
+    return `${day} ${month} ${year}`;
+  };
+
+  // Generate historical simulation dataset comparing Invested Value vs Current Value
+  const chartData: ChartDataPoint[] = useMemo(() => {
+    if (isPortfolioEmpty) {
+      return [];
     }
 
-    if (data.length === 0) return [];
-    
-    const currentTime = Date.now();
-    let cutoff = 0;
-    
+    const now = Date.now();
+    const points: ChartDataPoint[] = [];
+
+    // Configuration for different time horizons
+    let pointCount = 30;
+    let stepMs = 24 * 60 * 60 * 1000; // 1 day default
+    let isIntraday = false;
+
     switch (timeRange) {
-      case '1m': cutoff = currentTime - 60 * 1000; break;
-      case '5m': cutoff = currentTime - 5 * 60 * 1000; break;
-      case '15m': cutoff = currentTime - 15 * 60 * 1000; break;
-      case 'ALL': cutoff = 0; break;
+      case '1D':
+        pointCount = 20;
+        stepMs = 20 * 60 * 1000; // 20 mins across active hours
+        isIntraday = true;
+        break;
+      case '1W':
+        pointCount = 7;
+        stepMs = 24 * 60 * 60 * 1000;
+        break;
+      case '1M':
+        pointCount = 30;
+        stepMs = 24 * 60 * 60 * 1000;
+        break;
+      case '3M':
+        pointCount = 35;
+        stepMs = 2.5 * 24 * 60 * 60 * 1000;
+        break;
+      case '6M':
+        pointCount = 40;
+        stepMs = 4.5 * 24 * 60 * 60 * 1000;
+        break;
+      case '1Y':
+        pointCount = 45;
+        stepMs = 8 * 24 * 60 * 60 * 1000;
+        break;
+      case 'ALL':
+        pointCount = 50;
+        stepMs = 12 * 24 * 60 * 60 * 1000;
+        break;
+      default:
+        pointCount = 30;
+        stepMs = 24 * 60 * 60 * 1000;
     }
-    
-    return data
-      .filter(p => p.timestamp >= cutoff)
-      .map(p => ({
-        time: new Date(p.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-        value: parseFloat((p.value * currencyRate).toFixed(2)),
-        timestamp: p.timestamp,
-        raw: p.value
-      }));
-  }, [history, timeRange, currencyRate, currentValue, now]);
 
-  const { minVal, maxVal, gradientOffset } = useMemo(() => {
-    if (filteredData.length === 0) return { minVal: 0, maxVal: 0, gradientOffset: 0 };
-    const values = filteredData.map(d => d.value);
-    const min = Math.min(...values, baseline * currencyRate);
-    const max = Math.max(...values, baseline * currencyRate);
+    // Determine starting value for current market value simulation trajectory
+    // In ALL/1Y/6M/3M, assets start near purchase cost and grow towards current value
+    const growthRatio = safeInvested > 0 ? safeCurrent / safeInvested : 1;
+    let initialCurrentVal = safeInvested;
     
-    if (max === min) return { minVal: min, maxVal: max, gradientOffset: 0 };
-    
-    // Calculate color transition point (baseline) as a percentage of total height
-    const offset = (max - (baseline * currencyRate)) / (max - min);
-    return { minVal: min, maxVal: max, gradientOffset: offset };
-  }, [filteredData, baseline, currencyRate]);
+    if (timeRange === '1D') {
+      // Intraday fluctuates around recent opening price
+      initialCurrentVal = safeCurrent * (1 - (isGain ? 0.015 : -0.012));
+    } else if (timeRange === '1W') {
+      initialCurrentVal = safeCurrent * (1 - (isGain ? 0.04 : -0.03));
+    } else if (timeRange === '1M') {
+      initialCurrentVal = safeInvested * (growthRatio > 1 ? 1.05 : 0.95);
+    } else {
+      initialCurrentVal = safeInvested * 0.98;
+    }
 
-  if (filteredData.length < 2) {
+    for (let i = 0; i < pointCount - 1; i++) {
+      const progress = i / (pointCount - 1);
+      const ts = now - (pointCount - 1 - i) * stepMs;
+      const d = new Date(ts);
+
+      // Invested Value represents cumulative capital invested into holdings
+      // Stepped slightly over longer periods to reflect order placement, flat for shorter
+      let ptInvested = safeInvested;
+      if ((timeRange === '6M' || timeRange === '1Y' || timeRange === 'ALL') && progress < 0.3) {
+        ptInvested = safeInvested * (0.75 + progress * 0.83);
+      }
+
+      // Smooth geometric interpolation towards live current value with realistic market oscillation
+      const baseTrend = initialCurrentVal + (safeCurrent - initialCurrentVal) * Math.pow(progress, 1.15);
+      const waveNoise = Math.sin(progress * Math.PI * 3.5) * (safeCurrent * 0.015) +
+                        Math.cos(progress * Math.PI * 5) * (safeCurrent * 0.008);
+      const ptCurrent = Math.max(0, Number((baseTrend + waveNoise).toFixed(2)));
+
+      const timeLabel = isIntraday
+        ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`;
+
+      points.push({
+        timestamp: ts,
+        time: timeLabel,
+        fullDate: formatDateLabel(ts, isIntraday),
+        investedValue: Number(ptInvested.toFixed(2)),
+        currentValue: ptCurrent,
+      });
+    }
+
+    // Anchor the very last data point to the EXACT current live holdings value and invested cost
+    const lastDate = new Date(now);
+    points.push({
+      timestamp: now,
+      time: isIntraday
+        ? lastDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        : `${lastDate.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][lastDate.getMonth()]}`,
+      fullDate: formatDateLabel(now, isIntraday),
+      investedValue: Number(safeInvested.toFixed(2)),
+      currentValue: Number(safeCurrent.toFixed(2)),
+    });
+
+    return points;
+  }, [isPortfolioEmpty, safeInvested, safeCurrent, timeRange, isGain]);
+
+  // Determine Y-axis domain boundaries for proper padding
+  const { yMin, yMax } = useMemo(() => {
+    if (chartData.length === 0) return { yMin: 0, yMax: 100 };
+    const allInvested = chartData.map(d => d.investedValue);
+    const allCurrent = chartData.map(d => d.currentValue);
+    const min = Math.min(...allInvested, ...allCurrent);
+    const max = Math.max(...allInvested, ...allCurrent);
+    const padding = Math.max((max - min) * 0.12, min * 0.05, 100);
+
+    return {
+      yMin: Math.max(0, Math.floor(min - padding)),
+      yMax: Math.ceil(max + padding),
+    };
+  }, [chartData]);
+
+  // Render proper zero state if portfolio is reset or empty
+  if (isPortfolioEmpty) {
     return (
-      <div className="h-64 flex flex-col items-center justify-center bg-ui-surface rounded-3xl border border-dashed border-ui-border">
-        <p className="text-xs font-black text-text-muted uppercase tracking-widest">Collecting Market Intel...</p>
-        <p className="text-[10px] text-text-muted mt-2">Graph will populate shortly</p>
+      <div 
+        id="portfolio-graph-empty-state"
+        className="h-full w-full min-h-[360px] flex flex-col items-center justify-center bg-ui-surface rounded-2xl border border-dashed border-ui-border p-8 text-center relative overflow-hidden"
+      >
+        <div className="w-14 h-14 rounded-full bg-ui-bg flex items-center justify-center border border-ui-border mb-4 shadow-inner">
+          <Inbox size={26} className="text-text-muted" />
+        </div>
+        <h4 className="text-base font-bold text-text-main mb-1 tracking-tight">No Active Portfolio Assets</h4>
+        <p className="text-sm font-mono text-text-muted mb-4">
+          Invested Value: <span className="font-bold text-text-main">{currencySymbol}0.00</span> &bull; Current Value: <span className="font-bold text-text-main">{currencySymbol}0.00</span>
+        </p>
+        <p className="text-xs text-text-muted max-w-md leading-relaxed">
+          Available cash is preserved in your paper trading wallet. Execute a buy order or trade via AI Copilot to start charting your asset performance.
+        </p>
+
+        {/* Subtle decorative zero baseline */}
+        <div className="w-full max-w-sm h-[1px] bg-ui-border mt-6 relative">
+          <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 text-[10px] font-mono text-text-muted bg-ui-surface uppercase tracking-wider">
+            Zero Invested Baseline
+          </span>
+        </div>
       </div>
     );
   }
 
-  const latestValue = filteredData[filteredData.length - 1].value;
-  const isPositive = latestValue >= (baseline * currencyRate);
-  const strokeColor = isPositive ? '#10b981' : '#f43f5e';
-
   return (
-    <div className={`space-y-6 ${premiumMode ? 'h-full w-full' : ''}`}>
-      {!premiumMode && (
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2">
-            {(['1m', '5m', '15m', 'ALL'] as const).map((range) => (
-              <button
-                key={range}
-                onClick={() => setTimeRange(range)}
-                className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
-                  timeRange === range 
-                    ? 'bg-primary text-ui-bg shadow-lg shadow-primary/20 scale-105' 
-                    : 'text-text-muted hover:bg-ui-surface'
-                }`}
-              >
-                {range}
-              </button>
-            ))}
+    <div id="portfolio-performance-graph-container" className="flex flex-col h-full w-full">
+      {/* Legend and Realtime Series Status: Exactly two series */}
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-4 px-2">
+        <div className="flex items-center gap-6">
+          {/* Series 1: Invested Value */}
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-[2px] bg-[#D4AF37] border-b border-dashed border-[#D4AF37]" />
+            <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Invested Value</span>
+            <span className="text-xs font-mono font-bold text-text-main">
+              {formatCurrency(safeInvested)}
+            </span>
           </div>
-          <div className="text-right">
-            <div className="flex items-center justify-end gap-3">
-               <div className="text-right">
-                  <p className="text-[10px] font-black text-text-muted uppercase tracking-widest">Live Portfolio Performance</p>
-                  <div className="flex items-center gap-1.5 justify-end">
-                    <div className={`w-1.5 h-1.5 rounded-full animate-ping ${isPositive ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-                    <p className={`text-lg font-mono font-black italic ${isPositive ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {currencySymbol}{latestValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                    </p>
-                  </div>
-               </div>
-            </div>
+
+          {/* Series 2: Current Value */}
+          <div className="flex items-center gap-2">
+            <div className={`w-3 h-3 rounded-full ${isGain ? 'bg-positive shadow-[0_0_8px_rgba(0,208,132,0.4)]' : 'bg-negative shadow-[0_0_8px_rgba(244,63,94,0.4)]'}`} />
+            <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Current Value</span>
+            <span className={`text-xs font-mono font-bold ${isGain ? 'text-positive' : 'text-negative'}`}>
+              {formatCurrency(safeCurrent)}
+            </span>
           </div>
         </div>
-      )}
-      <div className={`${premiumMode ? 'h-[360px]' : 'h-80'} w-full`}>
+
+        {/* Live P&L Badge strictly derived from Current Value - Invested Value */}
+        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold border ${
+          isGain 
+            ? 'bg-positive/10 border-positive/30 text-positive' 
+            : 'bg-negative/10 border-negative/30 text-negative'
+        }`}>
+          {isGain ? <TrendingUp size={13} /> : <TrendingDown size={13} />}
+          <span>{isGain ? '+' : ''}{formatCurrency(pnl)} ({isGain ? '+' : ''}{returnPct.toFixed(2)}%)</span>
+        </div>
+      </div>
+
+      {/* Chart Canvas */}
+      <div className="flex-1 w-full min-h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={filteredData} margin={{ top: 10, right: premiumMode ? 40 : 10, left: 0, bottom: 0 }}>
+          <ComposedChart data={chartData} margin={{ top: 12, right: 35, left: 0, bottom: 5 }}>
             <defs>
-              {premiumMode ? (
-                <>
-                  <linearGradient id="premiumColor" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={isDark ? "#00D084" : "#00A878"} stopOpacity={0.4} />
-                    <stop offset="95%" stopColor={isDark ? "#00D084" : "#00A878"} stopOpacity={0.0} />
-                  </linearGradient>
-                </>
-              ) : (
-                <>
-                  <linearGradient id="splitColor" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset={gradientOffset} stopColor="#10b981" stopOpacity={0.6} />
-                    <stop offset={gradientOffset} stopColor="#f43f5e" stopOpacity={0.6} />
-                  </linearGradient>
-                  <linearGradient id="splitColorFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset={gradientOffset} stopColor="#10b981" stopOpacity={0.2} />
-                    <stop offset={gradientOffset} stopColor="#f43f5e" stopOpacity={0.2} />
-                  </linearGradient>
-                </>
-              )}
+              <linearGradient id="currentValueArea" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={isGain ? (isDark ? "#00D084" : "#00A878") : "#f43f5e"} stopOpacity={0.35} />
+                <stop offset="95%" stopColor={isGain ? (isDark ? "#00D084" : "#00A878") : "#f43f5e"} stopOpacity={0.0} />
+              </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ui-border)" opacity={0.5} />
-            <XAxis 
-              dataKey="time" 
+
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--ui-border)" opacity={0.4} />
+
+            <XAxis
+              dataKey="time"
               fontSize={10}
-              tickMargin={12}
+              tickMargin={10}
               axisLine={false}
               tickLine={false}
-              tick={{ fill: 'var(--text-muted)', fontWeight: premiumMode ? '600' : 'bold' }}
-              minTickGap={30}
+              tick={{ fill: 'var(--text-muted)', fontWeight: '600' }}
+              minTickGap={28}
             />
-            <YAxis 
+
+            <YAxis
               orientation="right"
-              domain={[minVal, maxVal]} 
-              hide={!premiumMode} 
+              domain={[yMin, yMax]}
               axisLine={false}
               tickLine={false}
               tick={{ fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 }}
               tickMargin={10}
-              tickFormatter={(val) => `${currencySymbol}${(val / 1000).toFixed(1)}K`}
+              tickFormatter={(val: number) => {
+                if (val >= 10000000) return `${currencySymbol}${(val / 10000000).toFixed(1)}Cr`;
+                if (val >= 100000) return `${currencySymbol}${(val / 100000).toFixed(1)}L`;
+                if (val >= 1000) return `${currencySymbol}${(val / 1000).toFixed(0)}K`;
+                return `${currencySymbol}${val.toFixed(0)}`;
+              }}
             />
-            
-            {premiumMode ? (
-              <Tooltip 
-                content={({ active, payload, label }) => {
-                  if (active && payload && payload.length) {
-                    const currentVal = payload[0].value as number;
-                    const pctChange = ((currentVal / (baseline * currencyRate)) - 1) * 100;
-                    const isUp = pctChange >= 0;
-                    return (
-                      <div className="bg-ui-surface rounded-xl p-3 shadow-xl border border-primary flex flex-col gap-1 relative overflow-hidden">
-                        <div className="flex justify-between items-center gap-4">
-                          <span className="text-[15px] font-mono font-bold text-text-main">
-                            {currencySymbol}{currentVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
+
+            {/* Custom Tooltip conforming precisely to requested specification */}
+            <Tooltip
+              content={({ active, payload }) => {
+                if (active && payload && payload.length) {
+                  const pt = payload[0].payload as ChartDataPoint;
+                  return (
+                    <div 
+                      id="portfolio-performance-tooltip"
+                      className="bg-ui-surface rounded-xl p-3.5 shadow-2xl border border-ui-border min-w-[220px] flex flex-col gap-2 z-50 pointer-events-none"
+                    >
+                      {/* Date header */}
+                      <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted pb-1.5 border-b border-ui-border">
+                        {pt.fullDate}
+                      </p>
+
+                      {/* Row 1: Invested Value */}
+                      <div className="flex justify-between items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />
+                          <span className="text-text-muted font-medium">Invested Value</span>
                         </div>
-                        <div className="flex justify-between items-center gap-4">
-                          <span className={`text-[11px] font-mono font-bold ${isUp ? 'text-positive' : 'text-rose-500'}`}>
-                            {isUp ? '+' : ''}{pctChange.toFixed(2)}%
-                          </span>
-                          <span className="text-[10px] text-text-main/50 uppercase tracking-widest">{label}</span>
-                        </div>
-                        <div className="absolute top-0 right-0 w-8 h-8 bg-positive blur-xl opacity-20 rounded-full" />
+                        <span className="font-mono font-bold text-text-main">
+                          {formatCurrency(pt.investedValue)}
+                        </span>
                       </div>
-                    );
-                  }
-                  return null;
-                }}
-                cursor={{ stroke: isDark ? '#00D084' : '#00A878', strokeWidth: 1, strokeDasharray: '4 4' }}
-              />
-            ) : (
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'var(--ui-surface)',
-                  border: '1px solid var(--ui-border)',
-                  borderRadius: '16px',
-                  padding: '12px',
-                  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.3)',
-                }}
-                itemStyle={{ color: 'var(--text-main)' }}
-                labelStyle={{ color: 'var(--text-muted)', fontSize: '10px', textTransform: 'uppercase', marginBottom: '8px', fontWeight: '900' }}
-                formatter={(value: number) => [
-                  <span className={value >= (baseline * currencyRate) ? 'text-emerald-400' : 'text-rose-400'}>
-                    {currencySymbol}{value.toLocaleString()}
-                  </span>, 
-                  'Live Valuation'
-                ]}
-              />
-            )}
-            
+
+                      {/* Row 2: Current Value */}
+                      <div className="flex justify-between items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`w-2 h-2 rounded-full ${isGain ? 'bg-positive' : 'bg-negative'}`} />
+                          <span className="text-text-muted font-medium">Current Value</span>
+                        </div>
+                        <span className={`font-mono font-bold ${isGain ? 'text-positive' : 'text-negative'}`}>
+                          {formatCurrency(pt.currentValue)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              }}
+              cursor={{ stroke: isDark ? '#D4AF37' : '#B8860B', strokeWidth: 1, strokeDasharray: '3 3' }}
+            />
+
+            {/* Series 1: Invested Value (Dashed steady line) */}
+            <Line
+              type="monotone"
+              dataKey="investedValue"
+              name="Invested Value"
+              stroke="#D4AF37"
+              strokeWidth={2}
+              strokeDasharray="4 4"
+              dot={false}
+              activeDot={{ r: 5, fill: '#D4AF37', stroke: '#000000', strokeWidth: 1.5 }}
+              isAnimationActive={true}
+              animationDuration={800}
+            />
+
+            {/* Series 2: Current Value (Filled Area with solid line) */}
             <Area
               type="monotone"
-              dataKey="value"
-              stroke={premiumMode ? (isDark ? "#00D084" : "#00A878") : "url(#splitColor)"}
-              strokeWidth={premiumMode ? 2.5 : 4}
+              dataKey="currentValue"
+              name="Current Value"
+              stroke={isGain ? (isDark ? "#00D084" : "#00A878") : "#f43f5e"}
+              strokeWidth={2.5}
+              fill="url(#currentValueArea)"
               fillOpacity={1}
-              fill={premiumMode ? "url(#premiumColor)" : "url(#splitColorFill)"}
-              animationDuration={1000}
+              dot={false}
+              activeDot={{
+                r: 6,
+                fill: isGain ? (isDark ? "#00D084" : "#00A878") : "#f43f5e",
+                stroke: isDark ? '#FFFFFF' : '#0B1728',
+                strokeWidth: 2,
+                style: { filter: isGain ? 'drop-shadow(0 0 6px rgba(0,208,132,0.6))' : 'drop-shadow(0 0 6px rgba(244,63,94,0.6))' }
+              }}
               isAnimationActive={true}
-              baseLine={baseline * currencyRate}
-              activeDot={premiumMode ? { r: 6, fill: isDark ? '#00D084' : '#00A878', stroke: isDark ? '#FFFFFF' : '#0B1728', strokeWidth: 2, style: { filter: 'drop-shadow(0 0 8px rgba(0,168,120,0.8))' } } : true}
+              animationDuration={1000}
             />
-            
-            {!premiumMode && (
-              <Brush 
-                dataKey="time" 
-                height={30} 
-                stroke="var(--primary)" 
-                fill="var(--ui-bg)"
-                travellerWidth={10}
-                gap={1}
-              />
-            )}
-          </AreaChart>
+          </ComposedChart>
         </ResponsiveContainer>
       </div>
     </div>
   );
 };
 
-export default PortfolioGraph;
+export default React.memo(PortfolioGraph);

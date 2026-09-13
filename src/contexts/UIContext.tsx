@@ -6,6 +6,7 @@ interface Toast {
   id: string;
   type: ToastType;
   message: string;
+  title?: string;
 }
 
 type ModalType = 
@@ -17,12 +18,13 @@ type ModalType =
   | 'asset-details'
   | 'notifications'
   | 'user-profile'
-  | 'transaction-details';
+  | 'transaction-details'
+  | 'reset-portfolio';
 
 interface UIContextType {
   // Toasts
   toasts: Toast[];
-  addToast: (message: string, type?: ToastType) => void;
+  addToast: (message: string, type?: ToastType, title?: string) => void;
   removeToast: (id: string) => void;
   
   // Modals & Panels
@@ -30,6 +32,18 @@ interface UIContextType {
   modalData: any;
   openModal: (type: ModalType, data?: any) => void;
   closeModal: () => void;
+
+  // AI Copilot
+  isCopilotOpen: boolean;
+  setIsCopilotOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  copilotPrompt: string | null;
+  setCopilotPrompt: React.Dispatch<React.SetStateAction<string | null>>;
+  openCopilotWithPrompt: (prompt: string) => void;
+
+  // Mobile Menu
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  toggleMobileMenu: () => void;
 }
 
 const UIContext = createContext<UIContextType | undefined>(undefined);
@@ -38,10 +52,22 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [activeModal, setActiveModal] = useState<ModalType>('none');
   const [modalData, setModalData] = useState<any>(null);
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
+  const [copilotPrompt, setCopilotPrompt] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const addToast = useCallback((message: string, type: ToastType = 'info') => {
+  const openCopilotWithPrompt = useCallback((prompt: string) => {
+    setCopilotPrompt(prompt);
+    setIsCopilotOpen(true);
+  }, []);
+
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen((prev) => !prev);
+  }, []);
+
+  const addToast = useCallback((message: string, type: ToastType = 'info', title?: string) => {
     const id = Math.random().toString(36).substr(2, 9);
-    setToasts((prev) => [...prev, { id, type, message }]);
+    setToasts((prev) => [...prev, { id, type, message, title }]);
     
     // Auto-remove after 4 seconds
     setTimeout(() => {
@@ -66,7 +92,10 @@ export const UIProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   return (
     <UIContext.Provider value={{
       toasts, addToast, removeToast,
-      activeModal, modalData, openModal, closeModal
+      activeModal, modalData, openModal, closeModal,
+      isCopilotOpen, setIsCopilotOpen,
+      copilotPrompt, setCopilotPrompt, openCopilotWithPrompt,
+      isMobileMenuOpen, setIsMobileMenuOpen, toggleMobileMenu
     }}>
       {children}
     </UIContext.Provider>

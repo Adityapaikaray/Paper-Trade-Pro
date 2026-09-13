@@ -1,27 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, ArrowDownRight, Clock, Activity, Briefcase, Star, FileText, BarChart2, PieChart, History as HistoryIcon } from 'lucide-react';
 import PortfolioGraph from './PortfolioGraph.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { useMarket } from '../contexts/MarketContext.tsx';
 
 interface PremiumPerformanceCardProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
 }
 
-const TABS = [
-  { id: 'Active Positions', label: 'Active Positions (2)', icon: Briefcase },
-  { id: 'Watchlist', label: 'Watchlist', icon: Star },
-  { id: 'Orders', label: 'Orders', icon: FileText },
-  { id: 'Performance', label: 'Performance', icon: BarChart2 },
-  { id: 'Allocation', label: 'Allocation', icon: PieChart },
-  { id: 'History', label: 'History', icon: HistoryIcon },
-];
-
 const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeTab, setActiveTab }) => {
-  const { profile } = usePortfolio();
+  const { profile, marketContext } = usePortfolio();
+  const { stocks } = useMarket();
   const [activeFilter, setActiveFilter] = useState('1M');
   const FILTERS = ['1D', '1W', '1M', '3M', '6M', '1Y', 'ALL'];
+
+  const isIndia = marketContext === 'IN';
+  const currencySymbol = isIndia ? '₹' : '$';
+
+  const holdings = profile.holdings || [];
+  const relevantHoldings = holdings.filter(h => {
+    const s = stocks.find(stock => stock.symbol.toUpperCase() === h.symbol.toUpperCase());
+    return !s || s.currency === currencySymbol;
+  });
+
+  const { totalValue, totalCost } = useMemo(() => {
+    let val = 0;
+    let cost = 0;
+    relevantHoldings.forEach(h => {
+      const s = stocks.find(stock => stock.symbol.toUpperCase() === h.symbol.toUpperCase());
+      const p = s ? s.price : h.averagePrice;
+      val += p * h.shares;
+      cost += h.averagePrice * h.shares;
+    });
+    return { totalValue: val, totalCost: cost };
+  }, [relevantHoldings, stocks]);
+
+  const cashBalance = typeof profile?.balances?.[currencySymbol] === 'number'
+    ? profile.balances[currencySymbol]
+    : 1000000;
+  const initialBase = 1000000;
+  const totalGain = totalValue - totalCost;
+  const returnPct = totalCost > 0 ? (totalGain / totalCost) * 100 : 0;
+  const isPositive = totalGain >= 0;
+
+  const tabs = [
+    { id: 'Active Positions', label: `Active Positions (${relevantHoldings.length})`, icon: Briefcase },
+    { id: 'Watchlist', label: 'Watchlist', icon: Star },
+    { id: 'Orders', label: `Orders (${profile.orders?.length || 0})`, icon: FileText },
+    { id: 'Performance', label: 'Performance', icon: BarChart2 },
+    { id: 'Allocation', label: 'Allocation', icon: PieChart },
+    { id: 'History', label: 'History', icon: HistoryIcon },
+  ];
 
   return (
     <motion.div 
@@ -61,24 +92,28 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
         {/* 2. Performance Summary */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-ui-surface-hover rounded-2xl p-5 border border-ui-border flex items-center gap-4 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-positive" />
+            <div className={`absolute top-0 left-0 w-1 h-full ${isPositive ? 'bg-positive' : 'bg-negative'}`} />
             <div className="w-10 h-10 rounded-full bg-ui-surface flex items-center justify-center shrink-0 border border-ui-border shadow-[0_0_10px_rgba(0,208,132,0.1)]">
-              <ArrowUpRight size={20} className="text-positive" />
+              {isPositive ? <ArrowUpRight size={20} className="text-positive" /> : <ArrowDownRight size={20} className="text-negative" />}
             </div>
             <div>
-              <p className="text-[11px] font-bold text-positive uppercase tracking-wider mb-0.5">Portfolio Return</p>
-              <p className="text-2xl font-mono font-bold text-text-main leading-none">+35.41%</p>
+              <p className={`text-[11px] font-bold uppercase tracking-wider mb-0.5 ${isPositive ? 'text-positive' : 'text-negative'}`}>Portfolio Return</p>
+              <p className="text-2xl font-mono font-bold text-text-main leading-none">
+                {isPositive ? '+' : ''}{returnPct.toFixed(2)}%
+              </p>
             </div>
           </div>
           
           <div className="bg-ui-surface-hover rounded-2xl p-5 border border-ui-border flex items-center gap-4 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-1 h-full bg-positive" />
+            <div className={`absolute top-0 left-0 w-1 h-full ${isPositive ? 'bg-positive' : 'bg-negative'}`} />
             <div className="w-10 h-10 rounded-full bg-ui-surface flex items-center justify-center shrink-0 border border-ui-border shadow-[0_0_10px_rgba(0,208,132,0.1)]">
-              <Activity size={20} className="text-positive" />
+              <Activity size={20} className={isPositive ? 'text-positive' : 'text-negative'} />
             </div>
             <div>
-              <p className="text-[11px] font-bold text-positive uppercase tracking-wider mb-0.5">Total Gain</p>
-              <p className="text-2xl font-mono font-bold text-text-main leading-none">+₹4,128.26</p>
+              <p className={`text-[11px] font-bold uppercase tracking-wider mb-0.5 ${isPositive ? 'text-positive' : 'text-negative'}`}>Total Gain / P&L</p>
+              <p className={`text-2xl font-mono font-bold leading-none ${isPositive ? 'text-positive' : 'text-negative'}`}>
+                {isPositive ? '+' : '-'}{currencySymbol}{Math.abs(totalGain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
             </div>
           </div>
 
@@ -89,9 +124,11 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
               <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             </div>
             <div>
-              <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-0.5">Live Portfolio Value</p>
-              <p className="text-2xl font-mono font-bold text-text-main leading-none">₹12,500.00</p>
-              <p className="text-[9px] text-primary mt-1 font-medium flex items-center gap-1"><Clock size={10} /> Updated just now</p>
+              <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-0.5">Current Portfolio Value</p>
+              <p className="text-2xl font-mono font-bold text-text-main leading-none">
+                {currencySymbol}{totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+              <p className="text-[9px] text-primary mt-1 font-medium flex items-center gap-1"><Clock size={10} /> Market value of holdings</p>
             </div>
           </div>
         </div>
@@ -99,11 +136,13 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
         {/* 3. Main Chart */}
         <div className="h-[380px] w-full -mx-2 relative z-0">
           <PortfolioGraph 
+             investedValue={totalCost}
+             currentValue={totalValue}
              history={profile.history || []} 
-             currentValue={12500} 
-             baseline={10000} 
-             currencySymbol="₹" 
-             currencyRate={83} 
+             currencySymbol={currencySymbol} 
+             timeRange={activeFilter}
+             onTimeRangeChange={setActiveFilter}
+             isReset={profile.isPortfolioReset || relevantHoldings.length === 0 || totalCost === 0}
              premiumMode={true}
           />
         </div>
@@ -111,10 +150,10 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
         {/* 4. Portfolio Statistics */}
         <div className="bg-ui-bg rounded-2xl border border-ui-border shadow-sm flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-ui-border overflow-hidden">
           {[
-            { label: 'Starting Value', val: '₹8,371.74' },
-            { label: 'Current Value', val: '₹12,500.00' },
-            { label: 'Highest Value', val: '₹12,634.21' },
-            { label: 'Lowest Value', val: '₹7,982.11' }
+            { label: 'Starting Capital', val: `${currencySymbol}${initialBase.toLocaleString()}` },
+            { label: 'Current Value', val: `${currencySymbol}${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+            { label: 'Invested Value', val: `${currencySymbol}${totalCost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+            { label: 'Available Cash', val: `${currencySymbol}${cashBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` }
           ].map((stat, i) => (
             <div key={i} className="flex-1 p-5 flex items-center gap-4">
               <div className="w-8 h-8 rounded-full bg-ui-surface flex items-center justify-center border border-ui-border">
@@ -131,7 +170,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
 
       {/* 5. Bottom Navigation */}
       <div className="bg-ui-sidebar border-t border-ui-border px-4 md:px-8 flex overflow-x-auto no-scrollbar relative z-10">
-        {TABS.map(tab => {
+        {tabs.map(tab => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
           return (
