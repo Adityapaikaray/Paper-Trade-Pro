@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Command, X, TrendingUp, LayoutDashboard, Briefcase, History, Settings, Moon, Sun, ArrowRight, BarChart3 } from 'lucide-react';
+import { Search, Command, X, TrendingUp, TrendingDown, LayoutDashboard, Briefcase, History, Settings, Moon, Sun, ArrowRight, BarChart3 } from 'lucide-react';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { Stock } from '../types.ts';
 import { useTheme } from '../contexts/ThemeContext.tsx';
@@ -14,7 +14,7 @@ interface CommandPaletteProps {
   isOpen: boolean;
   onClose: () => void;
   onNavigate: (tab: string) => void;
-  onTrade: (stock: Stock) => void;
+  onTrade: (stock: Stock, side?: "BUY" | "SELL") => void;
 }
 
 const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavigate, onTrade }) => {
@@ -79,13 +79,13 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
     ...filteredNavigation.map(item => ({ ...item, type: 'nav' })),
     ...filteredActions.map(item => ({ ...item, type: 'action' })),
     ...filteredIndices,
-    ...filteredStocks.map(stock => ({ 
-      id: stock.symbol, 
-      label: `${stock.name} (${stock.symbol})`, 
-      icon: TrendingUp, 
-      category: 'Asset', 
+    ...filteredStocks.map(stock => ({
+      id: stock.symbol,
+      label: `${stock.name} (${stock.symbol})`,
+      icon: TrendingUp,
+      category: 'Asset',
       type: 'stock',
-      stock 
+      stock
     })),
   ];
 
@@ -111,6 +111,8 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
       item.action();
     } else if (item.type === 'stock') {
       onTrade(item.stock);
+    } else if (item.type === 'stock-trade') {
+      onTrade(item.stock, item.side);
     } else if (item.type === 'index') {
       onNavigate('key-index');
     }
@@ -165,11 +167,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
               {results.length > 0 ? (
                 <div className="space-y-2">
                   {results.map((item, index) => (
-                    <button
+                    <div
                       key={`${item.type}-${item.id}`}
                       onMouseEnter={() => setSelectedIndex(index)}
                       onClick={() => executeAction(item)}
-                      className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all ${
+                      className={`w-full flex items-center justify-between p-4 rounded-2xl transition-all cursor-pointer ${
                         index === selectedIndex 
                           ? 'bg-primary/10 border border-primary/20 shadow-lg' 
                           : 'border border-transparent hover:bg-ui-bg'
@@ -192,13 +194,29 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                       </div>
                       <div className="flex items-center gap-4">
                         {'stock' in item && item.stock && (
-                          <div className="text-right">
-                            <p className="font-mono font-black italic text-sm text-text-main">
-                              {item.stock.currency}{item.stock.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                            </p>
-                            <p className={`text-[10px] font-mono font-bold ${item.stock.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                              {item.stock.change >= 0 ? '+' : ''}{item.stock.changePercent.toFixed(2)}%
-                            </p>
+                          <div className="flex items-center gap-3">
+                            <div className="text-right">
+                              <p className="font-mono font-black italic text-sm text-text-main">
+                                {item.stock.currency}{item.stock.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              </p>
+                              <p className={`text-[10px] font-mono font-bold ${item.stock.change >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                                {item.stock.change >= 0 ? '+' : ''}{item.stock.changePercent.toFixed(2)}%
+                              </p>
+                            </div>
+                            <div className="flex gap-1 ml-2">
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onTrade(item.stock, 'BUY'); onClose(); }}
+                                className="px-3 py-1.5 bg-positive text-white rounded-lg text-[10px] font-bold hover:bg-positive/90 transition-colors"
+                              >
+                                Buy
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); onTrade(item.stock, 'SELL'); onClose(); }}
+                                className="px-3 py-1.5 bg-negative text-white rounded-lg text-[10px] font-bold hover:bg-negative/90 transition-colors"
+                              >
+                                Sell
+                              </button>
+                            </div>
                           </div>
                         )}
                         {'indexQuote' in item && item.indexQuote && (
@@ -215,7 +233,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
                           <ArrowRight size={16} className="text-primary animate-in slide-in-from-left-2 duration-300" />
                         )}
                       </div>
-                    </button>
+                    </div>
                   ))}
                 </div>
               ) : (

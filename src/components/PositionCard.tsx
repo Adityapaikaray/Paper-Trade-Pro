@@ -1,5 +1,5 @@
 import React from 'react';
-import { MoreVertical, TrendingUp, TrendingDown } from 'lucide-react';
+import { MoreVertical, TrendingUp, TrendingDown, Eye, Edit2 } from 'lucide-react';
 
 export interface PositionCardProps {
   symbol: string;
@@ -147,18 +147,19 @@ export const PositionCard: React.FC<PositionCardProps> = ({
         <div className="flex items-center gap-3">
           <button
             onClick={onViewDetails}
-            className="px-5 py-2.5 text-xs font-bold rounded-xl bg-ui-surface border border-ui-border text-[#17243A] dark:text-white hover:bg-ui-surface-hover hover:border-primary/40 shadow-sm transition-all whitespace-nowrap active:scale-[0.98]"
+            className="w-9 h-9 rounded-xl bg-ui-surface border border-ui-border flex items-center justify-center text-text-muted hover:text-text-main hover:bg-ui-surface-hover shadow-sm transition-all active:scale-[0.98]"
+            title="View Details"
           >
-            View Details
+            <Eye size={16} />
           </button>
           <button
             onClick={onModifyAllocation}
-            className="px-5 py-2.5 text-xs font-bold rounded-xl bg-ui-surface border border-ui-border text-[#17243A] dark:text-white hover:bg-ui-surface-hover hover:border-primary/40 shadow-sm transition-all whitespace-nowrap active:scale-[0.98]"
+            className="w-9 h-9 rounded-xl bg-ui-surface border border-ui-border flex items-center justify-center text-text-muted hover:text-text-main hover:bg-ui-surface-hover shadow-sm transition-all active:scale-[0.98]"
+            title="Modify Allocation"
           >
-            Modify Allocation
+            <Edit2 size={16} />
           </button>
         </div>
-
         <button
           onClick={onOptions || onViewDetails}
           className="w-9 h-9 rounded-xl bg-ui-surface border border-ui-border flex items-center justify-center text-text-muted hover:text-text-main hover:bg-ui-surface-hover shadow-sm transition-all active:scale-[0.98]"

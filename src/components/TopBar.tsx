@@ -84,19 +84,10 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
   return (
     <header className="h-20 lg:h-[88px] shrink-0 border-b border-ui-border bg-ui-bg flex items-center justify-between px-4 md:px-6 lg:px-10 z-20 sticky top-0 transition-all duration-300">
       
-      {/* Mobile Menu Button */}
-      <button 
-        onClick={toggleMobileMenu}
-        className="md:hidden mr-4 p-2 text-text-muted hover:text-text-main"
-        aria-label="Open navigation menu"
-      >
-        <Menu size={24} />
-      </button>
-
       {/* Left section - Search */}
-      <div className="flex-1 max-w-xl">
+      <div className="flex-1 max-w-2xl">
         <div 
-          className="relative group cursor-text"
+          className="relative group cursor-text w-full"
           onClick={onSearchFocus}
         >
           <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-muted group-hover:text-primary transition-colors">
@@ -105,7 +96,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
           <input
             type="text"
             className="w-full bg-ui-surface border border-ui-border text-text-main placeholder:text-text-muted text-[15px] font-medium rounded-full py-3.5 pl-11 pr-4 focus:outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(212,175,55,0.1)] transition-all cursor-text shadow-sm"
-            placeholder="Search symbols, indices, or news... (⌘K)"
+            placeholder="Search symbols, indices, or news..."
             readOnly
           />
           <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">

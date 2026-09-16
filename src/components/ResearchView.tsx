@@ -52,17 +52,24 @@ export const ResearchView: React.FC<ResearchViewProps> = ({ onTrade }) => {
           {searchQuery && (
             <div className="absolute left-0 right-0 top-full mt-2 bg-ui-surface border border-ui-border rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-ui-border">
               {filteredStocks.map((s) => (
-                <button
-                  key={s.symbol}
-                  onClick={() => {
-                    setSelectedSymbol(s.symbol);
-                    setSearchQuery('');
-                  }}
-                  className="w-full text-left px-4 py-2.5 hover:bg-ui-surface-hover flex items-center justify-between text-xs"
-                >
-                  <span className="font-bold text-text-main">{s.symbol}</span>
-                  <span className="text-text-muted truncate max-w-[140px]">{s.name}</span>
-                </button>
+                <div key={s.symbol} className="flex items-center justify-between hover:bg-ui-surface-hover px-4 py-2">
+                  <button
+                    onClick={() => {
+                      setSelectedSymbol(s.symbol);
+                      setSearchQuery('');
+                    }}
+                    className="flex-1 text-left flex items-center justify-between mr-4 text-xs"
+                  >
+                    <span className="font-bold text-text-main">{s.symbol}</span>
+                    <span className="text-text-muted truncate max-w-[140px]">{s.name}</span>
+                  </button>
+                  {onTrade && (
+                    <div className="flex gap-2">
+                      <button onClick={(e) => { e.stopPropagation(); onTrade(s, 'BUY'); setSearchQuery(''); }} className="px-3 py-1 rounded bg-positive text-white text-[10px] font-bold">Buy</button>
+                      <button onClick={(e) => { e.stopPropagation(); onTrade(s, 'SELL'); setSearchQuery(''); }} className="px-3 py-1 rounded bg-negative text-white text-[10px] font-bold">Sell</button>
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -102,12 +109,20 @@ export const ResearchView: React.FC<ResearchViewProps> = ({ onTrade }) => {
           </div>
 
           {onTrade && (
-            <button
-              onClick={() => onTrade(currentStock)}
-              className="px-6 py-3 rounded-xl bg-primary text-white hover:opacity-95 text-xs font-bold shadow-sm transition-all flex items-center gap-2"
-            >
-              Trade {currentStock.symbol} <ArrowUpRight size={14} />
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => onTrade(currentStock, 'BUY')}
+                className="px-6 py-3 rounded-xl bg-positive text-white hover:opacity-95 text-xs font-bold shadow-sm transition-all flex items-center gap-2"
+              >
+                Buy {currentStock.symbol} <TrendingUp size={14} />
+              </button>
+              <button
+                onClick={() => onTrade(currentStock, 'SELL')}
+                className="px-6 py-3 rounded-xl bg-negative text-white hover:opacity-95 text-xs font-bold shadow-sm transition-all flex items-center gap-2"
+              >
+                Sell <TrendingDown size={14} />
+              </button>
+            </div>
           )}
         </div>
       </div>

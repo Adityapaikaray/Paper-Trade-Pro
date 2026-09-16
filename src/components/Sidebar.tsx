@@ -16,20 +16,18 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   const { openModal } = useUI();
 
   const menuItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'market', icon: BarChart3, label: 'Markets' },
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
+    { id: 'market', icon: Eye, label: 'Discover' },
     { id: 'portfolio', icon: Briefcase, label: 'Portfolio' },
-    { id: 'watchlist', icon: Eye, label: 'Watchlist' },
+    { id: 'trade', icon: ArrowUpRight, label: 'Trade' },
     { id: 'orders', icon: TrendingUp, label: 'Orders' },
-    { id: 'analytics', icon: BarChart3, label: 'Analytics' },
-    { id: 'news', icon: Newspaper, label: 'News' },
-    { id: 'research', icon: GraduationCap, label: 'Research' },
-    { id: 'tools', icon: Wrench, label: 'Tools' },
+    { id: 'wallet', icon: Crown, label: 'Wallet' },
+    { id: 'profile', icon: Settings, label: 'Profile' },
   ];
   
   const bottomItems = [
     { id: 'settings', icon: Settings, label: 'Settings' },
-    { id: 'help', icon: HelpCircle, label: 'Help & Support' },
+    { id: 'help', icon: HelpCircle, label: 'Support' },
   ];
 
   return (

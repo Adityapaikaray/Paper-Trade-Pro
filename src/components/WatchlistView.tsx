@@ -6,7 +6,7 @@ import { useUI } from '../contexts/UIContext.tsx';
 import { Stock } from '../types.ts';
 
 interface WatchlistViewProps {
-  onTrade: (stock: Stock) => void;
+  onTrade: (stock: Stock, side?: "BUY" | "SELL") => void;
 }
 
 export const WatchlistView: React.FC<WatchlistViewProps> = ({ onTrade }) => {
@@ -211,13 +211,13 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onTrade }) => {
               {/* Action Buttons: Buy / Sell */}
               <div className="mt-5 pt-4 border-t border-ui-border flex items-center gap-2">
                 <button
-                  onClick={() => onTrade(stock)}
+                  onClick={() => onTrade(stock, 'BUY')}
                   className="flex-1 py-2 rounded-xl bg-positive/10 text-positive border border-positive/30 hover:bg-positive hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-1"
                 >
                   <ArrowUpRight size={14} /> Buy
                 </button>
                 <button
-                  onClick={() => onTrade(stock)}
+                  onClick={() => onTrade(stock, 'SELL')}
                   className="flex-1 py-2 rounded-xl bg-negative/10 text-negative border border-negative/30 hover:bg-negative hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-1"
                 >
                   <ArrowDownRight size={14} /> Sell

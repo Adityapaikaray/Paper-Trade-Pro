@@ -24,7 +24,7 @@ const HistoryView = lazy(() => import('./components/HistoryView.tsx'));
 const NewsView = lazy(() => import('./components/NewsView.tsx'));
 const HelpSupportView = lazy(() => import('./components/HelpSupportView.tsx'));
 
-import TradeModal from './components/TradeModal.tsx';
+import TradeView from './components/TradeView.tsx';
 import NotificationManager from './components/NotificationManager.tsx';
 import PortfolioHistoryRecorder from './components/PortfolioHistoryRecorder.tsx';
 import CommandPalette from './components/CommandPalette.tsx';
@@ -62,6 +62,7 @@ function AppContent() {
   const { marketContext } = usePortfolio();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
+  const [selectedTradeSide, setSelectedTradeSide] = useState<'BUY' | 'SELL' | undefined>(undefined);
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [searchOrigin, setSearchOrigin] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -79,27 +80,49 @@ function AppContent() {
   }, []);
 
   const renderView = () => {
+    if (selectedStock) {
+      return (
+        <TradeView 
+          stock={selectedStock} 
+          initialSide={selectedTradeSide}
+          onClose={() => {
+            setSelectedStock(null);
+            setSearchOrigin(false);
+            setSelectedTradeSide(undefined);
+          }}
+          onBack={searchOrigin ? () => {
+            setSelectedStock(null);
+            setSelectedTradeSide(undefined);
+            setIsCommandPaletteOpen(true);
+          } : () => {
+            setSelectedStock(null);
+            setSelectedTradeSide(undefined);
+          }}
+        />
+      );
+    }
+
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardView onTrade={setSelectedStock} />;
+        return <DashboardView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
       case 'key-index':
-        return <KeyIndexView onTrade={setSelectedStock} />;
+        return <KeyIndexView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
       case 'market':
-        return <MarketView onTrade={setSelectedStock} />;
+        return <MarketView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
       case 'portfolio':
-        return <PortfolioView onTrade={setSelectedStock} />;
+        return <PortfolioView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
       case 'watchlist':
-        return <WatchlistView onTrade={setSelectedStock} />;
+        return <WatchlistView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
       case 'orders':
-        return <OrdersView onTrade={setSelectedStock} />;
+        return <OrdersView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
       case 'analytics':
         return <AnalyticsView />;
       case 'research':
-        return <ResearchView onTrade={setSelectedStock} />;
+        return <ResearchView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
       case 'tools':
         return <ToolsView />;
       case 'history':
-        return <HistoryView onTrade={setSelectedStock} />;
+        return <HistoryView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
       case 'news':
         return <NewsView />;
       case 'settings':
@@ -107,7 +130,7 @@ function AppContent() {
       case 'help':
         return <HelpSupportView />;
       default:
-        return <DashboardView onTrade={setSelectedStock} />;
+        return <DashboardView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
     }
   };
 
@@ -124,7 +147,10 @@ function AppContent() {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="flex h-screen bg-ui-bg text-text-main overflow-hidden transition-colors duration-300 border-t-2 border-[#1A1F29]"
           >
-            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+            <Sidebar 
+              activeTab={selectedStock ? 'trade' : activeTab} 
+              setActiveTab={setActiveTab} 
+            />
             
             <main className="flex-1 flex flex-col min-w-0 pb-10 relative">
               <TopBar onSearchFocus={() => setIsCommandPaletteOpen(true)} onNavigate={setActiveTab} />
@@ -183,23 +209,13 @@ function AppContent() {
               />
             </main>
 
-            <TradeModal 
-              stock={selectedStock} 
-              onClose={() => {
-                setSelectedStock(null);
-                setSearchOrigin(false);
-              }}
-              onBack={searchOrigin ? () => {
-                setSelectedStock(null);
-                setIsCommandPaletteOpen(true);
-              } : undefined}
-            />
             <CommandPalette 
               isOpen={isCommandPaletteOpen}
               onClose={() => setIsCommandPaletteOpen(false)}
               onNavigate={setActiveTab}
-              onTrade={(stock) => {
+              onTrade={(stock, side) => {
                 setSelectedStock(stock);
+                if (side) setSelectedTradeSide(side);
                 setSearchOrigin(true);
               }}
             />

@@ -15,7 +15,7 @@ interface BottomNavProps {
 const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab, onOpenMenu }) => {
   const navItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Home' },
-    { id: 'market', icon: BarChart3, label: 'Markets' },
+    { id: 'market', icon: BarChart3, label: 'Discover' },
     { id: 'portfolio', icon: Briefcase, label: 'Portfolio' },
     { id: 'orders', icon: TrendingUp, label: 'Orders' },
   ];

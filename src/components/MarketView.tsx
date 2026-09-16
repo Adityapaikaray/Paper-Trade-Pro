@@ -14,7 +14,7 @@ import StockChart from './StockChart.tsx';
 import KeyIndicesBar from './KeyIndicesBar.tsx';
 
 interface MarketViewProps {
-  onTrade: (stock: Stock) => void;
+  onTrade: (stock: Stock, side?: "BUY" | "SELL") => void;
 }
 
 const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
@@ -242,15 +242,26 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                           >
                             <Bell size={16} />
                           </button>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onTrade(stock);
-                            }}
-                            className="glass-button shadow-primary/5 text-[10px] md:text-xs px-3 md:px-6"
-                          >
-                            Trade
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onTrade(stock, 'BUY');
+                              }}
+                              className="px-3 md:px-5 py-2 md:py-2.5 rounded-xl bg-positive text-white hover:opacity-95 text-[10px] md:text-xs font-bold shadow-sm transition-all"
+                            >
+                              Buy
+                            </button>
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onTrade(stock, 'SELL');
+                              }}
+                              className="px-3 md:px-5 py-2 md:py-2.5 rounded-xl bg-negative text-white hover:opacity-95 text-[10px] md:text-xs font-bold shadow-sm transition-all"
+                            >
+                              Sell
+                            </button>
+                          </div>
                         </div>
                       </td>
                     </motion.tr>
