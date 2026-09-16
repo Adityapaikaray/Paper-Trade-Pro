@@ -38,14 +38,14 @@ export const StockChart: React.FC<StockChartProps> = ({
   showDetails = true,
   showTimeframes = false
 }) => {
-  const [selectedRange, setSelectedRange] = useState<'1d' | '5d' | '1mo' | '1y'>('1d');
+  const [selectedRange, setSelectedRange] = useState<'1D' | '1W' | '1M' | '6M' | '1Y' | '5Y' | 'All'>('1D');
   const [history, setHistory] = useState<ChartPoint[]>([]);
   const [isLoadingRange, setIsLoadingRange] = useState(false);
   const lastPrice = useRef(stock.price);
 
   // Initialize data from stock.history or generate sensible points
   useEffect(() => {
-    if (selectedRange === '1d') {
+    if (selectedRange === '1D') {
       if (Array.isArray(stock.history) && stock.history.length > 0) {
         const points = stock.history.map((pt, i) => ({
           time: pt.time,
@@ -94,9 +94,9 @@ export const StockChart: React.FC<StockChartProps> = ({
   }, [stock.price, selectedRange]);
 
   // Fetch higher timeframes on demand
-  const handleRangeChange = async (range: '1d' | '5d' | '1mo' | '1y') => {
+  const handleRangeChange = async (range: '1D' | '1W' | '1M' | '6M' | '1Y' | '5Y' | 'All') => {
     setSelectedRange(range);
-    if (range === '1d') return; // Handled by standard live feed
+    if (range === '1D') return; // Handled by standard live feed
 
     setIsLoadingRange(true);
     try {
@@ -148,7 +148,7 @@ export const StockChart: React.FC<StockChartProps> = ({
               Timeframe:
             </span>
             <div className="flex items-center gap-1 bg-ui-bg p-1 rounded-xl border border-ui-border">
-              {(['1d', '5d', '1mo', '1y'] as const).map(rng => (
+              {(['1D', '1W', '1M', '6M', '1Y', '5Y', 'All'] as const).map(rng => (
                 <button
                   key={rng}
                   onClick={() => handleRangeChange(rng)}
@@ -158,7 +158,7 @@ export const StockChart: React.FC<StockChartProps> = ({
                       : 'text-text-muted hover:text-text-main'
                   }`}
                 >
-                  {rng === '1mo' ? '1M' : rng.toUpperCase()}
+                  {rng}
                 </button>
               ))}
             </div>

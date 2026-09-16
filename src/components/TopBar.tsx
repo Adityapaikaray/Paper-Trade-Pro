@@ -4,12 +4,14 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Moon, Sun, Settings, LogOut, User, Menu, PlusCircle, RotateCcw, Check, CheckCheck, Trash2, X, AlertCircle } from 'lucide-react';
+import { Search, Bell, Moon, Sun, Settings, LogOut, User, Menu, PlusCircle, RotateCcw, Check, CheckCheck, Trash2, X, AlertCircle, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { useUI } from '../contexts/UIContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { useNavigation } from '../contexts/NavigationContext.tsx';
+import HeaderSearch from './HeaderSearch.tsx';
 
 interface TopBarProps {
   onSearchFocus: () => void;
@@ -20,6 +22,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
   const { user, logout } = useAuth();
   const { addToast, toggleMobileMenu, openModal } = useUI();
   const { theme, toggleTheme } = useTheme();
+  const { currentRoute, goBack, history, activeTab, navigate } = useNavigation();
   const {
     profile,
     marketContext,
@@ -34,7 +37,6 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-
   const profileRef = useRef<HTMLDivElement>(null);
   const switcherRef = useRef<HTMLDivElement>(null);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -77,38 +79,49 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
 
   const currentCurrency = marketContext === 'IN' ? '₹' : '$';
   const currentBalance = profile?.balances?.[currentCurrency] || 0;
-
+  
   const notifications = profile?.notifications || [];
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  return (
-    <header className="h-20 lg:h-[88px] shrink-0 border-b border-ui-border bg-ui-bg flex items-center justify-between px-4 md:px-6 lg:px-10 z-20 sticky top-0 transition-all duration-300">
-      
-      {/* Left section - Search */}
-      <div className="flex-1 max-w-2xl">
-        <div 
-          className="relative group cursor-text w-full"
-          onClick={onSearchFocus}
-        >
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-text-muted group-hover:text-primary transition-colors">
-            <Search size={18} strokeWidth={2} />
-          </div>
-          <input
-            type="text"
-            className="w-full bg-ui-surface border border-ui-border text-text-main placeholder:text-text-muted text-[15px] font-medium rounded-full py-3.5 pl-11 pr-4 focus:outline-none focus:border-primary focus:shadow-[0_0_15px_rgba(212,175,55,0.1)] transition-all cursor-text shadow-sm"
-            placeholder="Search symbols, indices, or news..."
-            readOnly
-          />
-          <div className="absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none">
-            <span className="hidden sm:inline-flex items-center justify-center bg-ui-surface-hover text-text-muted border border-ui-border rounded px-1.5 py-0.5 text-[10px] font-bold tracking-widest">
-              ⌘K
-            </span>
-          </div>
-        </div>
-      </div>
+  const getPageTitle = (routeId: string) => {
+    const titles: Record<string, string> = {
+      orders: 'Orders',
+      watchlist: 'Watchlist',
+      alerts: 'Alerts',
+      transactions: 'Transactions',
+      settings: 'Settings',
+      help: 'Help & Support',
+      trade: 'Trade',
+      'stock-details': 'Details',
+      analytics: 'Analytics',
+      research: 'Research',
+      tools: 'Tools',
+      news: 'News',
+      portfolio: 'Portfolio',
+      wealth: 'Wealth',
+    };
+    return titles[routeId] || 'Details';
+  };
 
+  const getBackLabel = () => {
+    if (history.length <= 1) return 'Back';
+    const prevRoute = history[history.length - 2];
+    const topLevelTitles: Record<string, string> = {
+      dashboard: 'Home',
+      market: 'Discover',
+      portfolio: 'Portfolio',
+      wealth: 'Wealth',
+    };
+    return topLevelTitles[prevRoute.id] || getPageTitle(prevRoute.id);
+  };
+
+  // Determine if it's a primary page (Home, Discover, Portfolio, Wealth)
+  const isPrimary = ['dashboard', 'market', 'portfolio', 'wealth'].includes(currentRoute.id);
+
+  const rightActions = (
+    <>
       {/* Right section - Actions & Profile */}
-      <div className="flex items-center gap-4 lg:gap-6 shrink-0 ml-4">
+      <div className="flex items-center gap-3 md:gap-4 lg:gap-6 shrink-0 ml-2 md:ml-4">
         
         {/* Virtual Account / Market Switcher */}
         <div className="relative hidden lg:block" ref={switcherRef}>
@@ -327,10 +340,10 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
                   <p className="text-xs text-text-muted">{user?.email || "adityapaikaray31@gmail.com"}</p>
                 </div>
                 
-                <button onClick={() => { setProfileOpen(false); onNavigate?.('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3">
+                <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3">
                   <User size={16} /> Profile
                 </button>
-                <button onClick={() => { setProfileOpen(false); onNavigate?.('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3">
+                <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3">
                   <Settings size={16} /> Settings
                 </button>
                 
@@ -344,9 +357,56 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
           </AnimatePresence>
         </div>
       </div>
+    </>
+  );
+
+  if (!isPrimary) {
+    return (
+      <header className="h-14 lg:h-[72px] shrink-0 border-b border-ui-border bg-ui-bg flex items-center justify-between px-3 md:px-6 lg:px-8 z-20 sticky top-0 transition-all duration-300">
+        <div className="flex flex-1 items-center gap-2 md:gap-4">
+          <button 
+            onClick={goBack}
+            className="flex items-center gap-1.5 text-text-muted hover:text-primary transition-colors py-1.5 pr-2 md:pr-3 -ml-1 md:-ml-2 rounded-lg"
+          >
+            <ArrowLeft size={20} strokeWidth={2.5} />
+            <span className="text-sm font-bold tracking-wide hidden sm:inline-block">Back</span>
+          </button>
+          
+          <h2 className="text-base md:text-xl font-serif font-black text-text-main italic pr-4 border-l border-ui-border/50 pl-4">
+            {getPageTitle(currentRoute.id)}
+          </h2>
+        </div>
+
+        <div className="flex items-center shrink-0">
+          {rightActions}
+        </div>
+      </header>
+    );
+  }
+
+  return (
+    <header className="h-16 lg:h-[76px] shrink-0 border-b border-ui-border bg-ui-bg flex items-center justify-between px-3 md:px-6 lg:px-8 z-20 sticky top-0 transition-all duration-300 gap-2 md:gap-4">
+      {/* Left section - Context & Search */}
+      <div className="flex-1 flex items-center gap-4 lg:gap-8 max-w-4xl">
+        <div className="hidden lg:flex items-center gap-2 shrink-0">
+          <h1 className="text-lg font-serif font-black text-text-main italic tracking-wide">
+            TradePro
+          </h1>
+          <span className="text-ui-border">/</span>
+          <span className="text-sm font-bold text-text-muted capitalize">
+            {currentRoute.id}
+          </span>
+        </div>
+        
+        {/* Search Bar - 60-70% width on mobile, flexible on desktop */}
+        <div className="w-[65%] md:w-full flex-1">
+          <HeaderSearch />
+        </div>
+      </div>
+      
+      {rightActions}
     </header>
   );
 };
 
 export default TopBar;
-

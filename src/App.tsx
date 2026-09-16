@@ -12,6 +12,7 @@ import DashboardView from './components/DashboardView.tsx';
 import MarketView from './components/MarketView.tsx';
 import KeyIndexView from './components/KeyIndexView.tsx';
 import PortfolioView from './components/PortfolioView.tsx';
+import WealthView from './components/WealthView.tsx';
 import { WatchlistView } from './components/WatchlistView.tsx';
 import { OrdersView } from './components/OrdersView.tsx';
 import SettingsView from './components/SettingsView.tsx';
@@ -38,6 +39,7 @@ import { MarketProvider } from './contexts/MarketContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SplashScreen from './components/SplashScreen.tsx';
 import MarketSelection from './components/MarketSelection.tsx';
+import { NavigationProvider } from './contexts/NavigationContext.tsx';
 
 import { Stock } from './types.ts';
 
@@ -48,7 +50,9 @@ export default function AppWrapper() {
         <AuthProvider>
           <MarketProvider>
             <PortfolioProvider>
-              <AppContent />
+              <NavigationProvider>
+                <AppContent />
+              </NavigationProvider>
             </PortfolioProvider>
           </MarketProvider>
         </AuthProvider>
@@ -57,14 +61,15 @@ export default function AppWrapper() {
   );
 }
 
+import MobileMoreMenu from './components/MobileMoreMenu.tsx';
+import { useNavigation } from './contexts/NavigationContext.tsx';
+
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
   const { marketContext } = usePortfolio();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [selectedStock, setSelectedStock] = useState<Stock | null>(null);
-  const [selectedTradeSide, setSelectedTradeSide] = useState<'BUY' | 'SELL' | undefined>(undefined);
+  const { currentRoute, goBack, navigate } = useNavigation();
+  const activeTab = currentRoute.id;
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
-  const [searchOrigin, setSearchOrigin] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
 
@@ -80,49 +85,44 @@ function AppContent() {
   }, []);
 
   const renderView = () => {
-    if (selectedStock) {
+    if (activeTab === 'trade' && currentRoute.params?.stock) {
       return (
         <TradeView 
-          stock={selectedStock} 
-          initialSide={selectedTradeSide}
-          onClose={() => {
-            setSelectedStock(null);
-            setSearchOrigin(false);
-            setSelectedTradeSide(undefined);
-          }}
-          onBack={searchOrigin ? () => {
-            setSelectedStock(null);
-            setSelectedTradeSide(undefined);
-            setIsCommandPaletteOpen(true);
-          } : () => {
-            setSelectedStock(null);
-            setSelectedTradeSide(undefined);
-          }}
+          stock={currentRoute.params.stock} 
+          initialSide={currentRoute.params.side}
+          onClose={() => goBack()}
+          onBack={() => goBack()}
         />
       );
     }
 
+    const handleTrade = (stock: Stock, side?: 'BUY' | 'SELL') => {
+      navigate('trade', { stock, side });
+    };
+
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
+        return <DashboardView onTrade={handleTrade} />;
       case 'key-index':
-        return <KeyIndexView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
+        return <KeyIndexView onTrade={handleTrade} />;
       case 'market':
-        return <MarketView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
+        return <MarketView onTrade={handleTrade} />;
       case 'portfolio':
-        return <PortfolioView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
+        return <PortfolioView onTrade={handleTrade} />;
+      case 'wealth':
+        return <WealthView />;
       case 'watchlist':
-        return <WatchlistView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
+        return <WatchlistView onTrade={handleTrade} />;
       case 'orders':
-        return <OrdersView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
+        return <OrdersView onTrade={handleTrade} />;
       case 'analytics':
         return <AnalyticsView />;
       case 'research':
-        return <ResearchView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
+        return <ResearchView onTrade={handleTrade} />;
       case 'tools':
         return <ToolsView />;
-      case 'history':
-        return <HistoryView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
+      case 'transactions':
+        return <HistoryView onTrade={handleTrade} />;
       case 'news':
         return <NewsView />;
       case 'settings':
@@ -130,7 +130,7 @@ function AppContent() {
       case 'help':
         return <HelpSupportView />;
       default:
-        return <DashboardView onTrade={(stock, side) => { setSelectedStock(stock); if (side) setSelectedTradeSide(side); }} />;
+        return <DashboardView onTrade={handleTrade} />;
     }
   };
 
@@ -147,13 +147,10 @@ function AppContent() {
             transition={{ duration: 0.3, ease: "easeOut" }}
             className="flex h-screen bg-ui-bg text-text-main overflow-hidden transition-colors duration-300 border-t-2 border-[#1A1F29]"
           >
-            <Sidebar 
-              activeTab={selectedStock ? 'trade' : activeTab} 
-              setActiveTab={setActiveTab} 
-            />
+            <Sidebar />
             
             <main className="flex-1 flex flex-col min-w-0 pb-10 relative">
-              <TopBar onSearchFocus={() => setIsCommandPaletteOpen(true)} onNavigate={setActiveTab} />
+              <TopBar onSearchFocus={() => setIsCommandPaletteOpen(true)} />
               
               <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar pb-12">
                 <div className="w-full max-w-[2000px] mx-auto pb-4">
@@ -202,31 +199,33 @@ function AppContent() {
                 </footer>
               </div>
               
-              <BottomNav 
-                activeTab={activeTab} 
-                setActiveTab={setActiveTab} 
-                onOpenMenu={() => setIsCommandPaletteOpen(true)} 
-              />
+              <BottomNav />
             </main>
+
+            <MobileMoreMenu />
 
             <CommandPalette 
               isOpen={isCommandPaletteOpen}
               onClose={() => setIsCommandPaletteOpen(false)}
-              onNavigate={setActiveTab}
+              onNavigate={(tab) => {
+                // @ts-ignore
+                navigate(tab);
+              }}
               onTrade={(stock, side) => {
-                setSelectedStock(stock);
-                if (side) setSelectedTradeSide(side);
-                setSearchOrigin(true);
+                navigate('trade', { stock, side });
               }}
             />
             <UIManager />
             <NotificationManager />
             <PortfolioHistoryRecorder />
             <AICopilot 
-              onNavigate={setActiveTab}
-              onOpenTrade={(stock) => setSelectedStock(stock)}
+              onNavigate={(tab) => {
+                // @ts-ignore
+                navigate(tab);
+              }}
+              onOpenTrade={(stock) => navigate('trade', { stock })}
             />
-            <BottomMarketTicker onTrade={(stock) => setSelectedStock(stock)} />
+            <BottomMarketTicker onTrade={(stock) => navigate('trade', { stock })} />
           </motion.div>
           )}
     </>
