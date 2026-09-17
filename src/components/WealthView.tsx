@@ -13,6 +13,7 @@ import {
   PieChart, Pie, Cell 
 } from 'recharts';
 import { FutureWealthProjection } from './FutureWealthProjection.tsx';
+import { WealthAnalytics } from './WealthAnalytics.tsx';
 
 interface FinancialGoal {
   id: string;
@@ -128,11 +129,11 @@ export const WealthView: React.FC = () => {
     
     for (let i = 0; i < points; i++) {
       if (i === points - 1) {
-        data.push({ time: 'Now', value: cv, invested: summary.investedValue });
+        data.push({ date: 'Now', value: cv, invested: summary.investedValue });
       } else {
         const step = baseValue * (1 + (Math.random() * vol * 2 - vol));
         baseValue = step;
-        data.push({ time: `T-${points - i}`, value: step, invested: step * 0.9 });
+        data.push({ date: `T-${points - i}`, value: step, invested: step * 0.9 });
       }
     }
     return data;
@@ -411,19 +412,45 @@ export const WealthView: React.FC = () => {
                         content={({ active, payload }) => {
                           if (active && payload && payload.length) {
                             return (
-                              <div className="bg-ui-surface border border-ui-border rounded-xl shadow-xl p-4 min-w-[150px]">
-                                <p className="text-[10px] text-text-muted font-bold mb-2 uppercase">{payload[0].payload.date}</p>
-                                <p className="text-sm font-mono font-bold text-text-main mb-1 flex justify-between gap-4">
-                                  <span>Value:</span>
-                                  <span>{hideBalances ? '••••••••' : formatCompactCurrency(payload[0].value as number)}</span>
-                                </p>
+                              <div className="bg-ui-surface border border-ui-border rounded-xl shadow-xl p-4 min-w-[170px]">
+                                <p className="text-[10px] text-text-muted font-bold mb-2 uppercase tracking-wider">{payload[0].payload.date}</p>
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span className="text-[10px] font-bold text-text-muted uppercase">Portfolio Value</span>
+                                    <span className="text-xs font-mono font-bold text-primary">
+                                      {hideBalances ? '••••••••' : formatCompactCurrency(payload[0].payload.value as number)}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center justify-between gap-4">
+                                    <span className="text-[10px] font-bold text-text-muted uppercase">Invested</span>
+                                    <span className="text-xs font-mono font-bold text-text-main">
+                                      {hideBalances ? '••••••••' : formatCompactCurrency(payload[0].payload.invested as number)}
+                                    </span>
+                                  </div>
+                                </div>
                               </div>
                             );
                           }
                           return null;
                         }}
                       />
-                      <Area type="monotone" dataKey="value" stroke="#D4AF37" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+                      <Area 
+                        type="monotone" 
+                        dataKey="invested" 
+                        stroke="#64748B" 
+                        strokeWidth={2} 
+                        fillOpacity={0} 
+                        activeDot={{ r: 4, fill: '#64748B', strokeWidth: 0 }} 
+                      />
+                      <Area 
+                        type="monotone" 
+                        dataKey="value" 
+                        stroke="#D4AF37" 
+                        strokeWidth={3} 
+                        fillOpacity={1} 
+                        fill="url(#colorValue)" 
+                        activeDot={{ r: 6, fill: '#D4AF37', strokeWidth: 0 }}
+                      />
                     </AreaChart>
                   </ResponsiveContainer>
                 </div>
@@ -636,6 +663,8 @@ export const WealthView: React.FC = () => {
                     </div>
                   )}
                 </div>
+                {/* Wealth Analytics */}
+                <WealthAnalytics />
               </div>
 
               {/* 5. FUTURE WEALTH PROJECTION */}
