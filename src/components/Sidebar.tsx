@@ -50,19 +50,10 @@ const Sidebar: React.FC = () => {
   return (
     <div className="hidden md:flex md:w-20 xl:w-[240px] border-r border-ui-border h-screen flex-col bg-[var(--ui-sidebar)] z-20 transition-all duration-300 overflow-y-auto custom-scrollbar shrink-0 text-text-main relative">
       <div className="p-8 md:p-4 xl:p-8 pb-6 sticky top-0 bg-[var(--ui-sidebar)] z-10 flex justify-center xl:justify-start">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg flex shrink-0 items-center justify-center bg-primary text-[#050505] shadow-sm">
-            <ArrowUpRight size={20} strokeWidth={2.5} />
-          </div>
-          <div className="hidden xl:flex flex-col">
-            <h1 className="text-xl font-serif font-black text-text-main leading-none uppercase tracking-wide">
-              TRADEPRO
-            </h1>
-            <p className="text-[8px] font-sans font-bold text-primary mt-1.5 uppercase tracking-[0.1em]">
-              Track. Analyze. Grow.
-            </p>
-          </div>
-        </div>
+        <button onClick={() => navigate('dashboard')} className="flex items-center gap-3 transition-transform active:scale-95 outline-none">
+          <img src="/tradepro-icon.jpg" alt="TradePro" className="w-8 h-8 rounded-lg object-contain xl:hidden" />
+          <img src="/tradepro-logo.jpg" alt="TRADEPRO" className="hidden xl:block h-10 w-auto object-contain" />
+        </button>
       </div>
       
       <nav className="flex-1 px-4 md:px-2 xl:px-4 space-y-1">

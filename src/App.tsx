@@ -74,6 +74,19 @@ function AppContent() {
 
 
   useEffect(() => {
+    const titles: Record<string, string> = {
+      dashboard: 'Home',
+      market: 'Discover',
+      portfolio: 'Portfolio',
+      wealth: 'Wealth',
+      trade: 'Trading',
+      orders: 'Orders'
+    };
+    const pageName = titles[currentRoute.id] || currentRoute.id.charAt(0).toUpperCase() + currentRoute.id.slice(1);
+    document.title = `TradePro — ${pageName}`;
+  }, [currentRoute.id]);
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();

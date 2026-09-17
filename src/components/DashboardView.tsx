@@ -275,9 +275,9 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
           </div>
         ) : (
           <div className={viewMode === 'grid' ? 'grid grid-cols-1 xl:grid-cols-2 gap-5 w-full' : 'space-y-5 w-full'}>
-            {holdingsWithData.map((pos) => (
+            {holdingsWithData.map((pos, index) => (
               <PositionCard
-                key={pos.symbol}
+                key={`${pos.symbol}-${index}`}
                 symbol={pos.symbol}
                 name={pos.stock.name}
                 tags={[pos.stock.sector || 'EQUITY', pos.stock.country || 'MARKET']}
@@ -331,11 +331,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ui-border/50">
-                  {holdingsWithData.slice(0, 5).map((holding) => {
+                  {holdingsWithData.slice(0, 5).map((holding, index) => {
                     const isPositive = holding.todayChange >= 0;
                     return (
                       <tr 
-                        key={holding.symbol} 
+                        key={`${holding.symbol}-${index}`} 
                         className="group hover:bg-ui-surface-hover/50 transition-colors cursor-pointer"
                         onClick={() => setDetailsSymbol(holding.symbol)}
                       >

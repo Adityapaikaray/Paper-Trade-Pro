@@ -387,19 +387,20 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
   return (
     <header className="h-16 lg:h-[76px] shrink-0 border-b border-ui-border bg-ui-bg flex items-center justify-between px-3 md:px-6 lg:px-8 z-20 sticky top-0 transition-all duration-300 gap-2 md:gap-4">
       {/* Left section - Context & Search */}
-      <div className="flex-1 flex items-center gap-4 lg:gap-8 max-w-4xl">
+      <div className="flex-1 flex items-center gap-3 md:gap-4 lg:gap-8 max-w-4xl">
+        {/* Compact Mobile Brand Mark */}
+        <div className="md:hidden shrink-0">
+          <img src="/tradepro-icon.jpg" alt="TradePro" className="w-8 h-8 rounded-lg object-contain" />
+        </div>
+
         <div className="hidden lg:flex items-center gap-2 shrink-0">
-          <h1 className="text-lg font-serif font-black text-text-main italic tracking-wide">
-            TradePro
-          </h1>
-          <span className="text-ui-border">/</span>
-          <span className="text-sm font-bold text-text-muted capitalize">
-            {currentRoute.id}
+          <span className="text-sm font-bold text-text-main capitalize">
+            {getPageTitle(currentRoute.id)}
           </span>
         </div>
         
         {/* Search Bar - 60-70% width on mobile, flexible on desktop */}
-        <div className="w-[65%] md:w-full flex-1">
+        <div className="flex-1">
           <HeaderSearch />
         </div>
       </div>

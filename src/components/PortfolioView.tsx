@@ -432,9 +432,9 @@ const PortfolioView: React.FC = () => {
                     <div className="col-span-3 text-right">Total P&L</div>
                   </div>
 
-                  {filteredAndSortedPositions.map((pos) => (
+                  {filteredAndSortedPositions.map((pos, index) => (
                     <div 
-                      key={pos.symbol}
+                      key={`${pos.symbol}-${index}`}
                       onClick={() => {
                         if (pos.stock) {
                           navigate('trade', { stock: pos.stock });
