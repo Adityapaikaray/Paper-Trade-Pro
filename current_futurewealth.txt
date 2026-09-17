@@ -331,8 +331,126 @@ export const FutureWealthProjection: React.FC = () => {
             
           </div>
 
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
+            <div className="bg-ui-bg p-3 rounded-xl border border-ui-border flex flex-col justify-between min-h-[75px]">
+              <div>
+                <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-1">Total Invested Amount</p>
+                <p className="text-lg font-mono font-black text-text-main mb-0.5">{formatCurrency(totalInvested, 0)}</p>
+              </div>
+              <p className="text-[8px] text-text-muted font-bold tracking-widest uppercase mt-1">
+                {mode === 'SIP' ? 'SIP Contributions' : mode === 'LUMPSUM' ? 'Lumpsum Amount' : 'Starting Portfolio + SIP Contributions'}
+              </p>
+            </div>
+            
+            <div className="bg-ui-bg p-3 rounded-xl border border-ui-border flex flex-col justify-between min-h-[75px]">
+              <div>
+                <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-1">Estimated Growth</p>
+                <p className="text-lg font-mono font-black text-positive mb-0.5">+{formatCurrency(estimatedGrowth, 0)}</p>
+              </div>
+              <p className="text-[8px] text-text-muted font-bold tracking-widest uppercase mt-1">Approx.</p>
+            </div>
+            
+            <div className="bg-ui-surface p-3 rounded-xl border border-primary/30 flex flex-col justify-between shadow-sm relative overflow-hidden min-h-[75px]">
+              <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
+              <div className="relative z-10">
+                <p className="text-[9px] font-bold text-primary uppercase tracking-wider mb-1">Projected Future Value</p>
+                <p className="text-lg font-mono font-black text-primary mb-0.5">{formatCurrency(projectedValue, 0)}</p>
+              </div>
+              <p className="text-[8px] text-primary/70 font-bold tracking-widest uppercase mt-1 relative z-10">Approx.</p>
+            </div>
+            
+            <div className="bg-ui-bg p-3 rounded-xl border border-ui-border flex flex-col justify-between min-h-[75px]">
+              <div>
+                <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-1">Wealth Multiplier</p>
+                <p className="text-lg font-mono font-black text-text-main mb-0.5">{multiplier.toFixed(1)}x</p>
+              </div>
+              <p className="text-[8px] text-text-muted font-bold tracking-widest uppercase mt-1">Of your total investment</p>
+            </div>
+          </div>
+
+          {/* Projection Breakdown */}
+          <div className="mt-2 bg-ui-bg border border-ui-border rounded-xl p-3">
+            <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-2">Projection Breakdown</p>
+            
+            {mode === 'SIP' && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Total SIP Contribs</p>
+                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(sipInvested)}</p>
+                </div>
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Estimated SIP Growth</p>
+                  <p className="text-[11px] font-mono font-bold text-positive">+{formatCompactCurrency(sipGrowth)}</p>
+                </div>
+                <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
+                  <p className="text-[8px] font-bold text-primary uppercase tracking-wider mb-0.5">Projected Value</p>
+                  <p className="text-[11px] font-mono font-bold text-primary">{formatCompactCurrency(projectedValue)}</p>
+                </div>
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Total Invested</p>
+                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(totalInvested)}</p>
+                </div>
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Wealth Multiplier</p>
+                  <p className="text-[11px] font-mono font-bold text-text-main">{multiplier.toFixed(1)}x</p>
+                </div>
+              </div>
+            )}
+
+            {mode === 'LUMPSUM' && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Starting Lumpsum</p>
+                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(parseFloat(projLumpsum) || 0)}</p>
+                </div>
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Estimated Growth</p>
+                  <p className="text-[11px] font-mono font-bold text-positive">+{formatCompactCurrency(lumpsumGrowth)}</p>
+                </div>
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Total Invested</p>
+                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(totalInvested)}</p>
+                </div>
+                <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
+                  <p className="text-[8px] font-bold text-primary uppercase tracking-wider mb-0.5">Projected Value</p>
+                  <p className="text-[11px] font-mono font-bold text-primary">{formatCompactCurrency(projectedValue)}</p>
+                </div>
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Wealth Multiplier</p>
+                  <p className="text-[11px] font-mono font-bold text-text-main">{multiplier.toFixed(1)}x</p>
+                </div>
+              </div>
+            )}
+
+            {mode === 'SIP_LUMPSUM' && (
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Starting Portfolio</p>
+                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(parseFloat(projLumpsum) || 0)}</p>
+                </div>
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Portfolio Growth</p>
+                  <p className="text-[11px] font-mono font-bold text-positive">+{formatCompactCurrency(lumpsumGrowth)}</p>
+                </div>
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Total SIP Contribs</p>
+                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(sipInvested)}</p>
+                </div>
+                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
+                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Growth from SIP</p>
+                  <p className="text-[11px] font-mono font-bold text-positive">+{formatCompactCurrency(sipGrowth)}</p>
+                </div>
+                <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
+                  <p className="text-[8px] font-bold text-primary uppercase tracking-wider mb-0.5">Projected Value</p>
+                  <p className="text-[11px] font-mono font-bold text-primary">{formatCompactCurrency(projectedValue)}</p>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-        {/* UPPER RIGHT: Inputs */}
+
+        {/* Right Side: Inputs & Value */}
         <div className="w-full xl:w-[32%] shrink-0 flex flex-col gap-4">
           <div className="space-y-3 bg-ui-bg p-4 rounded-xl border border-ui-border">
             <h3 className="text-[10px] font-bold text-primary uppercase tracking-widest mb-1 border-b border-ui-border/50 pb-1.5">Projection Details</h3>
@@ -454,176 +572,6 @@ export const FutureWealthProjection: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
-      </div>
-      {/* LOWER DASHBOARD */}
-      <div className="flex flex-col xl:flex-row gap-4">
-        {/* LOWER LEFT: Summary, Breakdown, Recent Activity */}
-        <div className="flex-1 w-full xl:w-[68%] min-w-0 flex flex-col gap-3">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-2">
-            <div className="bg-ui-bg p-3 rounded-xl border border-ui-border flex flex-col justify-between min-h-[75px]">
-              <div>
-                <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-1">Total Invested Amount</p>
-                <p className="text-lg font-mono font-black text-text-main mb-0.5">{formatCurrency(totalInvested, 0)}</p>
-              </div>
-              <p className="text-[8px] text-text-muted font-bold tracking-widest uppercase mt-1">
-                {mode === 'SIP' ? 'SIP Contributions' : mode === 'LUMPSUM' ? 'Lumpsum Amount' : 'Starting Portfolio + SIP Contributions'}
-              </p>
-            </div>
-            
-            <div className="bg-ui-bg p-3 rounded-xl border border-ui-border flex flex-col justify-between min-h-[75px]">
-              <div>
-                <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-1">Estimated Growth</p>
-                <p className="text-lg font-mono font-black text-positive mb-0.5">+{formatCurrency(estimatedGrowth, 0)}</p>
-              </div>
-              <p className="text-[8px] text-text-muted font-bold tracking-widest uppercase mt-1">Approx.</p>
-            </div>
-            
-            <div className="bg-ui-surface p-3 rounded-xl border border-primary/30 flex flex-col justify-between shadow-sm relative overflow-hidden min-h-[75px]">
-              <div className="absolute inset-0 bg-primary/5 pointer-events-none" />
-              <div className="relative z-10">
-                <p className="text-[9px] font-bold text-primary uppercase tracking-wider mb-1">Projected Future Value</p>
-                <p className="text-lg font-mono font-black text-primary mb-0.5">{formatCurrency(projectedValue, 0)}</p>
-              </div>
-              <p className="text-[8px] text-primary/70 font-bold tracking-widest uppercase mt-1 relative z-10">Approx.</p>
-            </div>
-            
-            <div className="bg-ui-bg p-3 rounded-xl border border-ui-border flex flex-col justify-between min-h-[75px]">
-              <div>
-                <p className="text-[9px] font-bold text-text-muted uppercase tracking-wider mb-1">Wealth Multiplier</p>
-                <p className="text-lg font-mono font-black text-text-main mb-0.5">{multiplier.toFixed(1)}x</p>
-              </div>
-              <p className="text-[8px] text-text-muted font-bold tracking-widest uppercase mt-1">Of your total investment</p>
-            </div>
-          </div>
-
-          {/* Projection Breakdown */}
-          <div className="mt-2 bg-ui-bg border border-ui-border rounded-xl p-3">
-            <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mb-2">Projection Breakdown</p>
-            
-            {mode === 'SIP' && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Total SIP Contribs</p>
-                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(sipInvested)}</p>
-                </div>
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Estimated SIP Growth</p>
-                  <p className="text-[11px] font-mono font-bold text-positive">+{formatCompactCurrency(sipGrowth)}</p>
-                </div>
-                <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
-                  <p className="text-[8px] font-bold text-primary uppercase tracking-wider mb-0.5">Projected Value</p>
-                  <p className="text-[11px] font-mono font-bold text-primary">{formatCompactCurrency(projectedValue)}</p>
-                </div>
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Total Invested</p>
-                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(totalInvested)}</p>
-                </div>
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Wealth Multiplier</p>
-                  <p className="text-[11px] font-mono font-bold text-text-main">{multiplier.toFixed(1)}x</p>
-                </div>
-              </div>
-            )}
-
-            {mode === 'LUMPSUM' && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Starting Lumpsum</p>
-                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(parseFloat(projLumpsum) || 0)}</p>
-                </div>
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Estimated Growth</p>
-                  <p className="text-[11px] font-mono font-bold text-positive">+{formatCompactCurrency(lumpsumGrowth)}</p>
-                </div>
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Total Invested</p>
-                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(totalInvested)}</p>
-                </div>
-                <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
-                  <p className="text-[8px] font-bold text-primary uppercase tracking-wider mb-0.5">Projected Value</p>
-                  <p className="text-[11px] font-mono font-bold text-primary">{formatCompactCurrency(projectedValue)}</p>
-                </div>
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Wealth Multiplier</p>
-                  <p className="text-[11px] font-mono font-bold text-text-main">{multiplier.toFixed(1)}x</p>
-                </div>
-              </div>
-            )}
-
-            {mode === 'SIP_LUMPSUM' && (
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Starting Portfolio</p>
-                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(parseFloat(projLumpsum) || 0)}</p>
-                </div>
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Portfolio Growth</p>
-                  <p className="text-[11px] font-mono font-bold text-positive">+{formatCompactCurrency(lumpsumGrowth)}</p>
-                </div>
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Total SIP Contribs</p>
-                  <p className="text-[11px] font-mono font-bold text-text-main">{formatCompactCurrency(sipInvested)}</p>
-                </div>
-                <div className="p-2 bg-ui-surface rounded-lg border border-ui-border">
-                  <p className="text-[8px] font-bold text-text-muted uppercase tracking-wider mb-0.5">Growth from SIP</p>
-                  <p className="text-[11px] font-mono font-bold text-positive">+{formatCompactCurrency(sipGrowth)}</p>
-                </div>
-                <div className="p-2 bg-primary/10 rounded-lg border border-primary/20">
-                  <p className="text-[8px] font-bold text-primary uppercase tracking-wider mb-0.5">Projected Value</p>
-                  <p className="text-[11px] font-mono font-bold text-primary">{formatCompactCurrency(projectedValue)}</p>
-                </div>
-              </div>
-            )}
-          </div>
-          {/* Recent Activity */}
-          <div className="bg-ui-bg border border-ui-border rounded-xl p-3 shadow-sm">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="text-[10px] font-bold text-text-main uppercase tracking-widest">Recent Activity</h3>
-              <button 
-                onClick={() => navigate('transactions')}
-                className="text-[9px] font-bold text-text-muted hover:text-primary transition-colors flex items-center gap-1 uppercase tracking-wider">
-                View All <ArrowRight size={12} />
-              </button>
-            </div>
-            
-            <div className="space-y-2">
-              {profile.transactions && profile.transactions.length > 0 ? (
-                profile.transactions.slice(0, 3).map((activity, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 bg-ui-surface border border-ui-border rounded-xl hover:border-primary/30 transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center shadow-sm shrink-0">
-                        {activity.type === 'BUY' ? <ArrowUpRight size={16} className="text-primary" /> : <TrendingUp size={16} className="text-positive" />}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-xs font-bold text-text-main truncate capitalize">{activity.type.toLowerCase()} {activity.symbol}</p>
-                        <p className="text-[9px] font-bold text-text-muted uppercase tracking-widest mt-0.5 truncate">
-                          {activity.type === 'BUY' ? 'Investment' : 'Withdrawal'} • {new Date(activity.timestamp).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0 pl-2">
-                      <p className={`text-sm font-mono font-bold ${activity.type === 'SELL' ? 'text-positive' : 'text-text-main'}`}>
-                        {activity.type === 'SELL' ? '+' : ''}{formatCompactCurrency(activity.shares * activity.price)}
-                      </p>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="py-4 text-center">
-                  <p className="text-[10px] text-text-muted font-bold tracking-widest uppercase mb-2">No recent activity</p>
-                  <p className="text-[9px] text-text-muted/60 mb-3 max-w-[200px] mx-auto">Your latest investments and transactions will appear here.</p>
-                  <button onClick={() => navigate('transactions')} className="text-[9px] bg-ui-surface border border-ui-border py-1.5 px-3 rounded-lg text-text-main font-bold uppercase tracking-wider hover:text-primary transition-colors">
-                    View Transactions
-                  </button>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-        {/* LOWER RIGHT: Value, Insights, Quick Actions */}
-        <div className="w-full xl:w-[32%] shrink-0 flex flex-col gap-4">
 
           <div className="bg-ui-surface border border-primary/30 rounded-xl p-4 text-center shadow-[0_4px_20px_rgba(212,175,55,0.1)] relative overflow-hidden group flex-1 flex flex-col justify-center min-h-[100px]">
             <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -719,6 +667,7 @@ export const FutureWealthProjection: React.FC = () => {
           </div>
         </div>
       </div>
+
       <p className="text-[8px] text-text-muted font-bold tracking-widest uppercase mt-6 text-center max-w-2xl mx-auto leading-relaxed">
         This is an illustrative projection based on the return assumption you entered. Actual investment returns may vary based on market conditions. Projected returns are not guaranteed.
       </p>

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Eye, EyeOff, Plus, Target, ArrowRight, Wallet, 
   TrendingUp, ArrowUpRight, TrendingDown, PieChart as PieChartIcon, Info, ChevronRight, Activity, 
-  ArrowLeft, Edit2
+  ArrowLeft, Edit2, Search
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
@@ -636,61 +636,6 @@ export const WealthView: React.FC = () => {
                     </div>
                   )}
                 </div>
-
-                {/* Insights & Actions */}
-                <div className="flex flex-col gap-6">
-                  {/* Wealth Insights */}
-                  <div className="bg-primary/5 border border-primary/20 rounded-3xl p-6 shadow-sm">
-                    <h3 className="text-sm font-bold text-primary flex items-center gap-2 uppercase tracking-widest mb-5">
-                      <Info size={16} /> Wealth Insights
-                    </h3>
-                    <div className="space-y-3">
-                      <div className="bg-ui-surface p-4 rounded-2xl border border-ui-border flex items-start gap-3">
-                        <TrendingUp size={16} className="text-positive mt-0.5 shrink-0" />
-                        <p className="text-xs text-text-main font-bold leading-relaxed">
-                          Your portfolio value increased by <span className="font-mono text-positive">+₹4,250</span> today.
-                        </p>
-                      </div>
-                      <div className="bg-ui-surface p-4 rounded-2xl border border-ui-border flex items-start gap-3">
-                        <PieChartIcon size={16} className="text-primary mt-0.5 shrink-0" />
-                        <p className="text-xs text-text-main font-bold leading-relaxed">
-                          Equities represent <span className="font-mono text-primary">{assetAllocation.find(a => a.name === 'Equities')?.percent.toFixed(0) || '0'}%</span> of your current portfolio.
-                        </p>
-                      </div>
-                      {goals.length > 0 && (
-                        <div className="bg-ui-surface p-4 rounded-2xl border border-ui-border flex items-start gap-3">
-                          <Target size={16} className="text-primary mt-0.5 shrink-0" />
-                          <p className="text-xs text-text-main font-bold leading-relaxed">
-                            Your <span className="uppercase">{goals[0].name}</span> goal is <span className="font-mono text-primary">{((goals[0].currentAmount / goals[0].targetAmount) * 100).toFixed(0)}%</span> complete.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Quick Actions */}
-                  <div className="bg-ui-surface border border-ui-border rounded-3xl p-6 shadow-sm flex-1">
-                    <h3 className="text-sm font-bold text-text-main uppercase tracking-widest mb-5">Quick Actions</h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button onClick={() => navigate('market')} className="bg-primary hover:bg-primary-hover text-black font-bold py-3 px-4 rounded-2xl text-[11px] transition-colors uppercase tracking-wider flex flex-col items-center justify-center gap-3 shadow-[0_4px_15px_rgba(212,175,55,0.2)] h-24">
-                        <TrendingUp size={24} />
-                        Invest
-                      </button>
-                      <button className="bg-ui-bg hover:bg-ui-surface-hover text-text-main border border-ui-border font-bold py-3 px-4 rounded-2xl text-[11px] transition-colors uppercase tracking-wider flex flex-col items-center justify-center gap-3 h-24">
-                        <ArrowUpRight size={24} className="text-positive" />
-                        Add Money
-                      </button>
-                      <button onClick={() => setStep('CREATE_GOAL')} className="bg-ui-bg hover:bg-ui-surface-hover text-text-main border border-ui-border font-bold py-3 px-4 rounded-2xl text-[11px] transition-colors uppercase tracking-wider flex flex-col items-center justify-center gap-3 h-24">
-                        <Target size={24} className="text-primary" />
-                        Create Goal
-                      </button>
-                      <button onClick={() => navigate('portfolio')} className="bg-ui-bg hover:bg-ui-surface-hover text-text-main border border-ui-border font-bold py-3 px-4 rounded-2xl text-[11px] transition-colors uppercase tracking-wider flex flex-col items-center justify-center gap-3 h-24">
-                        <PieChartIcon size={24} className="text-blue-500" />
-                        Portfolio
-                      </button>
-                    </div>
-                  </div>
-                </div>
               </div>
 
               {/* 5. FUTURE WEALTH PROJECTION */}
@@ -698,40 +643,7 @@ export const WealthView: React.FC = () => {
                 <FutureWealthProjection />
               </div>
 
-              {/* 6. WEALTH ACTIVITY */}
-              <div className="bg-ui-surface border border-ui-border rounded-3xl p-6 shadow-sm">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-sm font-bold text-text-main uppercase tracking-widest">Recent Activity</h3>
-                  <button className="text-[10px] font-bold text-text-muted hover:text-primary transition-colors flex items-center gap-1 uppercase tracking-wider">
-                    View All <ArrowRight size={14} />
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    { title: 'Monthly Investment', subtitle: 'Auto-SIP', date: 'Today', amount: '₹25,000', icon: <ArrowUpRight size={18} className="text-primary" /> },
-                    { title: 'Dividend Received', subtitle: 'Reliance Ind.', date: '12 Sep', amount: '+₹2,450', icon: <TrendingUp size={18} className="text-positive" /> },
-                    { title: 'Goal Contribution', subtitle: 'Retirement', date: '10 Sep', amount: '₹15,000', icon: <Target size={18} className="text-primary" /> }
-                  ].map((activity, i) => (
-                    <div key={i} className="flex items-center justify-between p-4 bg-ui-bg border border-ui-border rounded-2xl hover:border-primary/30 transition-colors cursor-pointer">
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-ui-surface border border-ui-border flex items-center justify-center shadow-sm">
-                          {activity.icon}
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-text-main">{activity.title}</p>
-                          <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mt-1">{activity.subtitle} • {activity.date}</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className={`text-sm font-mono font-bold ${activity.amount.startsWith('+') ? 'text-positive' : 'text-text-main'}`}>
-                          {hideBalances ? '••••••••' : activity.amount}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>          </motion.div>
+          </motion.div>
         )}
 
       </AnimatePresence>
