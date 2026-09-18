@@ -40,15 +40,15 @@ const Sidebar: React.FC = () => {
               title={isExpanded ? undefined : item.label}
               className={`w-full flex items-center ${isExpanded ? 'px-4 justify-start' : 'justify-center'} py-3 rounded-xl transition-all duration-200 group relative active:scale-[0.98] ${
                 isActive 
-                  ? 'bg-ui-surface-hover text-primary font-bold shadow-sm' 
+                  ? 'bg-[#FAF4E5] dark:bg-primary/15 text-[#17243A] dark:text-white font-bold shadow-xs' 
                   : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover/50 font-medium'
               }`}
             >
               {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-primary rounded-r-full shadow-[0_0_8px_#D4AF37]" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/5 bg-primary rounded-r-full shadow-[0_0_8px_#D4AF37]" />
               )}
               <div className={`shrink-0 transition-all duration-200 ${isActive ? 'text-primary' : 'text-text-muted group-hover:text-text-main'} ${isExpanded ? 'mr-3' : ''}`}>
-                <item.icon size={20} strokeWidth={isActive ? 2 : 1.5} />
+                <item.icon size={20} strokeWidth={isActive ? 2.2 : 1.5} />
               </div>
               {isExpanded && (
                 <span className="text-sm z-10 transition-colors tracking-wide truncate">
@@ -77,15 +77,15 @@ const Sidebar: React.FC = () => {
               title={isExpanded ? undefined : item.label}
               className={`w-full flex items-center ${isExpanded ? 'px-4 justify-start' : 'justify-center'} py-2.5 rounded-xl transition-all duration-200 group relative active:scale-[0.98] ${
                 isActive 
-                  ? 'bg-ui-surface-hover text-primary font-bold shadow-sm' 
+                  ? 'bg-[#FAF4E5] dark:bg-primary/15 text-[#17243A] dark:text-white font-bold shadow-xs' 
                   : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover/50 font-medium'
               }`}
             >
               {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-primary rounded-r-full shadow-[0_0_8px_#D4AF37]" />
+                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-3/5 bg-primary rounded-r-full shadow-[0_0_8px_#D4AF37]" />
               )}
               <div className={`shrink-0 transition-all duration-200 ${isActive ? 'text-primary' : 'text-text-muted group-hover:text-text-main'} ${isExpanded ? 'mr-3' : ''}`}>
-                <item.icon size={18} strokeWidth={isActive ? 2 : 1.5} />
+                <item.icon size={18} strokeWidth={isActive ? 2.2 : 1.5} />
               </div>
               {isExpanded && (
                 <span className="text-sm z-10 transition-colors tracking-wide truncate">
@@ -98,18 +98,41 @@ const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      <div className="p-4 mt-auto relative z-10">
-        <div className={`${isExpanded ? 'p-5' : 'p-0 py-3'} rounded-2xl bg-ui-surface border border-primary/50 shadow-[0_0_20px_rgba(212,175,55,0.05)] flex flex-col items-center relative group cursor-pointer hover:border-primary hover:shadow-[0_0_30px_rgba(212,175,55,0.15)] transition-all duration-300`} onClick={() => openModal('upgrade')} title="Upgrade to Pro">
-          <div className={`w-10 h-10 rounded-full bg-ui-sidebar border border-primary flex shrink-0 items-center justify-center text-primary ${isExpanded ? 'mb-4' : ''} group-hover:bg-primary/10 transition-colors`}>
-            <Crown size={20} strokeWidth={1.5} />
-          </div>
-          {isExpanded && (
+      <div className="p-3 mt-auto relative z-10">
+        <div 
+          className={`${isExpanded ? 'p-3.5' : 'p-2'} rounded-2xl bg-ui-surface border border-primary/40 shadow-sm flex flex-col relative group cursor-pointer hover:border-primary transition-all duration-200`} 
+          onClick={() => openModal('upgrade')} 
+          title="Upgrade to Pro"
+        >
+          {isExpanded ? (
             <>
-              <h4 className="text-[13px] font-bold text-text-main mb-2 font-serif italic tracking-wide">Upgrade to Pro</h4>
-              <p className="text-[11px] text-text-muted mb-3 leading-relaxed font-medium text-center">
-                Advanced analytics.<br />Real-time data.<br />Deeper insights.
-              </p>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 rounded-lg bg-primary/15 border border-primary/40 flex items-center justify-center text-primary shrink-0">
+                  <Crown size={14} strokeWidth={2} />
+                </div>
+                <h4 className="text-xs font-bold text-text-main font-serif">Upgrade to Pro</h4>
+              </div>
+              <ul className="text-[10px] text-text-muted space-y-1 mb-3 pl-1 leading-snug">
+                <li className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-primary" /> Advanced analytics</li>
+                <li className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-primary" /> Real-time data</li>
+                <li className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-primary" /> Deeper insights</li>
+                <li className="flex items-center gap-1.5"><span className="w-1 h-1 rounded-full bg-primary" /> Trade like an institution</li>
+              </ul>
+              <button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openModal('upgrade');
+                }}
+                className="w-full py-1.5 px-3 rounded-lg bg-primary hover:bg-primary-light text-text-dark font-bold text-xs transition-all shadow-xs flex items-center justify-center gap-1.5 active:scale-95"
+              >
+                <span>Upgrade Now</span>
+                <span>&rarr;</span>
+              </button>
             </>
+          ) : (
+            <div className="w-8 h-8 mx-auto rounded-lg bg-primary/15 border border-primary/40 flex items-center justify-center text-primary group-hover:scale-105 transition-transform">
+              <Crown size={16} strokeWidth={2} />
+            </div>
           )}
         </div>
       </div>

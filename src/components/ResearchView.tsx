@@ -16,15 +16,14 @@ export const ResearchView: React.FC<ResearchViewProps> = ({ onTrade }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [aiAnalysis, setAiAnalysis] = useState('Loading intelligence...');
 
-  
+  const currentStock = stocks.find((s) => s.symbol.toUpperCase() === selectedSymbol.toUpperCase()) || stocks[0];
+
   useEffect(() => {
     if (currentStock) {
       setAiAnalysis('Generating institutional market intelligence for ' + currentStock.symbol + '...');
       getStockAnalysis(currentStock).then(setAiAnalysis).catch(() => setAiAnalysis('Analysis unavailable.'));
     }
   }, [currentStock?.symbol]);
-
-  const currentStock = stocks.find((s) => s.symbol.toUpperCase() === selectedSymbol.toUpperCase()) || stocks[0];
 
   const filteredStocks = searchQuery.trim()
     ? stocks.filter(
@@ -62,7 +61,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({ onTrade }) => {
           />
           {searchQuery && (
             <div className="absolute left-0 right-0 top-full mt-2 bg-ui-surface border border-ui-border rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-ui-border">
-              {displayResults.map((s) => (
+              {filteredStocks.map((s) => (
                 <div key={s.symbol} className="flex items-center justify-between hover:bg-ui-surface-hover px-4 py-2">
                   <button
                     onClick={() => {

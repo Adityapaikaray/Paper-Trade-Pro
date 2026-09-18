@@ -13,7 +13,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
   const { profile, summary } = usePortfolio();
   const [activeFilter, setActiveFilter] = useState('1M');
   const [timeframeStats, setTimeframeStats] = useState({ returnPct: 0, totalGain: 0, currentValue: 0, investedValue: 0 });
-  const FILTERS = ['1 MIN', '5 MIN', '30 MIN', '1 HR', '1 WEEK', '1M', '6 M', '1 YEAR', '5 YEAR', 'ALL TIME'];
+  const FILTERS = ['1 MIN', '5 MIN', '30 MIN', '1 HR', '1 WEEK', '1M', '6M', '1 YEAR', '5 YEAR', 'ALL TIME'];
 
   const {
     investedValue,
@@ -42,28 +42,28 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
     <motion.div 
       initial={{ opacity: 0, y: 20 }} 
       animate={{ opacity: 1, y: 0 }} 
-      className="bg-ui-surface rounded-[28px] border border-ui-border shadow-2xl overflow-hidden flex flex-col w-full relative group"
+      className="bg-ui-surface rounded-[24px] border border-ui-border shadow-sm overflow-hidden flex flex-col w-full relative group"
     >
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       
-      <div className="p-8 lg:p-10 flex flex-col gap-8">
+      <div className="p-6 md:p-8 lg:p-10 flex flex-col gap-6 md:gap-8">
         
         {/* 1. Header */}
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div>
-            <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-3">Your Wealth Journey</p>
-            <h2 className="text-[32px] md:text-[40px] font-serif font-black text-text-main leading-none mb-2 tracking-tight">Portfolio Performance</h2>
-            <p className="text-text-muted text-[15px] font-medium">Track the growth of your investments over time</p>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-[0.3em] mb-2">Your Wealth Journey</p>
+            <h2 className="text-[28px] md:text-[36px] font-serif font-black text-text-main leading-none mb-2 tracking-tight">Portfolio Performance</h2>
+            <p className="text-text-muted text-xs md:text-sm font-medium">Track the growth of your investments over time</p>
           </div>
           
-          <div className="flex bg-ui-bg p-1 rounded-full border border-ui-border shadow-[0_5px_15px_rgba(0,0,0,0.5)] shrink-0 self-start max-w-full overflow-x-auto scrollbar-hide flex-nowrap" style={{ WebkitOverflowScrolling: 'touch' }}>
+          <div className="flex bg-ui-bg p-1 rounded-full border border-ui-border shadow-xs shrink-0 self-start max-w-full overflow-x-auto scrollbar-hide flex-nowrap" style={{ WebkitOverflowScrolling: 'touch' }}>
             {FILTERS.map(f => (
               <button 
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all whitespace-nowrap shrink-0 ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all whitespace-nowrap shrink-0 ${
                   activeFilter === f 
-                  ? 'bg-primary text-[#000000] shadow-[0_0_15px_rgba(212,175,55,0.4)] scale-105' 
+                  ? 'bg-[#17243A] text-white dark:bg-primary dark:text-black shadow-xs scale-105' 
                   : 'text-text-muted hover:text-text-main'
                 }`}
               >
@@ -154,7 +154,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
       </div>
 
       {/* 5. Bottom Navigation */}
-      <div className="bg-ui-sidebar border-t border-ui-border px-4 md:px-8 flex overflow-x-auto no-scrollbar relative z-10">
+      <div className="bg-[#FAF8F5] dark:bg-ui-sidebar border-t border-ui-border px-4 md:px-8 flex overflow-x-auto no-scrollbar relative z-10">
         {tabs.map(tab => {
           const isActive = activeTab === tab.id;
           const Icon = tab.icon;
@@ -162,8 +162,8 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 min-w-[120px] py-5 px-2 flex flex-col items-center justify-center gap-2 relative transition-all group ${
-                isActive ? 'text-primary bg-ui-surface-hover' : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover'
+              className={`flex-1 min-w-[120px] py-4 px-2 flex flex-col items-center justify-center gap-1.5 relative transition-all group ${
+                isActive ? 'text-primary bg-primary/10 dark:bg-ui-surface-hover font-bold' : 'text-text-muted hover:text-text-main hover:bg-ui-surface-hover/50 font-medium'
               }`}
             >
               <Icon size={18} className={`transition-colors ${isActive ? 'text-primary' : 'text-text-muted group-hover:text-text-main'}`} />

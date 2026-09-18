@@ -2,9 +2,10 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  */
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { UserProfile, Holding, Transaction, OrderItem, AppNotification, Stock, Currency, MarketRegion } from '../types.ts';
 import { useMarketData } from './MarketContext.tsx';
+import { useAuth } from './AuthContext.tsx';
 
 const INITIAL_BALANCES = { '$': 1000000, '₹': 1000000 };
 
@@ -161,6 +162,10 @@ const DEFAULT_CURRENCY: Currency = { code: 'USD', symbol: '$', rate: 1 };
 const PortfolioContext = createContext<PortfolioContextType | undefined>(undefined);
 
 export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuth();
+  const currentUserId = user?.id || 'guest';
+  const lastLoadedUserId = useRef<string>(currentUserId);
+
   const [marketContext, setMarketContext] = useState<MarketRegion | null>(() => (localStorage.getItem('papertrade_market') as MarketRegion | null) || null);
   const { stocks } = useMarketData();
 
@@ -169,9 +174,13 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     else localStorage.removeItem('papertrade_market');
   }, [marketContext]);
 
-  const [profile, setProfile] = useState<UserProfile>(() => {
-    const isReset = localStorage.getItem('papertrade_portfolio_reset') === 'true';
-    const saved = localStorage.getItem('papertrade_profile');
+  const loadProfileForUser = useCallback((uid: string): UserProfile => {
+    const isReset = localStorage.getItem(`papertrade_portfolio_reset_${uid}`) === 'true' || localStorage.getItem('papertrade_portfolio_reset') === 'true';
+    let saved = localStorage.getItem(`papertrade_profile_${uid}`);
+    if (!saved && (uid === 'guest' || uid === 'tp_usr_9876543210')) {
+      saved = localStorage.getItem('papertrade_profile');
+    }
+
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
@@ -180,7 +189,6 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           const cashIN = typeof parsed?.balances?.['₹'] === 'number' && parsed.balances['₹'] >= 0 ? parsed.balances['₹'] : 1000000;
           
           let holdings = Array.isArray(parsed?.holdings) ? parsed.holdings : [];
-          // If reset was explicitly recorded, ensure holdings are empty
           if (isReset || parsed.isPortfolioReset) {
             holdings = [];
           }
@@ -204,28 +212,48 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         console.error('Failed to parse saved profile:', err);
       }
     }
+
+    // Default holdings customized for new / distinct users
+    const isStandardDemoUser = uid === 'tp_usr_9876543210' || uid === 'guest';
     return {
       balances: INITIAL_BALANCES,
-      holdings: DEFAULT_HOLDINGS,
+      holdings: isStandardDemoUser ? DEFAULT_HOLDINGS : [
+        { symbol: 'RELIANCE', shares: 50, averagePrice: 2850.00, targetAllocation: 40 },
+        { symbol: 'TCS', shares: 35, averagePrice: 3890.00, targetAllocation: 35 },
+        { symbol: 'INFY', shares: 120, averagePrice: 1620.00, targetAllocation: 25 },
+      ],
       transactions: [],
-      orders: DEFAULT_ORDERS,
-      watchlist: ['TITAN', 'AMD', 'RELIANCE', 'TCS', 'NVDA', 'AAPL', 'INFY'],
+      orders: isStandardDemoUser ? DEFAULT_ORDERS : [],
+      watchlist: ['RELIANCE', 'TCS', 'INFY', 'TITAN', 'HDFCBANK', 'AAPL', 'NVDA'],
       alerts: [],
       notifications: DEFAULT_NOTIFICATIONS,
       history: [],
-      targetAllocations: { TITAN: 55, AMD: 10, RELIANCE: 25 },
+      targetAllocations: isStandardDemoUser ? { TITAN: 55, AMD: 10, RELIANCE: 25 } : { RELIANCE: 40, TCS: 35, INFY: 25 },
       isPortfolioReset: false,
     };
-  });
+  }, []);
+
+  const [profile, setProfile] = useState<UserProfile>(() => loadProfileForUser(currentUserId));
+
+  // Sync profile when user changes
+  useEffect(() => {
+    if (lastLoadedUserId.current !== currentUserId) {
+      lastLoadedUserId.current = currentUserId;
+      setProfile(loadProfileForUser(currentUserId));
+    }
+  }, [currentUserId, loadProfileForUser]);
 
   // Save profile to localStorage whenever it changes
   useEffect(() => {
     try {
-      localStorage.setItem('papertrade_profile', JSON.stringify(profile));
+      localStorage.setItem(`papertrade_profile_${currentUserId}`, JSON.stringify(profile));
+      if (currentUserId === 'guest' || currentUserId === 'tp_usr_9876543210') {
+        localStorage.setItem('papertrade_profile', JSON.stringify(profile));
+      }
     } catch (err) {
       console.error('Failed to save profile to localStorage:', err);
     }
-  }, [profile]);
+  }, [profile, currentUserId]);
 
   const currencySymbol = marketContext === 'US' ? '$' : '₹';
 

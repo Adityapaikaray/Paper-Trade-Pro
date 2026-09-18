@@ -98,16 +98,16 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
     const hasTick = !!item.tick;
     const isTickUp = item.tick === 'up';
 
-    // Tailored styling for crisp contrast on white backgrounds
+    // Tailored styling for high-contrast presentation on black background
     const baseChipClass = item.stockRef
-      ? 'cursor-pointer hover:bg-slate-100 hover:border-slate-300 dark:hover:bg-slate-800 dark:hover:border-slate-700'
-      : 'hover:bg-slate-50 dark:hover:bg-slate-800/40';
+      ? 'cursor-pointer bg-[#111622] border-[#1E2638] hover:bg-[#182030] hover:border-[#2C3850]'
+      : 'bg-[#111622] border-[#1E2638] hover:bg-[#182030]';
 
     const tickClass = hasTick
       ? isTickUp
-        ? 'bg-emerald-50 border-emerald-300 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-600/50 dark:text-emerald-300 shadow-xs'
-        : 'bg-rose-50 border-rose-300 text-rose-800 dark:bg-rose-950/40 dark:border-rose-600/50 dark:text-rose-300 shadow-xs'
-      : 'bg-slate-50/90 border-slate-200/90 text-slate-800 dark:bg-slate-900/40 dark:border-slate-800/90 dark:text-slate-200';
+        ? 'bg-emerald-950/60 border-emerald-500/60 text-emerald-300 shadow-[0_0_8px_rgba(0,208,132,0.2)]'
+        : 'bg-rose-950/60 border-rose-500/60 text-rose-300 shadow-[0_0_8px_rgba(255,92,92,0.2)]'
+      : '';
 
     return (
       <button
@@ -120,13 +120,13 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
         tabIndex={0}
         aria-label={`${item.name || item.symbol}, price ${item.price}, ${item.isPositive ? 'up' : 'down'} ${Math.abs(item.percentChange || 0).toFixed(2)} percent`}
         title={item.stockRef ? `Click to trade ${item.symbol} (${formatPrice(item.price, item.currency)})` : item.name}
-        className={`flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-mono border transition-all duration-200 shrink-0 select-none focus:outline-none focus:ring-2 focus:ring-primary ${baseChipClass} ${tickClass}`}
+        className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-mono border transition-all duration-200 shrink-0 select-none focus:outline-none focus:ring-1 focus:ring-primary ${baseChipClass} ${tickClass}`}
       >
         {/* Symbol badge */}
-        <span className="font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1">
+        <span className="font-bold tracking-tight text-white flex items-center gap-1.5">
           {item.symbol}
           {item.isIndex && (
-            <span className="text-[8.5px] font-sans font-bold px-1 py-0.2 rounded bg-slate-200/80 text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+            <span className="text-[8px] font-sans font-bold px-1 py-0.2 rounded bg-white/10 text-slate-300 border border-white/10">
               IDX
             </span>
           )}
@@ -134,21 +134,33 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
 
         {/* Real-time Price */}
         <span
-          className={`font-semibold tabular-nums transition-colors duration-200 ${
+          className={`font-semibold tabular-nums text-slate-200 ${
             hasTick
               ? isTickUp
-                ? 'text-emerald-700 dark:text-emerald-300 font-bold'
-                : 'text-rose-700 dark:text-rose-300 font-bold'
-              : 'text-slate-800 dark:text-slate-200'
+                ? 'text-emerald-300 font-bold'
+                : 'text-rose-300 font-bold'
+              : ''
           }`}
         >
           {formatPrice(item.price, item.currency)}
         </span>
 
+        {/* Mini Sparkline indicator */}
+        <svg width="24" height="12" viewBox="0 0 24 12" className="overflow-visible opacity-80 shrink-0">
+          <polyline
+            fill="none"
+            stroke={item.isPositive ? "#00D084" : "#FF5C5C"}
+            strokeWidth="1.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            points={item.isPositive ? "0,10 6,8 12,9 18,3 24,1" : "0,2 6,4 12,3 18,9 24,11"}
+          />
+        </svg>
+
         {/* Percentage change */}
         <span
           className={`font-bold flex items-center text-[11px] tabular-nums ${
-            item.isPositive ? 'text-[#00875A] dark:text-[#00D084]' : 'text-[#D32F2F] dark:text-[#FF5C5C]'
+            item.isPositive ? 'text-[#00D084]' : 'text-[#FF5C5C]'
           }`}
         >
           {item.isPositive ? (
@@ -162,10 +174,10 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
         {/* Active flash tick pill */}
         {hasTick && (
           <span
-            className={`text-[9px] font-bold px-1 rounded uppercase tracking-wider ${
+            className={`text-[8.5px] font-bold px-1 rounded uppercase tracking-wider ${
               isTickUp
-                ? 'bg-emerald-200/70 text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300'
-                : 'bg-rose-200/70 text-rose-800 dark:bg-rose-500/20 dark:text-rose-300'
+                ? 'bg-emerald-500/25 text-emerald-300'
+                : 'bg-rose-500/25 text-rose-300'
             }`}
           >
             {isTickUp ? '▲' : '▼'}
@@ -178,15 +190,15 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
   return (
     <aside
       aria-label="Live Market Ticker"
-      className="fixed bottom-16 md:bottom-0 left-0 right-0 h-10 bg-white/95 dark:bg-[#080E1A]/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 z-40 flex items-center shadow-[0_-2px_10px_rgba(0,0,0,0.03)] overflow-hidden select-none"
+      className="fixed bottom-0 left-0 right-0 h-10 bg-[#07090E] border-t border-[#182030] z-40 flex items-center shadow-[0_-4px_25px_rgba(0,0,0,0.6)] overflow-hidden select-none"
     >
       {/* Real-time Status Anchor */}
-      <div className="flex items-center h-full px-3 md:px-4 border-r border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-[#080E1A] z-20 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
+      <div className="flex items-center h-full px-3 md:px-4 border-r border-[#182030] shrink-0 bg-[#07090E] z-20 shadow-[4px_0_12px_rgba(0,0,0,0.4)]">
         {(() => {
           let label = 'CONNECTING';
           let detail = 'CONNECTING...';
           let color = 'bg-amber-500';
-          let bgColor = 'bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
+          let bgColor = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
           let ping = true;
 
           if (stocks.length > 0) {
@@ -197,18 +209,18 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
               label = 'CLOSED';
               detail = 'MARKET CLOSED';
               color = 'bg-slate-500';
-              bgColor = 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700';
+              bgColor = 'bg-slate-800/60 text-slate-400 border-slate-700/60';
               ping = false;
             } else if (!isRealtime) {
               label = 'DELAYED';
               detail = '15 MIN';
               color = 'bg-amber-500';
-              bgColor = 'bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
+              bgColor = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
             } else {
               label = 'LIVE';
               detail = 'STREAMING';
-              color = 'bg-[#00B887]';
-              bgColor = 'bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
+              color = 'bg-[#00D084]';
+              bgColor = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
             }
           }
 
@@ -218,10 +230,10 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
                 {ping && <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${color}`} />}
                 <span className={`relative inline-flex rounded-full h-2 w-2 ${color}`} />
               </span>
-              <span className="text-[10px] font-mono font-bold tracking-widest text-slate-800 dark:text-slate-200 uppercase">
+              <span className="text-[10px] font-mono font-bold tracking-widest text-white uppercase">
                 {label}
               </span>
-              <span className={`hidden sm:inline-flex text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-tight ${bgColor}`}>
+              <span className={`hidden sm:inline-flex text-[8.5px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-tight ${bgColor}`}>
                 {detail}
               </span>
             </div>
@@ -231,12 +243,12 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
 
       {/* Ticker Continuous Marquee Track */}
       <div className="flex-1 flex items-center h-full overflow-x-auto overflow-y-hidden scrollbar-hide relative group touch-pan-x">
-        {/* Soft edge gradients with clean white-point fade */}
-        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-[#080E1A] dark:via-[#080E1A]/80 dark:to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-white via-white/80 to-transparent dark:from-[#080E1A] dark:via-[#080E1A]/80 dark:to-transparent z-10 pointer-events-none" />
+        {/* Soft edge gradients on black background */}
+        <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#07090E] via-[#07090E]/80 to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-[#07090E] via-[#07090E]/80 to-transparent z-10 pointer-events-none" />
 
         {/* Marquee Animation Stream - 2 identical tracks for mathematically seamless loop */}
-        <div className="flex items-center shrink-0 animate-[ticker_40s_linear_infinite] hover:[animation-play-state:paused] will-change-transform">
+        <div className="flex items-center shrink-0 animate-[ticker_45s_linear_infinite] hover:[animation-play-state:paused] will-change-transform">
           {/* Primary Track */}
           <div className="flex items-center gap-2.5 pr-2.5 shrink-0">
             {tickerItems.map(item => renderItem(item, 'primary'))}

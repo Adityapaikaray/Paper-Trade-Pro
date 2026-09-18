@@ -146,14 +146,14 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         axios.get('/api/indices')
       ]);
 
-      const allData = res1.status === 'fulfilled' ? res1.value.data : {};
+      const allData: Record<string, any> = res1.status === 'fulfilled' ? res1.value.data : {};
       
       // Determine overall market status
-      const nseStock = Object.values(allData).find((d: any) => d.exchange === 'NSE' || d.exchange === 'NSI' || d.symbol.includes('.NS'));
-      const usStock = Object.values(allData).find((d: any) => d.symbol === 'AAPL' || d.symbol === 'MSFT');
+      const nseStock = Object.values(allData).find((d: any) => d && (d.exchange === 'NSE' || d.exchange === 'NSI' || (d.symbol && d.symbol.includes('.NS'))));
+      const usStock = Object.values(allData).find((d: any) => d && (d.symbol === 'AAPL' || d.symbol === 'MSFT'));
       setMarketStatus({
-        nse: nseStock?.marketState || 'UNKNOWN',
-        nyse: usStock?.marketState || 'UNKNOWN'
+        nse: (nseStock as any)?.marketState || 'UNKNOWN',
+        nyse: (usStock as any)?.marketState || 'UNKNOWN'
       });
 
       const now = Date.now();

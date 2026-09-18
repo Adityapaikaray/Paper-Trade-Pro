@@ -16,7 +16,8 @@ export type RouteId =
   | 'analytics'
   | 'research'
   | 'tools'
-  | 'news';
+  | 'news'
+  | 'login';
 
 export interface RouteState {
   id: RouteId;
