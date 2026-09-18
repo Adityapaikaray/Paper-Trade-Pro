@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Search, TrendingUp, TrendingDown, BookOpen, BarChart2, DollarSign, Award, ArrowUpRight, ShieldCheck, Newspaper } from 'lucide-react';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { Stock } from '../types.ts';
 import StockChart from './StockChart.tsx';
+import { getStockAnalysis } from '../services/geminiService.ts';
 
 interface ResearchViewProps {
   onTrade?: (stock: Stock) => void;
@@ -12,6 +14,15 @@ export const ResearchView: React.FC<ResearchViewProps> = ({ onTrade }) => {
   const { stocks } = useMarketData();
   const [selectedSymbol, setSelectedSymbol] = useState<string>('TITAN');
   const [searchQuery, setSearchQuery] = useState('');
+  const [aiAnalysis, setAiAnalysis] = useState('Loading intelligence...');
+
+  
+  useEffect(() => {
+    if (currentStock) {
+      setAiAnalysis('Generating institutional market intelligence for ' + currentStock.symbol + '...');
+      getStockAnalysis(currentStock).then(setAiAnalysis).catch(() => setAiAnalysis('Analysis unavailable.'));
+    }
+  }, [currentStock?.symbol]);
 
   const currentStock = stocks.find((s) => s.symbol.toUpperCase() === selectedSymbol.toUpperCase()) || stocks[0];
 
@@ -51,7 +62,7 @@ export const ResearchView: React.FC<ResearchViewProps> = ({ onTrade }) => {
           />
           {searchQuery && (
             <div className="absolute left-0 right-0 top-full mt-2 bg-ui-surface border border-ui-border rounded-xl shadow-xl z-30 max-h-56 overflow-y-auto divide-y divide-ui-border">
-              {filteredStocks.map((s) => (
+              {displayResults.map((s) => (
                 <div key={s.symbol} className="flex items-center justify-between hover:bg-ui-surface-hover px-4 py-2">
                   <button
                     onClick={() => {

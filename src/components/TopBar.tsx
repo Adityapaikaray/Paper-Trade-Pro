@@ -22,7 +22,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
   const { user, logout } = useAuth();
   const { addToast, toggleMobileMenu, openModal } = useUI();
   const { theme, toggleTheme } = useTheme();
-  const { currentRoute, goBack, history, activeTab, navigate } = useNavigation();
+  const { currentRoute, goBack, history, activeTab, navigate, setMenuOpen, isMenuOpen } = useNavigation();
   const {
     profile,
     marketContext,
@@ -389,9 +389,14 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
       {/* Left section - Context & Search */}
       <div className="flex-1 flex items-center gap-3 md:gap-4 lg:gap-8 max-w-4xl">
         {/* Compact Mobile Brand Mark */}
-        <div className="md:hidden shrink-0">
-          <img src="/tradepro-icon.jpg" alt="TradePro" className="w-8 h-8 rounded-lg object-contain" />
-        </div>
+        <button 
+          onClick={() => setMenuOpen(!isMenuOpen)} 
+          className="md:hidden shrink-0 transition-transform active:scale-95 outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
+          aria-label="Toggle navigation"
+          aria-expanded={isMenuOpen}
+        >
+          <img src="/tradepro-logo.jpg" alt="TradePro" className="w-[100px] h-[26px] object-contain object-left" />
+        </button>
 
         <div className="hidden lg:flex items-center gap-2 shrink-0">
           <span className="text-sm font-bold text-text-main capitalize">

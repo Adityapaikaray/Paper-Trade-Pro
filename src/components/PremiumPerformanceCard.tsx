@@ -12,7 +12,8 @@ interface PremiumPerformanceCardProps {
 const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeTab, setActiveTab }) => {
   const { profile, summary } = usePortfolio();
   const [activeFilter, setActiveFilter] = useState('1M');
-  const FILTERS = ['1D', '1W', '1M', '3M', '6M', '1Y', 'ALL'];
+  const [timeframeStats, setTimeframeStats] = useState({ returnPct: 0, totalGain: 0, currentValue: 0, investedValue: 0 });
+  const FILTERS = ['1 MIN', '5 MIN', '30 MIN', '1 HR', '1 WEEK', '1M', '6 M', '1 YEAR', '5 YEAR', 'ALL TIME'];
 
   const {
     investedValue,
@@ -26,7 +27,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
     holdingsCount,
   } = summary;
 
-  const isPositive = totalGain >= 0;
+  const isPositive = timeframeStats.totalGain >= 0;
 
   const tabs = [
     { id: 'Active Positions', label: `Active Positions (${holdingsCount})`, icon: Briefcase },
@@ -55,12 +56,12 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
             <p className="text-text-muted text-[15px] font-medium">Track the growth of your investments over time</p>
           </div>
           
-          <div className="flex bg-ui-bg p-1 rounded-full border border-ui-border shadow-[0_5px_15px_rgba(0,0,0,0.5)] shrink-0 self-start">
+          <div className="flex bg-ui-bg p-1 rounded-full border border-ui-border shadow-[0_5px_15px_rgba(0,0,0,0.5)] shrink-0 self-start max-w-full overflow-x-auto scrollbar-hide flex-nowrap" style={{ WebkitOverflowScrolling: 'touch' }}>
             {FILTERS.map(f => (
               <button 
                 key={f}
                 onClick={() => setActiveFilter(f)}
-                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all ${
+                className={`px-4 py-2 rounded-full text-[13px] font-bold transition-all whitespace-nowrap shrink-0 ${
                   activeFilter === f 
                   ? 'bg-primary text-[#000000] shadow-[0_0_15px_rgba(212,175,55,0.4)] scale-105' 
                   : 'text-text-muted hover:text-text-main'
@@ -82,7 +83,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
             <div>
               <p className={`text-[11px] font-bold uppercase tracking-wider mb-0.5 ${isPositive ? 'text-positive' : 'text-negative'}`}>Portfolio Return</p>
               <p className="text-2xl font-mono font-bold text-text-main leading-none">
-                {isPositive ? '+' : ''}{returnPct.toFixed(2)}%
+                {timeframeStats.totalGain >= 0 ? '+' : ''}{timeframeStats.returnPct.toFixed(2)}%
               </p>
             </div>
           </div>
@@ -95,7 +96,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
             <div>
               <p className={`text-[11px] font-bold uppercase tracking-wider mb-0.5 ${isPositive ? 'text-positive' : 'text-negative'}`}>Total Gain / P&L</p>
               <p className={`text-2xl font-mono font-bold leading-none ${isPositive ? 'text-positive' : 'text-negative'}`}>
-                {isPositive ? '+' : '-'}{currencySymbol}{Math.abs(totalGain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {timeframeStats.totalGain >= 0 ? '+' : '-'}{currencySymbol}{Math.abs(timeframeStats.totalGain).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
           </div>
@@ -109,7 +110,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
             <div>
               <p className="text-[11px] font-bold text-primary uppercase tracking-wider mb-0.5">Current Portfolio Value</p>
               <p className="text-2xl font-mono font-bold text-text-main leading-none">
-                {currencySymbol}{currentValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                {currencySymbol}{(timeframeStats.currentValue || currentValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
               <p className="text-[9px] text-primary mt-1 font-medium flex items-center gap-1"><Clock size={10} /> Market value of holdings</p>
             </div>
@@ -125,6 +126,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
              currencySymbol={currencySymbol} 
              timeRange={activeFilter}
              onTimeRangeChange={setActiveFilter}
+             onStatsChange={setTimeframeStats}
              hasHoldings={hasHoldings}
              premiumMode={true}
           />

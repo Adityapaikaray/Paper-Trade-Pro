@@ -11,6 +11,11 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
+import { db } from './src/server/db.ts';
+import { YahooProvider } from './src/server/yahooProvider.ts';
+const provider = new YahooProvider();
+
+
 // Gemini AI client initialization
 let aiClient: GoogleGenAI | null = null;
 function getGenAI(): GoogleGenAI | null {
@@ -402,55 +407,12 @@ const KEY_INDICES = [
   { key: "niftybank", name: "Nifty Bank", symbol: "^NSEBANK", displaySymbol: "BANK NIFTY", region: "India", currency: "₹", baselinePrice: 56154.30, baselineChange: -317.65, baselinePct: -0.56 }
 ];
 
+
 app.get("/api/indices", async (req, res) => {
-  try {
-    const indicesData = await Promise.all(
-      KEY_INDICES.map(async (idx) => {
-        const quote = await fetchYahooQuote(idx.symbol);
-        if (quote && quote.price !== undefined) {
-          return {
-            key: idx.key,
-            name: idx.name,
-            symbol: idx.symbol,
-            displaySymbol: idx.displaySymbol,
-            region: idx.region,
-            currency: idx.currency,
-            price: quote.price,
-            change: quote.change,
-            percentChange: quote.percent_change,
-            dayHigh: quote.day_high,
-            dayLow: quote.day_low,
-            prevClose: quote.close,
-            fiftyTwoWeekHigh: quote.fifty_two_week_high,
-            fiftyTwoWeekLow: quote.fifty_two_week_low,
-            isLive: quote.is_live,
-            lastUpdated: quote.timestamp,
-            history: quote.history
-          };
-        }
-
-        // Return baseline if temporary upstream delay
-        return {
-          key: idx.key,
-          name: idx.name,
-          symbol: idx.symbol,
-          displaySymbol: idx.displaySymbol,
-          region: idx.region,
-          currency: idx.currency,
-          price: idx.baselinePrice,
-          change: idx.baselineChange,
-          percentChange: idx.baselinePct,
-          isLive: false,
-          lastUpdated: Date.now()
-        };
-      })
-    );
-
-    res.json(indicesData);
-  } catch (error: any) {
-    console.error("Error fetching indices:", error);
-    res.status(500).json({ error: "Failed to fetch key index data" });
-  }
+  const symbols = ['^DJI', '^GSPC', '^IXIC', '^GDAXI', '^NSEI', '^BSESN', '^NSEBANK'];
+  const queries = symbols.map(s => ({ exchange: 'UNKNOWN', symbol: s }));
+  const quotes = await provider.getQuotes(queries);
+  res.json(quotes);
 });
 
 // Dedicated interactive chart endpoint supporting multi-timeframe queries for both indices and stocks
@@ -771,6 +733,54 @@ function parseSmartTradeFallback(prompt: string, context: any) {
     trade: null
   };
 }
+
+
+// --- NSE & BSE Market Data API ---
+
+app.get("/api/instruments", (req, res) => {
+  res.json(db.getAll());
+});
+
+app.get("/api/instruments/search", async (req, res) => {
+  const query = req.query.q;
+  if (!query) return res.json([]);
+  
+  // Combine local DB and provider search
+  const localResults = db.search(query);
+  if (localResults.length > 0) {
+    return res.json(localResults);
+  }
+  
+  const providerResults = await provider.searchInstruments(query);
+  res.json(providerResults);
+});
+
+app.get("/api/quotes", async (req, res) => {
+  const symbolsParam = req.query.symbols;
+  if (!symbolsParam) return res.status(400).json({ error: "No symbols" });
+  
+  const pairs = symbolsParam.split(',').map(s => {
+    const parts = s.split(':');
+    return parts.length === 2 ? { exchange: parts[0], symbol: parts[1] } : { exchange: 'NSE', symbol: parts[0] };
+  });
+  
+  const quotes = await provider.getQuotes(pairs);
+  res.json(quotes);
+});
+
+app.get("/api/quotes/:exchange/:symbol", async (req, res) => {
+  const quote = await provider.getQuote(req.params.exchange, req.params.symbol);
+  if (!quote) return res.status(404).json({ error: "Not found" });
+  res.json(quote);
+});
+
+app.get("/api/historical/:exchange/:symbol", async (req, res) => {
+  const interval = req.query.interval || '1 day';
+  const range = req.query.range || '1Y';
+  
+  const data = await provider.getHistoricalData(req.params.exchange, req.params.symbol, interval, range);
+  res.json(data);
+});
 
 // Copilot API Route
 app.post("/api/copilot", express.json(), async (req, res) => {

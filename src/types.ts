@@ -22,6 +22,7 @@ export interface Stock {
   fiftyTwoWeekLow?: number;
   lastUpdated?: number;
   isRealtime?: boolean;
+  marketState?: string;
   history?: { time: string; price: number }[];
 }
 

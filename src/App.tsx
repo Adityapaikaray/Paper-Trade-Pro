@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import Sidebar from './components/Sidebar.tsx';
-import BottomNav from './components/BottomNav.tsx';
+
 import TopBar from './components/TopBar.tsx';
 import BottomMarketTicker from './components/BottomMarketTicker.tsx';
 import DashboardView from './components/DashboardView.tsx';
@@ -61,7 +61,7 @@ export default function AppWrapper() {
   );
 }
 
-import MobileMoreMenu from './components/MobileMoreMenu.tsx';
+import MobileNavigationDrawer from './components/MobileNavigationDrawer.tsx';
 import { useNavigation } from './contexts/NavigationContext.tsx';
 
 function AppContent() {
@@ -212,10 +212,10 @@ function AppContent() {
                 </footer>
               </div>
               
-              <BottomNav />
+              
             </main>
 
-            <MobileMoreMenu />
+            <MobileNavigationDrawer />
 
             <CommandPalette 
               isOpen={isCommandPaletteOpen}

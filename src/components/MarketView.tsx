@@ -21,23 +21,23 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
   const { stocks, isLive, lastUpdated, priceTicks, refresh, isLoading, marketStatus } = useMarketData();
   const { toggleWatchlist, isWatchlisted, marketContext } = usePortfolio();
   const [searchTerm, setSearchTerm] = React.useState('');
-  const [selectedCountry, setSelectedCountry] = React.useState('All');
+  const [selectedExchange, setSelectedExchange] = React.useState('All');
   const [selectedSector, setSelectedSector] = React.useState('All');
   const [alertStock, setAlertStock] = React.useState<Stock | null>(null);
   const [expandedSymbol, setExpandedSymbol] = React.useState<string | null>(null);
 
-  const countries = ['All', ...new Set(stocks.map(s => s.country))];
+  const exchanges = ['All', 'NSE', 'BSE', ...new Set(stocks.filter(s => s.exchange && s.exchange !== 'NSE' && s.exchange !== 'BSE').map(s => s.exchange))];
   const sectors = ['All', ...new Set(stocks.map(s => s.sector))].sort();
 
   
-  const contextCountry = marketContext === 'IN' ? 'India' : (marketContext === 'US' ? 'USA' : 'All');
+  const contextExchange = marketContext === 'IN' ? 'NSE' : (marketContext === 'US' ? 'US' : 'All');
 
   const filteredStocks = stocks.filter(s => {
     const matchesSearch = s.symbol.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           s.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCountry = contextCountry !== 'All' ? s.country === contextCountry : (selectedCountry === 'All' || s.country === selectedCountry);
+    const matchesExchange = contextExchange !== 'All' ? s.exchange === contextExchange : (selectedExchange === 'All' || s.exchange === selectedExchange);
     const matchesSector = selectedSector === 'All' || s.sector === selectedSector;
-    return matchesSearch && matchesCountry && matchesSector;
+    return matchesSearch && matchesExchange && matchesSector;
   });
 
 
@@ -100,17 +100,17 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
             <div className="flex items-center gap-2 bg-ui-bg p-1.5 rounded-2xl border border-ui-border shadow-md">
               <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-3">Region:</span>
               <div className="flex items-center gap-1">
-                {countries.map(country => (
+                {exchanges.map(exchange => (
                   <button
-                    key={country}
-                    onClick={() => setSelectedCountry(country)}
+                    key={exchange}
+                    onClick={() => setSelectedExchange(exchange)}
                     className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
-                      selectedCountry === country 
+                      selectedExchange === exchange 
                         ? 'bg-primary text-ui-bg shadow-lg shadow-primary/10' 
                         : 'text-text-muted hover:text-primary hover:bg-ui-surface'
                     }`}
                   >
-                    {country}
+                    {exchange}
                   </button>
                 ))}
               </div>

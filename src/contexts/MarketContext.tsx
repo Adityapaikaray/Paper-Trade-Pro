@@ -7,6 +7,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Stock, IndexQuote } from '../types.ts';
 import { MOCK_STOCKS } from '../constants.ts';
 import axios from 'axios';
+declare global {
+  interface Window {
+    __instrumentsFetched: boolean;
+  }
+}
 
 interface MarketContextType {
   stocks: Stock[];
@@ -52,7 +57,7 @@ const formatVolume = (vol: number | string | undefined): string => {
 };
 
 export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [stocks, setStocks] = useState<Stock[]>(MOCK_STOCKS);
+  const [stocks, setStocks] = useState<Stock[]>([]);
   const [indices, setIndices] = useState<IndexQuote[]>(INITIAL_INDICES);
   const [isLive, setIsLive] = useState<boolean>(false);
   const [lastUpdated, setLastUpdated] = useState<number>(Date.now());
@@ -102,34 +107,66 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, []);
 
+  
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Fetch stock batches and key indices concurrently
-      const batch1 = MOCK_STOCKS.slice(0, 26).map(getApiSymbol).join(',');
-      const batch2 = MOCK_STOCKS.slice(26).map(getApiSymbol).join(',');
+      let currentStocksList = stocks;
+      
+      // We need a ref to track if we've fetched instruments yet to avoid stale closure issues
+      if (currentStocksList.length === 0 && !window.__instrumentsFetched) {
+        window.__instrumentsFetched = true;
+        const instRes = await axios.get('/api/instruments');
+        currentStocksList = instRes.data.map((i: any) => ({
+          symbol: i.exchange_symbol || i.display_name,
+          name: i.company_name,
+          price: 0,
+          change: 0,
+          changePercent: 0,
+          volume: "0",
+          marketCap: "N/A",
+          pe: "N/A",
+          sector: i.sector || 'Unknown',
+          country: i.exchange === 'NSE' || i.exchange === 'BSE' ? 'India' : 'USA',
+          exchange: i.exchange,
+          history: []
+        }));
+        setStocks(currentStocksList);
+      }
+      
+      if (currentStocksList.length === 0) {
+        setIsLoading(false);
+        return;
+      }
 
-      const [res1, res2, indicesRes] = await Promise.allSettled([
-        axios.get(`/api/market-data?symbols=${batch1}`),
-        axios.get(`/api/market-data?symbols=${batch2}`),
+      const symbolsToFetch = currentStocksList.map((s: any) => `${s.exchange || 'NSE'}:${s.symbol}`).join(',');
+      
+      const [res1, indicesRes] = await Promise.allSettled([
+        axios.get(`/api/quotes?symbols=${symbolsToFetch}`),
         axios.get('/api/indices')
       ]);
 
-      const data1 = res1.status === 'fulfilled' ? res1.value.data : {};
-      const data2 = res2.status === 'fulfilled' ? res2.value.data : {};
-      const allData = { ...(data1 || {}), ...(data2 || {}) };
+      const allData = res1.status === 'fulfilled' ? res1.value.data : {};
+      
+      // Determine overall market status
+      const nseStock = Object.values(allData).find((d: any) => d.exchange === 'NSE' || d.exchange === 'NSI' || d.symbol.includes('.NS'));
+      const usStock = Object.values(allData).find((d: any) => d.symbol === 'AAPL' || d.symbol === 'MSFT');
+      setMarketStatus({
+        nse: nseStock?.marketState || 'UNKNOWN',
+        nyse: usStock?.marketState || 'UNKNOWN'
+      });
+
       const now = Date.now();
       let hasLiveData = false;
 
-      // Update stocks
-      setStocks(currentStocks =>
-        currentStocks.map(stock => {
-          const apiSymbol = getApiSymbol(stock);
-          const liveData = allData[apiSymbol] || allData[stock.symbol];
+      setStocks(current =>
+        current.map(stock => {
+          const apiSymbol = `${stock.exchange || 'NSE'}:${stock.symbol}`;
+          const liveData = allData[apiSymbol];
 
-          if (liveData && (liveData.price !== undefined || liveData.close !== undefined)) {
+          if (liveData && liveData.price !== undefined) {
             hasLiveData = true;
-            const newPrice = parseFloat(liveData.close || liveData.price);
+            const newPrice = liveData.price;
             const oldPrice = prevPricesRef.current[stock.symbol] ?? stock.price;
 
             if (newPrice > oldPrice + 0.001) {
@@ -143,53 +180,58 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             return {
               ...stock,
               price: newPrice,
-              change: parseFloat(liveData.change ?? '0'),
-              changePercent: parseFloat(liveData.percent_change ?? '0'),
-              dayHigh: liveData.day_high,
-              dayLow: liveData.day_low,
-              prevClose: liveData.previous_close,
-              fiftyTwoWeekHigh: liveData.fifty_two_week_high,
-              fiftyTwoWeekLow: liveData.fifty_two_week_low,
-              volume: formatVolume(liveData.volume) !== 'N/A' ? formatVolume(liveData.volume) : stock.volume,
-              isRealtime: true,
+              change: liveData.change,
+              changePercent: liveData.changePercent,
+              dayHigh: liveData.high,
+              dayLow: liveData.low,
+              prevClose: liveData.previousClose,
+              fiftyTwoWeekHigh: liveData.fiftyTwoWeekHigh,
+              fiftyTwoWeekLow: liveData.fiftyTwoWeekLow,
+              volume: typeof liveData.volume === 'number' ? liveData.volume.toString() : liveData.volume,
+              isRealtime: liveData.isRealtime || false,
               lastUpdated: liveData.timestamp || now,
-              history: Array.isArray(liveData.history) ? liveData.history : stock.history,
+              marketState: liveData.marketState,
             };
           }
           return stock;
         })
       );
-
-      // Update indices
-      if (indicesRes.status === 'fulfilled' && Array.isArray(indicesRes.value.data)) {
-        const liveIndices = indicesRes.value.data as IndexQuote[];
-        if (liveIndices.length > 0) {
-          hasLiveData = true;
-          setIndices(currentIndices =>
-            currentIndices.map(existing => {
-              const incoming = liveIndices.find(idx => idx.key === existing.key || idx.symbol === existing.symbol);
-              if (incoming && incoming.price !== undefined) {
-                const oldPrice = prevIndexPricesRef.current[existing.key] ?? existing.price;
-                if (incoming.price > oldPrice + 0.001) {
-                  triggerIndexTick(existing.key, 'up');
-                } else if (incoming.price < oldPrice - 0.001) {
-                  triggerIndexTick(existing.key, 'down');
-                }
-                prevIndexPricesRef.current[existing.key] = incoming.price;
-
-                return {
-                  ...existing,
-                  ...incoming,
-                  lastUpdated: incoming.lastUpdated || now,
-                  isLive: true
-                };
+      
+// Update indices
+      if (indicesRes.status === 'fulfilled' && typeof indicesRes.value.data === 'object' && !Array.isArray(indicesRes.value.data)) {
+        const liveIndicesDict = indicesRes.value.data;
+        hasLiveData = true;
+        setIndices(currentIndices =>
+          currentIndices.map(existing => {
+            const apiSymbol = existing.symbol;
+            // Depending on how YahooProvider formats it, the key is usually 'UNKNOWN:^DJI' or 'UNKNOWN:DJI'
+            const possibleKeys = [`UNKNOWN:${apiSymbol}`, `NSE:${apiSymbol}`, `BSE:${apiSymbol}`, `UNKNOWN:${apiSymbol.replace('^', '')}`];
+            const incomingKey = Object.keys(liveIndicesDict).find(k => possibleKeys.includes(k) || k.includes(apiSymbol));
+            const incoming = incomingKey ? liveIndicesDict[incomingKey] : null;
+            
+            if (incoming && incoming.price !== undefined) {
+              const oldPrice = prevIndexPricesRef.current[existing.key] ?? existing.price;
+              if (incoming.price > oldPrice + 0.001) {
+                triggerIndexTick(existing.key, 'up');
+              } else if (incoming.price < oldPrice - 0.001) {
+                triggerIndexTick(existing.key, 'down');
               }
-              return existing;
-            })
-          );
-        }
-      }
+              prevIndexPricesRef.current[existing.key] = incoming.price;
 
+              return {
+                ...existing,
+                price: incoming.price,
+                change: incoming.change,
+                percentChange: incoming.changePercent,
+                lastUpdated: incoming.timestamp || Date.now(),
+                isLive: true
+              };
+            }
+            return existing;
+          })
+        );
+      }
+      
       if (hasLiveData) {
         setIsLive(true);
         setLastUpdated(now);

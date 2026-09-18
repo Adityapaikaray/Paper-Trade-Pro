@@ -3,7 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
+import axios from 'axios';
+import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { useMarketData } from '../contexts/MarketContext.tsx';
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -25,12 +28,13 @@ export interface PortfolioGraphProps {
   currencySymbol?: string;
   timeRange?: string;
   onTimeRangeChange?: (range: string) => void;
+  onStatsChange?: (stats: { returnPct: number, totalGain: number, currentValue: number, investedValue: number }) => void;
   hasHoldings?: boolean;
   isReset?: boolean;
   premiumMode?: boolean;
 }
 
-const FILTERS = ['1D', '1W', '1M', '3M', '6M', '1Y', 'ALL'];
+const FILTERS = ['1 MIN', '5 MIN', '30 MIN', '1 HR', '1 WEEK', '1M', '6 M', '1 YEAR', '5 YEAR', 'ALL TIME'];
 
 interface ChartDataPoint {
   timestamp: number;
@@ -47,6 +51,7 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
   currencySymbol = '₹',
   timeRange = '1M',
   onTimeRangeChange,
+  onStatsChange,
   hasHoldings,
   isReset = false,
   premiumMode = false,
@@ -57,12 +62,30 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
   const isPortfolioEmpty = hasHoldings !== undefined
     ? !hasHoldings
     : (isReset || (investedValue === 0 && currentValue === 0));
+
+  const { profile } = usePortfolio();
+  const { isLive, lastUpdated, stocks } = useMarketData();
+    const holdings = profile.holdings || [];
+
+  const isIntradayMode = ['1 MIN', '5 MIN', '30 MIN', '1 HR'].includes(timeRange || '1M');
+
+  const portfolioPrevClose = useMemo(() => {
+    if (isPortfolioEmpty || !hasHoldings || holdings.length === 0) return 0;
+    let total = 0;
+    holdings.forEach(h => {
+      const stock = stocks.find(s => s.symbol === h.symbol);
+      const prev = stock?.prevClose || h.averagePrice || 0;
+      total += prev * h.shares;
+    });
+    return total;
+  }, [holdings, stocks, isPortfolioEmpty, hasHoldings]);
   const safeInvested = isPortfolioEmpty ? 0 : Math.max(0, investedValue);
   const safeCurrent = isPortfolioEmpty ? 0 : Math.max(0, currentValue);
 
-  // Return & P&L calculation strictly between Current Value and Invested Value (zero cash)
-  const pnl = safeCurrent - safeInvested;
-  const returnPct = safeInvested > 0 ? (pnl / safeInvested) * 100 : 0;
+  // For intraday, use previous close as reference
+  const refValue = isIntradayMode ? portfolioPrevClose : safeInvested;
+  const pnl = safeCurrent - refValue;
+  const returnPct = refValue > 0 ? (pnl / refValue) * 100 : 0;
   const isGain = pnl >= 0;
 
   // Format currency with standard commas and two decimal places
@@ -89,117 +112,173 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
   };
 
   // Generate historical simulation dataset comparing Invested Value vs Current Value
-  const chartData: ChartDataPoint[] = useMemo(() => {
-    if (isPortfolioEmpty) {
-      return [];
-    }
-
-    const now = Date.now();
-    const points: ChartDataPoint[] = [];
-
-    // Configuration for different time horizons
-    let pointCount = 30;
-    let stepMs = 24 * 60 * 60 * 1000; // 1 day default
-    let isIntraday = false;
-
-    switch (timeRange) {
-      case '1D':
-        pointCount = 20;
-        stepMs = 20 * 60 * 1000; // 20 mins across active hours
-        isIntraday = true;
-        break;
-      case '1W':
-        pointCount = 7;
-        stepMs = 24 * 60 * 60 * 1000;
-        break;
-      case '1M':
-        pointCount = 30;
-        stepMs = 24 * 60 * 60 * 1000;
-        break;
-      case '3M':
-        pointCount = 35;
-        stepMs = 2.5 * 24 * 60 * 60 * 1000;
-        break;
-      case '6M':
-        pointCount = 40;
-        stepMs = 4.5 * 24 * 60 * 60 * 1000;
-        break;
-      case '1Y':
-        pointCount = 45;
-        stepMs = 8 * 24 * 60 * 60 * 1000;
-        break;
-      case 'ALL':
-        pointCount = 50;
-        stepMs = 12 * 24 * 60 * 60 * 1000;
-        break;
-      default:
-        pointCount = 30;
-        stepMs = 24 * 60 * 60 * 1000;
-    }
-
-    // Determine starting value for current market value simulation trajectory
-    // In ALL/1Y/6M/3M, assets start near purchase cost and grow towards current value
-    const growthRatio = safeInvested > 0 ? safeCurrent / safeInvested : 1;
-    let initialCurrentVal = safeInvested;
     
-    if (timeRange === '1D') {
-      // Intraday fluctuates around recent opening price
-      initialCurrentVal = safeCurrent * (1 - (isGain ? 0.015 : -0.012));
-    } else if (timeRange === '1W') {
-      initialCurrentVal = safeCurrent * (1 - (isGain ? 0.04 : -0.03));
-    } else if (timeRange === '1M') {
-      initialCurrentVal = safeInvested * (growthRatio > 1 ? 1.05 : 0.95);
-    } else {
-      initialCurrentVal = safeInvested * 0.98;
+
+
+  const [apiChartData, setApiChartData] = useState<ChartDataPoint[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  // Fetch real historical data for the portfolio
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function fetchData() {
+      if (isPortfolioEmpty || !hasHoldings || holdings.length === 0) {
+        setApiChartData([]);
+        setIsLoading(false);
+        return;
+      }
+      
+      setIsLoading(true);
+      setError('');
+      
+      try {
+        let rangeQuery = '1M';
+        let intervalQuery = '1d';
+        let isIntraday = false;
+
+        switch (timeRange) {
+          case '1 MIN': rangeQuery = '1D'; intervalQuery = '1m'; isIntraday = true; break;
+          case '5 MIN': rangeQuery = '1D'; intervalQuery = '5m'; isIntraday = true; break;
+          case '30 MIN': rangeQuery = '1D'; intervalQuery = '30m'; isIntraday = true; break;
+          case '1 HR': rangeQuery = '1D'; intervalQuery = '60m'; isIntraday = true; break;
+          case '1 WEEK': rangeQuery = '1W'; intervalQuery = '15m'; break;
+          case '1M': rangeQuery = '1M'; intervalQuery = '1d'; break;
+          case '6 M': rangeQuery = '6M'; intervalQuery = '1d'; break;
+          case '1 YEAR': rangeQuery = '1Y'; intervalQuery = '1wk'; break;
+          case '5 YEAR': rangeQuery = '5Y'; intervalQuery = '1mo'; break;
+          case 'ALL TIME': rangeQuery = 'MAX'; intervalQuery = '1mo'; break;
+          default: rangeQuery = '1M'; intervalQuery = '1d';
+        }
+
+        const exchange = currencySymbol === '₹' ? 'NSE' : 'US';
+        
+        const promises = holdings.map(async (h) => {
+           try {
+             const res = await axios.get(`/api/historical/${exchange}/${h.symbol}?range=${rangeQuery}&interval=${intervalQuery}`);
+             return { symbol: h.symbol, shares: h.shares, data: res.data || [] };
+           } catch (e) {
+             console.error(`Failed to fetch ${h.symbol}`, e);
+             return { symbol: h.symbol, shares: h.shares, data: [] };
+           }
+        });
+        
+        const results = await Promise.all(promises);
+        if (!isMounted) return;
+
+        const allTimestamps = new Set<number>();
+        results.forEach(r => {
+           r.data.forEach((d: any) => allTimestamps.add(d.timestamp));
+        });
+        
+        const sortedTimestamps = Array.from(allTimestamps).sort((a, b) => a - b);
+        
+        const latestPrices = new Map<string, number>();
+        const points: ChartDataPoint[] = [];
+        
+        const safeInv = Number(investedValue?.toFixed(2) || 0);
+
+        sortedTimestamps.forEach(ts => {
+           let totalStockValue = 0;
+           results.forEach(r => {
+             const point = r.data.find((d: any) => d.timestamp === ts);
+             if (point && point.close != null) {
+                latestPrices.set(r.symbol, point.close);
+             }
+             const price = latestPrices.get(r.symbol) || 0;
+             totalStockValue += (price * r.shares);
+           });
+           
+           if (totalStockValue === 0) return; // Skip if no data yet
+
+           const d = new Date(ts);
+           let timeLabel = '';
+           if (isIntraday) {
+             timeLabel = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+           } else if (timeRange === '6 M' || timeRange === '1 YEAR') {
+             timeLabel = `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]} ${d.getFullYear().toString().substr(2)}`;
+           } else if (timeRange === '5 YEAR' || timeRange === 'ALL TIME') {
+             timeLabel = d.getFullYear().toString();
+           } else {
+             timeLabel = `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`;
+           }
+           
+           points.push({
+             timestamp: ts,
+             time: timeLabel,
+             fullDate: formatDateLabel(ts, isIntraday),
+             investedValue: isIntradayMode ? Number(portfolioPrevClose.toFixed(2)) : safeInv,
+             currentValue: Number(totalStockValue.toFixed(2)),
+           });
+        });
+
+        // Always append the very latest live point
+        if (points.length > 0) {
+          const now = Date.now();
+          const d = new Date(now);
+          let timeLabel = '';
+          if (isIntraday) {
+            timeLabel = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          } else if (timeRange === '6 M' || timeRange === '1 YEAR') {
+            timeLabel = `${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]} ${d.getFullYear().toString().substr(2)}`;
+          } else if (timeRange === '5 YEAR' || timeRange === 'ALL TIME') {
+            timeLabel = d.getFullYear().toString();
+          } else {
+            timeLabel = `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`;
+          }
+          
+          points.push({
+            timestamp: now,
+            time: timeLabel,
+            fullDate: formatDateLabel(now, isIntraday),
+            investedValue: isIntradayMode ? Number(portfolioPrevClose.toFixed(2)) : safeInv,
+            currentValue: Number(currentValue?.toFixed(2) || 0),
+          });
+        }
+
+        setApiChartData(points);
+        setIsLoading(false);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Unable to load portfolio performance data.');
+        setIsLoading(false);
+      }
     }
 
-    for (let i = 0; i < pointCount - 1; i++) {
-      const progress = i / (pointCount - 1);
-      const ts = now - (pointCount - 1 - i) * stepMs;
-      const d = new Date(ts);
+    fetchData();
 
-      // Invested Value represents cumulative capital invested into holdings
-      // Stepped slightly over longer periods to reflect order placement, flat for shorter
-      let ptInvested = safeInvested;
-      if ((timeRange === '6M' || timeRange === '1Y' || timeRange === 'ALL') && progress < 0.3) {
-        ptInvested = safeInvested * (0.75 + progress * 0.83);
-      }
+    // Refetch every minute for intraday
+    let intervalId: any = null;
+    if (['1 MIN', '5 MIN', '30 MIN', '1 HR'].includes(timeRange || '1M')) {
+      intervalId = setInterval(fetchData, 60000);
+    }
+    
+    return () => {
+      isMounted = false;
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, [timeRange, holdings, hasHoldings, isPortfolioEmpty, currentValue, investedValue, currencySymbol]);
 
-      // Smooth geometric interpolation towards live current value with realistic market oscillation
-      const baseTrend = initialCurrentVal + (safeCurrent - initialCurrentVal) * Math.pow(progress, 1.15);
-      const waveNoise = Math.sin(progress * Math.PI * 3.5) * (safeCurrent * 0.015) +
-                        Math.cos(progress * Math.PI * 5) * (safeCurrent * 0.008);
-      const ptCurrent = Math.max(0, Number((baseTrend + waveNoise).toFixed(2)));
-
-      const timeLabel = isIntraday
-        ? d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : `${d.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][d.getMonth()]}`;
-
-      points.push({
-        timestamp: ts,
-        time: timeLabel,
-        fullDate: formatDateLabel(ts, isIntraday),
-        investedValue: Number(ptInvested.toFixed(2)),
-        currentValue: ptCurrent,
+  // Sync stats back up to PremiumPerformanceCard
+  useEffect(() => {
+    if (onStatsChange && apiChartData.length > 0 && !isLoading) {
+      const startPoint = apiChartData[0];
+      const endPoint = apiChartData[apiChartData.length - 1];
+      // Send the GLOBAL stats to the parent component, NOT the timeframe stats,
+      // to keep "Total Gain / P&L" based on Invested Value separately.
+      onStatsChange({
+        returnPct: (safeInvested > 0 ? ((safeCurrent - safeInvested) / safeInvested) * 100 : 0),
+        totalGain: (safeCurrent - safeInvested),
+        currentValue: safeCurrent,
+        investedValue: safeInvested
       });
     }
+  }, [apiChartData, isLoading, onStatsChange]);
 
-    // Anchor the very last data point to the EXACT current live holdings value and invested cost
-    const lastDate = new Date(now);
-    points.push({
-      timestamp: now,
-      time: isIntraday
-        ? lastDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : `${lastDate.getDate()} ${['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'][lastDate.getMonth()]}`,
-      fullDate: formatDateLabel(now, isIntraday),
-      investedValue: Number(safeInvested.toFixed(2)),
-      currentValue: Number(safeCurrent.toFixed(2)),
-    });
+  const chartData = apiChartData;
 
-    return points;
-  }, [isPortfolioEmpty, safeInvested, safeCurrent, timeRange, isGain]);
-
-  // Determine Y-axis domain boundaries for proper padding
   const { yMin, yMax } = useMemo(() => {
     if (chartData.length === 0) return { yMin: 0, yMax: 100 };
     const allInvested = chartData.map(d => d.investedValue);
@@ -250,9 +329,16 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
           {/* Series 1: Invested Value */}
           <div className="flex items-center gap-2">
             <div className="w-4 h-[2px] bg-[#D4AF37] border-b border-dashed border-[#D4AF37]" />
-            <span className="text-xs font-bold text-text-muted uppercase tracking-wider">Invested Value</span>
+            <span className="text-xs font-bold text-text-muted uppercase tracking-wider group relative cursor-help">
+              {isIntradayMode ? 'Previous Day Close' : 'Invested Value'}
+              {isIntradayMode && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 p-2 bg-ui-surface border border-ui-border rounded shadow-xl text-[10px] normal-case text-text-main opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50">
+                  Intraday performance is measured against the previous trading day's portfolio close.
+                </div>
+              )}
+            </span>
             <span className="text-xs font-mono font-bold text-text-main">
-              {formatCurrency(safeInvested)}
+              {formatCurrency(refValue)}
             </span>
           </div>
 
@@ -278,7 +364,25 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
       </div>
 
       {/* Chart Canvas */}
-      <div className="flex-1 w-full min-h-[300px]">
+      <div className="flex-1 w-full min-h-[300px] relative">
+        {isLoading && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-ui-bg/50 backdrop-blur-sm rounded-lg">
+            <div className="w-8 h-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin mb-3"></div>
+            <p className="text-sm font-bold text-text-main">Loading portfolio history...</p>
+          </div>
+        )}
+        
+        {error && !isLoading && (
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-ui-bg/80 backdrop-blur-sm rounded-lg">
+            <p className="text-sm font-bold text-negative mb-3">{error}</p>
+            <button 
+              onClick={() => window.location.reload()} 
+              className="px-4 py-1.5 bg-ui-surface-hover border border-ui-border rounded-full text-xs font-bold text-text-main hover:bg-ui-border transition-colors"
+            >
+              Retry
+            </button>
+          </div>
+        )}
         <ResponsiveContainer width="100%" height="100%">
           <ComposedChart data={chartData} margin={{ top: 12, right: 35, left: 0, bottom: 5 }}>
             <defs>
@@ -326,15 +430,41 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
                       className="bg-ui-surface rounded-xl p-3.5 shadow-2xl border border-ui-border min-w-[220px] flex flex-col gap-2 z-50 pointer-events-none"
                     >
                       {/* Date header */}
-                      <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted pb-1.5 border-b border-ui-border">
-                        {pt.fullDate}
-                      </p>
+                      <div className="flex justify-between items-center pb-1.5 border-b border-ui-border">
+                        <p className="text-[11px] font-bold uppercase tracking-wider text-text-muted">
+                          {pt.fullDate}
+                        </p>
+                        {isLive && (pt.timestamp > Date.now() - 60000) && (
+                          <div className="flex items-center gap-1">
+                            <div className="w-1.5 h-1.5 rounded-full bg-positive animate-pulse" />
+                            <span className="text-[9px] font-bold text-positive tracking-wider">LIVE</span>
+                          </div>
+                        )}
+                      </div>
 
+                      {/* Row: Gain/Loss */}
+                      <div className="flex justify-between items-center gap-4 text-xs mt-1">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-text-muted font-medium">{isIntradayMode ? 'Intraday Gain/Loss' : 'Gain / Loss'}</span>
+                        </div>
+                        <span className={`font-mono font-bold ${pt.currentValue - pt.investedValue >= 0 ? 'text-positive' : 'text-negative'}`}>
+                          {pt.currentValue - pt.investedValue >= 0 ? '+' : ''}{formatCurrency(pt.currentValue - pt.investedValue)}
+                        </span>
+                      </div>
+                      {/* Row: Return % */}
+                      <div className="flex justify-between items-center gap-4 text-xs">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-text-muted font-medium">{isIntradayMode ? 'Intraday Return' : 'Return %'}</span>
+                        </div>
+                        <span className={`font-mono font-bold ${pt.currentValue - pt.investedValue >= 0 ? 'text-positive' : 'text-negative'}`}>
+                          {pt.investedValue > 0 ? ((pt.currentValue - pt.investedValue) / pt.investedValue * 100).toFixed(2) : '0.00'}%
+                        </span>
+                      </div>
                       {/* Row 1: Invested Value */}
                       <div className="flex justify-between items-center gap-4 text-xs">
                         <div className="flex items-center gap-1.5">
                           <div className="w-2 h-2 rounded-full bg-[#D4AF37]" />
-                          <span className="text-text-muted font-medium">Invested Value</span>
+                          <span className="text-text-muted font-medium">{isIntradayMode ? 'Prev Day Close' : 'Invested Value'}</span>
                         </div>
                         <span className="font-mono font-bold text-text-main">
                           {formatCurrency(pt.investedValue)}
@@ -345,7 +475,7 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
                       <div className="flex justify-between items-center gap-4 text-xs">
                         <div className="flex items-center gap-1.5">
                           <div className={`w-2 h-2 rounded-full ${isGain ? 'bg-positive' : 'bg-negative'}`} />
-                          <span className="text-text-muted font-medium">Current Value</span>
+                          <span className="text-text-muted font-medium">Portfolio Value</span>
                         </div>
                         <span className={`font-mono font-bold ${isGain ? 'text-positive' : 'text-negative'}`}>
                           {formatCurrency(pt.currentValue)}
@@ -395,6 +525,26 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
             />
           </ComposedChart>
         </ResponsiveContainer>
+      </div>
+      
+      {/* Real-time Status Indicator */}
+      <div className="mt-3 flex items-center justify-center gap-3 text-[11px] font-mono tracking-wide border-t border-ui-border pt-3">
+        <div className="flex items-center gap-1.5">
+          <div className={`w-2 h-2 rounded-full ${isLive ? 'bg-positive animate-pulse' : 'bg-negative'}`} />
+          <span className={`font-bold ${isLive ? 'text-positive' : 'text-negative'}`}>
+            {isLive ? 'LIVE' : 'MARKET DATA UNAVAILABLE'}
+          </span>
+        </div>
+        {isLive && (
+          <>
+            <span className="text-text-muted px-1.5 py-0.5 rounded bg-ui-surface-hover border border-ui-border font-bold">
+              MARKET {timeRange === '1 MIN' || timeRange === '5 MIN' || timeRange === '30 MIN' || timeRange === '1 HR' ? 'OPEN' : 'DATA'}
+            </span>
+            <span className="text-text-muted">
+              Last updated: {new Date(lastUpdated || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+          </>
+        )}
       </div>
     </div>
   );

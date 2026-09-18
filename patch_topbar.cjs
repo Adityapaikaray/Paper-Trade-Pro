@@ -1,17 +1,23 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/components/TopBar.tsx', 'utf8');
 
-// Remove "+ Add Market" button
-code = code.replace(
-  /<div className="h-px bg-ui-border my-2" \/>\s*<button\s*onClick=\{[^}]*\}\s*className="w-full text-left px-4 py-2 text-xs font-bold text-primary hover:text-primary-light transition-colors flex items-center gap-2"\s*>\s*\+ Add Market\s*<\/button>/g,
-  ''
-);
+// Replace navigation to use setMenuOpen
+code = code.replace("const { currentRoute, goBack, history, activeTab, navigate } = useNavigation();", "const { currentRoute, goBack, history, activeTab, navigate, setMenuOpen, isMenuOpen } = useNavigation();");
 
-// Remove hardcoded '3' from notifications
-code = code.replace(
-  /<span className="absolute top-1\.5 right-1\.5 w-3\.5 h-3\.5 bg-rose-500 rounded-full border-2 border-ui-bg flex items-center justify-center text-\[8px\] font-bold text-white leading-none">3<\/span>/g,
-  ''
-);
+// Replace Mobile Brand Mark
+const mobileBrandOld = `<button onClick={() => navigate('dashboard')} className="md:hidden shrink-0 transition-transform active:scale-95 outline-none">
+          <img src="/tradepro-icon.jpg" alt="TradePro" className="w-9 h-9 rounded-lg object-contain" />
+        </button>`;
+        
+const mobileBrandNew = `<button 
+          onClick={() => setMenuOpen(!isMenuOpen)} 
+          className="md:hidden shrink-0 transition-transform active:scale-95 outline-none rounded-lg focus-visible:ring-2 focus-visible:ring-primary"
+          aria-label="Toggle navigation"
+          aria-expanded={isMenuOpen}
+        >
+          <img src="/tradepro-logo.jpg" alt="TradePro" className="w-[100px] h-[26px] object-contain object-left" />
+        </button>`;
+
+code = code.replace(mobileBrandOld, mobileBrandNew);
 
 fs.writeFileSync('src/components/TopBar.tsx', code);
-console.log("Patched TopBar");

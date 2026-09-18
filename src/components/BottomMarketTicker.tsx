@@ -6,6 +6,7 @@
 import React, { useMemo } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useMarketData } from '../contexts/MarketContext.tsx';
+import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { Stock } from '../types.ts';
 
 interface BottomMarketTickerProps {
@@ -27,7 +28,8 @@ interface TickerDisplayItem {
 }
 
 export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade }) => {
-  const { stocks, indices, priceTicks, indexTicks, isLive } = useMarketData();
+  const { stocks, indices, priceTicks, indexTicks, marketStatus, lastUpdated } = useMarketData();
+  const { isWatchlisted } = usePortfolio();
 
   // Combine real-time indices and highlighted market stocks
   const tickerItems = useMemo<TickerDisplayItem[]>(() => {
@@ -108,15 +110,17 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
       : 'bg-slate-50/90 border-slate-200/90 text-slate-800 dark:bg-slate-900/40 dark:border-slate-800/90 dark:text-slate-200';
 
     return (
-      <div
+      <button
         key={`${keyPrefix}-${item.id}`}
         onClick={() => {
           if (item.stockRef && onTrade) {
             onTrade(item.stockRef);
           }
         }}
+        tabIndex={0}
+        aria-label={`${item.name || item.symbol}, price ${item.price}, ${item.isPositive ? 'up' : 'down'} ${Math.abs(item.percentChange || 0).toFixed(2)} percent`}
         title={item.stockRef ? `Click to trade ${item.symbol} (${formatPrice(item.price, item.currency)})` : item.name}
-        className={`flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-mono border transition-all duration-200 shrink-0 select-none ${baseChipClass} ${tickClass}`}
+        className={`flex items-center gap-2 px-2.5 py-1 rounded-md text-xs font-mono border transition-all duration-200 shrink-0 select-none focus:outline-none focus:ring-2 focus:ring-primary ${baseChipClass} ${tickClass}`}
       >
         {/* Symbol badge */}
         <span className="font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1">
@@ -167,7 +171,7 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
             {isTickUp ? '▲' : '▼'}
           </span>
         )}
-      </div>
+      </button>
     );
   };
 
@@ -178,22 +182,55 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
     >
       {/* Real-time Status Anchor */}
       <div className="flex items-center h-full px-3 md:px-4 border-r border-slate-200 dark:border-slate-800 shrink-0 bg-white dark:bg-[#080E1A] z-20 shadow-[2px_0_8px_rgba(0,0,0,0.02)]">
-        <div className="flex items-center gap-2">
-          <span className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00B887] opacity-75" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00B887]" />
-          </span>
-          <span className="text-[10px] font-mono font-bold tracking-widest text-slate-800 dark:text-slate-200 uppercase">
-            LIVE
-          </span>
-          <span className="hidden sm:inline-flex text-[9px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/80 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20 uppercase tracking-tight">
-            {isLive ? 'STREAMING' : 'CONNECTING'}
-          </span>
-        </div>
+        {(() => {
+          let label = 'CONNECTING';
+          let detail = 'CONNECTING...';
+          let color = 'bg-amber-500';
+          let bgColor = 'bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
+          let ping = true;
+
+          if (stocks.length > 0) {
+            const isOpen = marketStatus?.nse === 'REGULAR' || marketStatus?.nyse === 'REGULAR' || marketStatus?.nse === 'OPEN' || marketStatus?.nyse === 'OPEN';
+            const isRealtime = stocks.some(s => s.isRealtime);
+
+            if (!isOpen) {
+              label = 'CLOSED';
+              detail = 'MARKET CLOSED';
+              color = 'bg-slate-500';
+              bgColor = 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700';
+              ping = false;
+            } else if (!isRealtime) {
+              label = 'DELAYED';
+              detail = '15 MIN';
+              color = 'bg-amber-500';
+              bgColor = 'bg-amber-50 text-amber-700 border-amber-200/80 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20';
+            } else {
+              label = 'LIVE';
+              detail = 'STREAMING';
+              color = 'bg-[#00B887]';
+              bgColor = 'bg-emerald-50 text-emerald-700 border-emerald-200/80 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20';
+            }
+          }
+
+          return (
+            <div className="flex items-center gap-2" title={lastUpdated ? "Last Updated: " + new Date(lastUpdated).toLocaleTimeString() : ""}>
+              <span className="relative flex h-2 w-2">
+                {ping && <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${color}`} />}
+                <span className={`relative inline-flex rounded-full h-2 w-2 ${color}`} />
+              </span>
+              <span className="text-[10px] font-mono font-bold tracking-widest text-slate-800 dark:text-slate-200 uppercase">
+                {label}
+              </span>
+              <span className={`hidden sm:inline-flex text-[9px] font-mono font-bold px-1.5 py-0.5 rounded border uppercase tracking-tight ${bgColor}`}>
+                {detail}
+              </span>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Ticker Continuous Marquee Track */}
-      <div className="flex-1 flex items-center h-full overflow-hidden relative group">
+      <div className="flex-1 flex items-center h-full overflow-x-auto overflow-y-hidden scrollbar-hide relative group touch-pan-x">
         {/* Soft edge gradients with clean white-point fade */}
         <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-white via-white/80 to-transparent dark:from-[#080E1A] dark:via-[#080E1A]/80 dark:to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 bottom-0 w-10 bg-gradient-to-l from-white via-white/80 to-transparent dark:from-[#080E1A] dark:via-[#080E1A]/80 dark:to-transparent z-10 pointer-events-none" />
