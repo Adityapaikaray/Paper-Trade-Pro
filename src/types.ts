@@ -134,3 +134,26 @@ export interface NewsArticle {
 }
 
 export type MarketRegion = 'IN' | 'US';
+
+export interface MarketConfig {
+  region: MarketRegion;
+  name: string;
+  flag: string;
+  currency: {
+    code: 'USD' | 'INR';
+    symbol: '$' | '₹';
+    name: string;
+  };
+  locale: string;
+  timezone: string;
+  exchanges: string[];
+  defaultIndices: string[];
+  newsRegion: string;
+  tradingHours: {
+    open: string;
+    close: string;
+    timezone: string;
+    preMarket?: { open: string; close: string };
+    afterHours?: { open: string; close: string };
+  };
+}

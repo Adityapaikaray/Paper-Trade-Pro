@@ -3,43 +3,62 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { UserProfile, Holding, Transaction, OrderItem, AppNotification, Stock, Currency, MarketRegion } from '../types.ts';
+import { UserProfile, Holding, Transaction, OrderItem, AppNotification, Stock, Currency, MarketRegion, MarketConfig } from '../types.ts';
 import { useMarketData } from './MarketContext.tsx';
 import { useAuth } from './AuthContext.tsx';
+import { getMarketConfig } from '../utils/marketConfig.ts';
 
 const INITIAL_BALANCES = { '$': 1000000, '₹': 1000000 };
 
 const DEFAULT_HOLDINGS: Holding[] = [
-  { symbol: 'TITAN', shares: 245, averagePrice: 3394.60, targetAllocation: 55 },
-  { symbol: 'AMD', shares: 245, averagePrice: 460.10, targetAllocation: 10 },
-  { symbol: 'RELIANCE', shares: 80, averagePrice: 2750.00, targetAllocation: 25 },
+  // U.S. Portfolio
+  { symbol: 'AAPL', shares: 25, averagePrice: 228.40, targetAllocation: 35 },
+  { symbol: 'NVDA', shares: 35, averagePrice: 124.50, targetAllocation: 35 },
+  { symbol: 'MSFT', shares: 15, averagePrice: 428.10, targetAllocation: 30 },
+  // India Portfolio
+  { symbol: 'RELIANCE', shares: 80, averagePrice: 2750.00, targetAllocation: 40 },
+  { symbol: 'TCS', shares: 35, averagePrice: 4150.00, targetAllocation: 35 },
+  { symbol: 'TITAN', shares: 120, averagePrice: 3394.60, targetAllocation: 25 },
 ];
 
 const DEFAULT_ORDERS: OrderItem[] = [
   {
     id: 'ORD-894102',
-    symbol: 'TITAN',
-    companyName: 'Titan Company Ltd.',
+    symbol: 'AAPL',
+    companyName: 'Apple Inc.',
     type: 'BUY',
-    quantity: 245,
-    orderPrice: 3394.60,
-    executionPrice: 3394.60,
-    currency: '₹',
+    quantity: 25,
+    orderPrice: 228.40,
+    executionPrice: 228.40,
+    currency: '$',
+    status: 'FILLED',
+    timestamp: Date.now() - 3600 * 1000 * 24,
+    orderType: 'Market',
+  },
+  {
+    id: 'ORD-894088',
+    symbol: 'NVDA',
+    companyName: 'NVIDIA Corporation',
+    type: 'BUY',
+    quantity: 35,
+    orderPrice: 124.50,
+    executionPrice: 124.50,
+    currency: '$',
     status: 'FILLED',
     timestamp: Date.now() - 3600 * 1000 * 48,
     orderType: 'Market',
   },
   {
-    id: 'ORD-894088',
-    symbol: 'AMD',
-    companyName: 'Advanced Micro Devices, Inc.',
+    id: 'ORD-894099',
+    symbol: 'MSFT',
+    companyName: 'Microsoft Corporation',
     type: 'BUY',
-    quantity: 245,
-    orderPrice: 460.10,
-    executionPrice: 460.10,
+    quantity: 15,
+    orderPrice: 428.10,
+    executionPrice: 428.10,
     currency: '$',
     status: 'FILLED',
-    timestamp: Date.now() - 3600 * 1000 * 96,
+    timestamp: Date.now() - 3600 * 1000 * 72,
     orderType: 'Market',
   },
   {
@@ -66,19 +85,6 @@ const DEFAULT_ORDERS: OrderItem[] = [
     currency: '₹',
     status: 'PENDING',
     timestamp: Date.now() - 1000 * 60 * 35,
-    orderType: 'Limit',
-  },
-  {
-    id: 'ORD-895390',
-    symbol: 'NVDA',
-    companyName: 'NVIDIA Corporation',
-    type: 'SELL',
-    quantity: 15,
-    orderPrice: 135.00,
-    executionPrice: 0,
-    currency: '$',
-    status: 'PENDING',
-    timestamp: Date.now() - 1000 * 60 * 120,
     orderType: 'Limit',
   },
 ];
@@ -126,8 +132,9 @@ export interface PortfolioSummary {
 
 interface PortfolioContextType {
   profile: UserProfile;
-  marketContext: MarketRegion | null;
-  setMarketContext: (market: MarketRegion | null) => void;
+  marketContext: MarketRegion;
+  setMarketContext: (market: MarketRegion) => void;
+  activeMarketConfig: MarketConfig;
   summary: PortfolioSummary;
   executeTrade: (
     stock: Stock,
@@ -166,12 +173,16 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const currentUserId = user?.id || 'guest';
   const lastLoadedUserId = useRef<string>(currentUserId);
 
-  const [marketContext, setMarketContext] = useState<MarketRegion | null>(() => (localStorage.getItem('papertrade_market') as MarketRegion | null) || null);
+  const [marketContext, setMarketContext] = useState<MarketRegion>(() => {
+    const saved = localStorage.getItem('papertrade_market') as MarketRegion;
+    return saved === 'IN' || saved === 'US' ? saved : 'US';
+  });
   const { stocks } = useMarketData();
 
+  const activeMarketConfig = useMemo(() => getMarketConfig(marketContext), [marketContext]);
+
   useEffect(() => {
-    if (marketContext) localStorage.setItem('papertrade_market', marketContext);
-    else localStorage.removeItem('papertrade_market');
+    localStorage.setItem('papertrade_market', marketContext);
   }, [marketContext]);
 
   const loadProfileForUser = useCallback((uid: string): UserProfile => {
@@ -694,6 +705,7 @@ export const PortfolioProvider: React.FC<{ children: React.ReactNode }> = ({ chi
        profile: { ...profile, preferredCurrency: profile.preferredCurrency || DEFAULT_CURRENCY }, 
        marketContext,
        setMarketContext,
+       activeMarketConfig,
        summary,
        executeTrade,
        buyStock, 

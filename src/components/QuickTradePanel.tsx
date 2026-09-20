@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ArrowUpRight, ArrowDownLeft, Zap, CheckCircle2, ChevronDown, DollarSign } from 'lucide-react';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
@@ -9,14 +9,27 @@ export const QuickTradePanel: React.FC = () => {
   const { profile, executeTrade, marketContext } = usePortfolio();
   const { addToast } = useUI();
 
-  const [symbol, setSymbol] = useState('TITAN');
+  const isIndia = marketContext === 'IN';
+  const defaultSymbol = isIndia ? 'RELIANCE' : 'AAPL';
+  const [symbol, setSymbol] = useState(defaultSymbol);
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY');
   const [orderType, setOrderType] = useState<'Market' | 'Limit' | 'Stop'>('Market');
   const [quantity, setQuantity] = useState<number>(10);
   const [limitPrice, setLimitPrice] = useState<string>('');
 
-  const currentStock = stocks.find((s) => s.symbol.toUpperCase() === symbol.toUpperCase()) || stocks[0];
-  const currencySymbol = currentStock?.currency || (marketContext === 'US' ? '$' : '₹');
+  // Filter stocks strictly matching the active market region
+  const regionalStocks = useMemo(() => {
+    return stocks.filter(s => isIndia ? (s.currency === '₹' || s.country === 'India') : (s.currency === '$' || s.country === 'USA'));
+  }, [stocks, isIndia]);
+
+  useEffect(() => {
+    if (regionalStocks.length > 0 && !regionalStocks.some(s => s.symbol.toUpperCase() === symbol.toUpperCase())) {
+      setSymbol(regionalStocks[0].symbol);
+    }
+  }, [marketContext, regionalStocks]);
+
+  const currentStock = regionalStocks.find((s) => s.symbol.toUpperCase() === symbol.toUpperCase()) || regionalStocks[0];
+  const currencySymbol = currentStock?.currency || (isIndia ? '₹' : '$');
   const effectivePrice = orderType === 'Market' ? currentStock?.price || 0 : Number(limitPrice) || currentStock?.price || 0;
   const estimatedTotal = effectivePrice * quantity;
 
@@ -90,9 +103,9 @@ export const QuickTradePanel: React.FC = () => {
               onChange={(e) => setSymbol(e.target.value)}
               className="w-full bg-ui-bg border border-ui-border rounded-xl px-3 py-2 text-xs font-bold text-text-main focus:outline-none focus:border-primary cursor-pointer"
             >
-              {stocks.map((s) => (
+              {regionalStocks.map((s) => (
                 <option key={s.symbol} value={s.symbol}>
-                  {s.symbol} — {s.name} ({s.currency || '₹'}{s.price.toFixed(2)})
+                  {s.symbol} — {s.name} ({s.currency || (isIndia ? '₹' : '$')}{s.price.toFixed(2)})
                 </option>
               ))}
             </select>

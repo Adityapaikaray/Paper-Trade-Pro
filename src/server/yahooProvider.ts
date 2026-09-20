@@ -44,36 +44,59 @@ export class YahooProvider implements MarketDataProvider {
     if (symbols.length === 0) return {};
     const queries = symbols.map(s => this.formatSymbol(s.exchange, s.symbol));
     try {
-      
-      console.log("queries:", queries);
-      const results = await yahooFinance.quote(queries);
+      // Chunk queries into groups of 20 to prevent timeout/rate limits
+      const CHUNK_SIZE = 20;
       const records: Record<string, MarketQuote> = {};
-      const resArray = Array.isArray(results) ? results : [results];
-      for (const result of resArray) {
-        if (!result.symbol) continue;
-        const exchange = result.exchange === 'NSI' || result.symbol.endsWith('.NS') ? 'NSE' : (result.symbol.endsWith('.BO') ? 'BSE' : result.exchange || 'UNKNOWN');
-        const rawSymbol = result.symbol.replace('.NS', '').replace('.BO', '');
-        records[`${exchange}:${rawSymbol}`] = {
-          symbol: rawSymbol,
-          exchange,
-          price: result.regularMarketPrice || 0,
-          change: result.regularMarketChange || 0,
-          changePercent: result.regularMarketChangePercent || 0,
-          open: result.regularMarketOpen || 0,
-          high: result.regularMarketDayHigh || 0,
-          low: result.regularMarketDayLow || 0,
-          previousClose: result.regularMarketPreviousClose || 0,
-          volume: result.regularMarketVolume || 0,
-          fiftyTwoWeekHigh: result.fiftyTwoWeekHigh || 0,
-          fiftyTwoWeekLow: result.fiftyTwoWeekLow || 0,
-          timestamp: (result.regularMarketTime ? new Date(result.regularMarketTime).getTime() : Date.now()),
-          isRealtime: false,
-          marketState: result.marketState
-        };
+
+      for (let i = 0; i < queries.length; i += CHUNK_SIZE) {
+        const chunk = queries.slice(i, i + CHUNK_SIZE);
+        try {
+          const results = await yahooFinance.quote(chunk);
+          const resArray = Array.isArray(results) ? results : [results];
+
+          for (const result of resArray) {
+            if (!result || !result.symbol) continue;
+            const isIndian = result.exchange === 'NSI' || result.symbol.endsWith('.NS') || result.symbol.endsWith('.BO');
+            const exchange = isIndian 
+              ? (result.exchange === 'NSI' || result.symbol.endsWith('.NS') ? 'NSE' : 'BSE') 
+              : (result.exchange || 'US');
+            const rawSymbol = result.symbol.replace('.NS', '').replace('.BO', '');
+
+            const quoteObj: MarketQuote = {
+              symbol: rawSymbol,
+              exchange,
+              price: result.regularMarketPrice ?? result.regularMarketPreviousClose ?? 0,
+              change: result.regularMarketChange ?? 0,
+              changePercent: result.regularMarketChangePercent ?? 0,
+              open: result.regularMarketOpen ?? 0,
+              high: result.regularMarketDayHigh ?? 0,
+              low: result.regularMarketDayLow ?? 0,
+              previousClose: result.regularMarketPreviousClose ?? 0,
+              volume: result.regularMarketVolume ?? 0,
+              fiftyTwoWeekHigh: result.fiftyTwoWeekHigh ?? 0,
+              fiftyTwoWeekLow: result.fiftyTwoWeekLow ?? 0,
+              timestamp: (result.regularMarketTime ? new Date(result.regularMarketTime).getTime() : Date.now()),
+              isRealtime: false,
+              marketState: result.marketState
+            };
+
+            // Key under multiple aliases so client lookups never fail
+            records[`${exchange}:${rawSymbol}`] = quoteObj;
+            records[`${result.symbol}`] = quoteObj;
+            records[`${rawSymbol}`] = quoteObj;
+            if (!isIndian) {
+              records[`US:${rawSymbol}`] = quoteObj;
+              records[`NASDAQ:${rawSymbol}`] = quoteObj;
+              records[`NYSE:${rawSymbol}`] = quoteObj;
+            }
+          }
+        } catch (chunkErr) {
+          console.error('YahooProvider chunk fetch error:', chunkErr);
+        }
       }
+
       return records;
     } catch (e) {
-      
       return {};
     }
   }
@@ -130,11 +153,13 @@ export class YahooProvider implements MarketDataProvider {
 
   async searchInstruments(query: string): Promise<any[]> {
     try {
-      const result = await yahooFinance.search(query, { quotesCount: 10, newsCount: 0 });
-      return result.quotes
-        .filter(q => q.exchange === 'NSI' || q.exchange === 'BSE' || (q.symbol && (q.symbol.endsWith('.NS') || q.symbol.endsWith('.BO'))))
+      const result = await yahooFinance.search(query, { quotesCount: 15, newsCount: 0 });
+      return (result.quotes || [])
         .map(q => {
-          const exchange = q.exchange === 'NSI' || q.symbol.endsWith('.NS') ? 'NSE' : (q.symbol.endsWith('.BO') ? 'BSE' : 'UNKNOWN');
+          const isIndian = q.exchange === 'NSI' || q.exchange === 'BSE' || (q.symbol && (q.symbol.endsWith('.NS') || q.symbol.endsWith('.BO')));
+          const exchange = isIndian 
+            ? (q.exchange === 'NSI' || q.symbol.endsWith('.NS') ? 'NSE' : 'BSE') 
+            : (q.exchange || 'US');
           const rawSymbol = q.symbol.replace('.NS', '').replace('.BO', '');
           return {
             company_name: q.shortname || q.longname || rawSymbol,
@@ -142,7 +167,9 @@ export class YahooProvider implements MarketDataProvider {
             exchange,
             exchange_symbol: rawSymbol,
             security_type: q.quoteType || 'EQUITY',
-            sector: q.industry || 'Unknown'
+            sector: q.industry || q.sector || 'Equities',
+            country: isIndian ? 'India' : 'USA',
+            currency: isIndian ? '₹' : '$'
           };
       });
     } catch (e) {

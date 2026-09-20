@@ -29,7 +29,6 @@ import TradeView from './components/TradeView.tsx';
 import NotificationManager from './components/NotificationManager.tsx';
 import PortfolioHistoryRecorder from './components/PortfolioHistoryRecorder.tsx';
 import CommandPalette from './components/CommandPalette.tsx';
-import LoginPage from './components/LoginPage.tsx';
 import { UIProvider } from './contexts/UIContext.tsx';
 import { UIManager } from './components/UIManager.tsx';
 import AICopilot from './components/AICopilot.tsx';
@@ -66,7 +65,6 @@ import MobileNavigationDrawer from './components/MobileNavigationDrawer.tsx';
 import { useNavigation } from './contexts/NavigationContext.tsx';
 
 function AppContent() {
-  const { isAuthenticated, loading } = useAuth();
   const { marketContext } = usePortfolio();
   const { currentRoute, goBack, navigate, resetTo } = useNavigation();
   const activeTab = currentRoute.id;
@@ -74,54 +72,24 @@ function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
-    if (!loading) {
-      if (!isAuthenticated) {
-        if (window.location.pathname !== '/login') {
-          sessionStorage.setItem('tradepro_redirect_path', window.location.pathname);
-          window.history.replaceState(null, '', '/login');
-        }
-        document.title = 'TradePro — Login & Verification';
-      } else {
-        const redirectPath = sessionStorage.getItem('tradepro_redirect_path');
-        if (redirectPath && redirectPath !== '/login' && redirectPath !== '/') {
-          sessionStorage.removeItem('tradepro_redirect_path');
-          const routeMap: Record<string, any> = {
-            '/home': 'dashboard',
-            '/discover': 'market',
-            '/portfolio': 'portfolio',
-            '/wealth': 'wealth',
-            '/orders': 'orders',
-            '/watchlist': 'watchlist',
-            '/alerts': 'watchlist',
-            '/transactions': 'transactions',
-            '/settings': 'settings',
-            '/help': 'help'
-          };
-          const targetTab = routeMap[redirectPath];
-          if (targetTab) {
-            navigate(targetTab);
-          }
-        }
-        if (window.location.pathname === '/login') {
-          window.history.replaceState(null, '', '/');
-        }
-        const titles: Record<string, string> = {
-          dashboard: 'Home',
-          market: 'Discover',
-          portfolio: 'Portfolio',
-          wealth: 'Wealth',
-          trade: 'Trading',
-          orders: 'Orders',
-          watchlist: 'Watchlist',
-          transactions: 'Transactions',
-          settings: 'Settings',
-          help: 'Help & Support'
-        };
-        const pageName = titles[currentRoute.id] || currentRoute.id.charAt(0).toUpperCase() + currentRoute.id.slice(1);
-        document.title = `TradePro — ${pageName}`;
-      }
+    if (window.location.pathname === '/login') {
+      window.history.replaceState(null, '', '/');
     }
-  }, [currentRoute.id, isAuthenticated, loading, navigate]);
+    const titles: Record<string, string> = {
+      dashboard: 'Home',
+      market: 'Discover',
+      portfolio: 'Portfolio',
+      wealth: 'Wealth',
+      trade: 'Trading',
+      orders: 'Orders',
+      watchlist: 'Watchlist',
+      transactions: 'Transactions',
+      settings: 'Settings',
+      help: 'Help & Support'
+    };
+    const pageName = titles[currentRoute.id] || currentRoute.id.charAt(0).toUpperCase() + currentRoute.id.slice(1);
+    document.title = `TradePro — ${pageName}`;
+  }, [currentRoute.id]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -187,46 +155,13 @@ function AppContent() {
   return (
     <>
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
-      {loading && !showSplash && (
-        <div className="h-screen w-screen bg-[var(--ui-bg)] flex items-center justify-center">
-          <div className="w-8 h-8 border-4 border-[var(--ui-border)] border-t-primary rounded-full animate-spin" />
-        </div>
-      )}
 
-      {/* Unauthenticated Route: Dedicated /login Screen */}
-      {!loading && !showSplash && !isAuthenticated && (
-        <LoginPage onSuccess={() => {
-          const redirectPath = sessionStorage.getItem('tradepro_redirect_path');
-          if (redirectPath) {
-            const routeMap: Record<string, any> = {
-              '/home': 'dashboard',
-              '/discover': 'market',
-              '/portfolio': 'portfolio',
-              '/wealth': 'wealth',
-              '/orders': 'orders',
-              '/watchlist': 'watchlist',
-              '/alerts': 'watchlist',
-              '/transactions': 'transactions',
-              '/settings': 'settings',
-              '/help': 'help'
-            };
-            const target = routeMap[redirectPath];
-            sessionStorage.removeItem('tradepro_redirect_path');
-            if (target) {
-              resetTo(target);
-              return;
-            }
-          }
-          resetTo('dashboard');
-        }} />
-      )}
-
-      {/* Authenticated Flow */}
-      {!loading && !showSplash && isAuthenticated && marketContext === null && (
+      {/* Market Selection if not chosen */}
+      {!showSplash && marketContext === null && (
         <MarketSelection onComplete={() => {}} />
       )}
       
-      {(!loading && !showSplash && isAuthenticated && marketContext !== null) && (
+      {(!showSplash && marketContext !== null) && (
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

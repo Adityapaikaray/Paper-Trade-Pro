@@ -20,6 +20,7 @@ import {
 import { HistoryPoint } from '../types.ts';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { TrendingUp, TrendingDown, Inbox } from 'lucide-react';
+import { formatCompactCurrency } from '../utils/formatters.ts';
 
 export interface PortfolioGraphProps {
   investedValue?: number;
@@ -63,7 +64,7 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
     ? !hasHoldings
     : (isReset || (investedValue === 0 && currentValue === 0));
 
-  const { profile } = usePortfolio();
+  const { profile, marketContext } = usePortfolio();
   const { isLive, lastUpdated, stocks } = useMarketData();
     const holdings = profile.holdings || [];
 
@@ -412,10 +413,7 @@ export const PortfolioGraph: React.FC<PortfolioGraphProps> = ({
               tick={{ fill: 'var(--text-muted)', fontSize: 10, fontWeight: 600 }}
               tickMargin={10}
               tickFormatter={(val: number) => {
-                if (val >= 10000000) return `${currencySymbol}${(val / 10000000).toFixed(1)}Cr`;
-                if (val >= 100000) return `${currencySymbol}${(val / 100000).toFixed(1)}L`;
-                if (val >= 1000) return `${currencySymbol}${(val / 1000).toFixed(0)}K`;
-                return `${currencySymbol}${val.toFixed(0)}`;
+                return formatCompactCurrency(val, marketContext);
               }}
             />
 

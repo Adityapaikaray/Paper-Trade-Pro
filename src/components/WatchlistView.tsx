@@ -18,20 +18,23 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onTrade }) => {
   const [sortOption, setSortOption] = useState<'change_desc' | 'change_asc' | 'price_desc' | 'symbol_asc'>('change_desc');
   const [selectedSector, setSelectedSector] = useState('All');
 
-  const currencySymbol = marketContext === 'US' ? '$' : '₹';
+  const isIndia = marketContext === 'IN';
+  const currencySymbol = isIndia ? '₹' : '$';
 
-  // Base watchlist items
+  // Base watchlist items filtered strictly by market region
   const watchlistStocks = useMemo(() => {
     // If user has items in profile watchlist
     const userSymbols = new Set(profile?.watchlist || []);
 
-    // Provide default watched symbols if empty
-    const defaultWatchlist = ['TITAN', 'AMD', 'RELIANCE', 'TCS', 'NVDA', 'AAPL', 'INFY', 'HDFCBANK'];
+    // Provide default watched symbols tailored to market region
+    const defaultWatchlist = isIndia
+      ? ['RELIANCE', 'TCS', 'TITAN', 'HDFCBANK', 'INFY', 'TATAMOTORS', 'ICICIBANK']
+      : ['AAPL', 'NVDA', 'MSFT', 'AMZN', 'GOOGL', 'TSLA', 'SPY', 'QQQ', 'META', 'AMD'];
     
-    return stocks.filter(
-      (s) => userSymbols.has(s.symbol) || defaultWatchlist.includes(s.symbol)
-    );
-  }, [profile?.watchlist, stocks]);
+    return stocks
+      .filter(s => isIndia ? (s.currency === '₹' || s.country === 'India') : (s.currency === '$' || s.country === 'USA'))
+      .filter((s) => userSymbols.has(s.symbol) || defaultWatchlist.includes(s.symbol));
+  }, [profile?.watchlist, stocks, isIndia]);
 
   const sectors = useMemo(() => {
     return ['All', ...new Set(watchlistStocks.map((s) => s.sector || 'General'))];

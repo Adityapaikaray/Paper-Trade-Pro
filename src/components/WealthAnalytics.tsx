@@ -3,6 +3,7 @@ import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
 import { ArrowUpRight, ArrowDownRight, DollarSign, Activity, Minus } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
+import { formatCompactCurrency as globalFormatCompactCurrency } from '../utils/formatters.ts';
 
 type TimeRange = '6M' | '1Y' | '3Y' | 'ALL';
 
@@ -13,13 +14,7 @@ export const WealthAnalytics: React.FC = () => {
   const currencySymbol = marketContext === 'US' ? '$' : '₹';
 
   const formatCurrency = (val: number) => {
-    const isNegative = val < 0;
-    const absVal = Math.abs(val);
-    const sign = isNegative ? '-' : '';
-    if (absVal >= 10000000) return `${sign}${currencySymbol}${(absVal / 10000000).toFixed(2)}Cr`;
-    if (absVal >= 100000) return `${sign}${currencySymbol}${(absVal / 100000).toFixed(2)}L`;
-    if (absVal >= 1000) return `${sign}${currencySymbol}${(absVal / 1000).toFixed(2)}K`;
-    return `${sign}${currencySymbol}${absVal.toFixed(2)}`;
+    return globalFormatCompactCurrency(val, marketContext);
   };
 
   const analytics = useMemo(() => {
@@ -47,7 +42,13 @@ export const WealthAnalytics: React.FC = () => {
 
     const monthlyData: Record<string, number> = {};
 
-    profile.transactions?.forEach(t => {
+    const marketTransactions = (profile.transactions || []).filter(t => {
+      if (t.currency) return t.currency === currencySymbol;
+      const isUSStock = ['AAPL', 'MSFT', 'NVDA', 'AMD', 'TSLA', 'AMZN', 'GOOGL', 'META', 'SPY', 'QQQ', 'VTI', 'VOO', 'IWM', 'BND'].includes(t.symbol?.toUpperCase());
+      return marketContext === 'US' ? isUSStock : !isUSStock;
+    });
+
+    marketTransactions.forEach(t => {
       const isCurrent = t.timestamp >= currentRangeStart && t.timestamp <= now;
       const isPrev = t.timestamp >= prevRangeStart && t.timestamp < currentRangeStart;
       

@@ -11,6 +11,7 @@ import { useUI } from '../contexts/UIContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
+import { formatCurrency } from '../utils/formatters.ts';
 import HeaderSearch from './HeaderSearch.tsx';
 
 interface TopBarProps {
@@ -123,20 +124,22 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
       {/* Right section - Actions & Profile */}
       <div className="flex items-center gap-3 md:gap-4 lg:gap-6 shrink-0 ml-2 md:ml-4">
         
-        {/* Virtual Account / Market Switcher */}
-        <div className="relative hidden lg:block" ref={switcherRef}>
+        {/* Virtual Account / Market Region Switcher */}
+        <div className="relative" ref={switcherRef}>
           <div 
             onClick={() => setSwitcherOpen(!switcherOpen)}
-            className="flex items-center gap-4 px-5 py-2.5 bg-ui-surface border border-ui-border rounded-full shadow-md cursor-pointer hover:border-primary hover:shadow-primary/10 transition-all"
+            className="flex items-center gap-2 sm:gap-3 lg:gap-4 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 bg-ui-surface border border-ui-border rounded-full shadow-md cursor-pointer hover:border-primary hover:shadow-primary/10 transition-all select-none"
+            title="Switch Market Region (US / India)"
           >
-            <div className="text-[18px] leading-none">{marketContext === 'IN' ? '🇮🇳' : '🇺🇸'}</div>
+            <div className="text-[16px] sm:text-[18px] leading-none">{marketContext === 'IN' ? '🇮🇳' : '🇺🇸'}</div>
             <div className="flex flex-col">
-              <span className="text-[9px] font-bold text-positive flex items-center gap-1.5 uppercase tracking-[0.2em] leading-none mb-1">
+              <span className="text-[8px] sm:text-[9px] font-bold text-positive flex items-center gap-1.5 uppercase tracking-[0.15em] sm:tracking-[0.2em] leading-none mb-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-positive shadow-[0_0_5px_var(--color-positive)] animate-pulse"></span>
-                VIRTUAL ACCOUNT
+                <span className="hidden sm:inline">{marketContext === 'IN' ? 'INDIA MARKET' : 'U.S. MARKET'}</span>
+                <span className="sm:hidden">{marketContext === 'IN' ? 'IN' : 'US'}</span>
               </span>
-              <span className="text-[15px] font-mono font-bold text-text-main tracking-tight leading-none flex items-center gap-2">
-                {currentCurrency}{currentBalance.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              <span className="text-[12px] sm:text-[14px] lg:text-[15px] font-mono font-bold text-text-main tracking-tight leading-none flex items-center gap-1.5 sm:gap-2">
+                {formatCurrency(currentBalance, marketContext)}
                 <span className="text-[8px] text-text-muted">▼</span>
               </span>
             </div>
@@ -148,38 +151,45 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute right-0 top-full mt-3 w-72 bg-ui-surface border border-ui-border rounded-2xl shadow-2xl overflow-hidden py-2 z-50"
+                className="absolute right-0 top-full mt-3 w-72 sm:w-80 bg-ui-surface border border-ui-border rounded-2xl shadow-2xl overflow-hidden py-2 z-50"
               >
                 <div className="px-4 py-3 border-b border-ui-border flex items-center justify-between">
-                  <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Paper Portfolio</p>
-                  <span className="text-[10px] bg-positive/10 text-positive px-2 py-0.5 rounded-full font-bold">Simulated</span>
+                  <p className="text-xs font-bold text-text-muted uppercase tracking-widest">Market Region</p>
+                  <span className="text-[10px] bg-positive/10 text-positive px-2 py-0.5 rounded-full font-bold">Live Data</span>
                 </div>
                 
-                <button 
-                  onClick={() => handleSwitch('IN')}
-                  className={`w-full text-left px-4 py-3 hover:bg-ui-surface-hover transition-colors flex items-center justify-between ${marketContext === 'IN' ? 'bg-ui-surface-hover' : ''}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">🇮🇳</span>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-bold text-text-main">Indian Markets (NSE/BSE)</span>
-                      <span className="text-xs font-mono font-bold text-text-muted">₹{(profile?.balances?.['₹'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} cash</span>
-                    </div>
-                  </div>
-                  {marketContext === 'IN' && <span className="text-primary font-bold">✓</span>}
-                </button>
                 <button 
                   onClick={() => handleSwitch('US')}
                   className={`w-full text-left px-4 py-3 hover:bg-ui-surface-hover transition-colors flex items-center justify-between ${marketContext === 'US' ? 'bg-ui-surface-hover' : ''}`}
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-xl">🇺🇸</span>
+                    <span className="text-2xl">🇺🇸</span>
                     <div className="flex flex-col">
-                      <span className="text-sm font-bold text-text-main">US Markets (NYSE/NASDAQ)</span>
-                      <span className="text-xs font-mono font-bold text-text-muted">${(profile?.balances?.['$'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} cash</span>
+                      <span className="text-sm font-bold text-text-main">🇺🇸 U.S. Market</span>
+                      <span className="text-[11px] text-text-muted">NYSE, NASDAQ • USD ($)</span>
+                      <span className="text-xs font-mono font-bold text-text-main mt-0.5">
+                        ${(profile?.balances?.['$'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} cash
+                      </span>
                     </div>
                   </div>
-                  {marketContext === 'US' && <span className="text-primary font-bold">✓</span>}
+                  {marketContext === 'US' && <span className="text-primary text-base font-bold">✓</span>}
+                </button>
+
+                <button 
+                  onClick={() => handleSwitch('IN')}
+                  className={`w-full text-left px-4 py-3 hover:bg-ui-surface-hover transition-colors flex items-center justify-between ${marketContext === 'IN' ? 'bg-ui-surface-hover' : ''}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">🇮🇳</span>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-text-main">🇮🇳 India Market</span>
+                      <span className="text-[11px] text-text-muted">NSE, BSE • INR (₹)</span>
+                      <span className="text-xs font-mono font-bold text-text-main mt-0.5">
+                        ₹{(profile?.balances?.['₹'] || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })} cash
+                      </span>
+                    </div>
+                  </div>
+                  {marketContext === 'IN' && <span className="text-primary text-base font-bold">✓</span>}
                 </button>
 
                 <div className="h-px bg-ui-border my-2" />

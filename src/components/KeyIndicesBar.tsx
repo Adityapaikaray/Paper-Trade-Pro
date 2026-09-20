@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useMarketData } from '../hooks/useMarketData.ts';
+import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { TrendingUp, TrendingDown, Globe, Activity, RefreshCw } from 'lucide-react';
 import { IndexQuote } from '../types.ts';
 
@@ -14,13 +15,17 @@ interface KeyIndicesBarProps {
 
 export const KeyIndicesBar: React.FC<KeyIndicesBarProps> = ({ className = '' }) => {
   const { indices, indexTicks, isLive, refresh, isLoading } = useMarketData();
-  const [selectedRegion, setSelectedRegion] = useState<string>('ALL');
+  const { marketContext } = usePortfolio();
+  const [selectedRegion, setSelectedRegion] = useState<string>(() => marketContext === 'IN' ? 'India' : 'US');
+
+  useEffect(() => {
+    setSelectedRegion(marketContext === 'IN' ? 'India' : 'US');
+  }, [marketContext]);
 
   const regions = [
+    { id: marketContext === 'IN' ? 'India' : 'US', label: marketContext === 'IN' ? '🇮🇳 Indian Benchmarks' : '🇺🇸 U.S. Benchmarks' },
     { id: 'ALL', label: 'All Benchmarks' },
-    { id: 'US', label: 'US (Dow, S&P, Nasdaq)' },
-    { id: 'India', label: 'India (Nifty, Sensex, Bank)' },
-    { id: 'Europe', label: 'Europe (DAX)' }
+    { id: marketContext === 'IN' ? 'US' : 'India', label: marketContext === 'IN' ? '🇺🇸 U.S. Benchmarks' : '🇮🇳 Indian Benchmarks' },
   ];
 
   const filteredIndices = selectedRegion === 'ALL'

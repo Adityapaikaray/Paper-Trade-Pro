@@ -7,6 +7,13 @@ import dotenv from "dotenv";
 import crypto from "crypto";
 import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
+import {
+  getMsg91AuthKey,
+  getMsg91OtpTemplateId,
+  isMsg91Configured,
+  getMsg91Diagnostic,
+  logMsg91ConfigurationStatus
+} from "./server/config/env.ts";
 
 dotenv.config();
 
@@ -54,7 +61,7 @@ function getGenAI(): GoogleGenAI | null {
 
 app.use(cors());
 app.use(express.json());
-// --- Secure Mobile Number + Email ID Verify OTP Authentication Backend ---
+// --- Secure Mobile Number + MSG91 SMS OTP Authentication Backend ---
 interface RateLimitRecord {
   lastSentAt: number;
   requestCount: number;
@@ -62,17 +69,7 @@ interface RateLimitRecord {
   verifyAttempts: number;
 }
 
-interface EmailOtpRecord {
-  otp: string;
-  expiresAt: number;
-  lastSentAt: number;
-  requestCount: number;
-  windowStart: number;
-  verifyAttempts: number;
-}
-
 const rateLimitStore = new Map<string, RateLimitRecord>();
-const emailOtpStore = new Map<string, EmailOtpRecord>();
 const usersByPhone = new Map<string, any>();
 const users = new Map(); // email -> { name, email, password }
 const sessions = new Map(); // token -> user object
@@ -102,33 +99,15 @@ setInterval(() => {
       rateLimitStore.delete(key);
     }
   }
-  for (const [key, record] of emailOtpStore.entries()) {
-    if (now > record.expiresAt && now - record.lastSentAt > 60000) {
-      emailOtpStore.delete(key);
-    }
-  }
 }, 300000);
-
-// Helper: mask email address for security and logs (e.g. ad****1@gmail.com)
-function maskEmail(email: string): string {
-  if (!email || !email.includes('@')) return 'e****@domain.com';
-  const [localPart, domain] = email.split('@');
-  if (localPart.length <= 2) {
-    return `${localPart[0]}*@${domain}`;
-  }
-  const visibleStart = localPart.slice(0, 2);
-  const visibleEnd = localPart.slice(-1);
-  const maskedMiddle = '*'.repeat(Math.min(6, Math.max(2, localPart.length - 3)));
-  return `${visibleStart}${maskedMiddle}${visibleEnd}@${domain}`;
-}
 
 // Helper: normalize and validate phone number into strict E.164 format
 function normalizeE164(
   phoneInput?: string,
   countryCodeInput: string = '+91'
-): { valid: boolean; e164: string; cleanDigits: string; countryCode: string; error?: string } {
+): { valid: boolean; e164: string; cleanDigits: string; countryCode: string; msg91Mobile: string; error?: string } {
   if (!phoneInput || typeof phoneInput !== 'string') {
-    return { valid: false, e164: '', cleanDigits: '', countryCode: '', error: 'Enter a valid mobile number.' };
+    return { valid: false, e164: '', cleanDigits: '', countryCode: '', msg91Mobile: '', error: 'Enter a valid mobile number.' };
   }
 
   const trimmed = phoneInput.trim();
@@ -158,28 +137,29 @@ function normalizeE164(
     }
     // Valid Indian mobile number: 10 digits starting with 6, 7, 8, or 9
     if (cleanDigits.length !== 10 || !/^[6-9]\d{9}$/.test(cleanDigits)) {
-      return { valid: false, e164: '', cleanDigits: '', countryCode: '+91', error: 'Enter a valid mobile number.' };
+      return { valid: false, e164: '', cleanDigits: '', countryCode: '+91', msg91Mobile: '', error: 'Enter a valid mobile number.' };
     }
     e164 = `+91${cleanDigits}`;
   } else {
     if (cleanDigits.length < 7 || cleanDigits.length > 15) {
-      return { valid: false, e164: '', cleanDigits: '', countryCode, error: 'Enter a valid mobile number.' };
+      return { valid: false, e164: '', cleanDigits: '', countryCode, msg91Mobile: '', error: 'Enter a valid mobile number.' };
     }
   }
 
-  return { valid: true, e164, cleanDigits, countryCode };
+  const msg91Mobile = e164.replace(/\D/g, '');
+  return { valid: true, e164, cleanDigits, countryCode, msg91Mobile };
 }
 
-// Helper: secure masking for logs (e.g. +91******3210)
+// Helper: secure masking for logs (e.g. +91 ******3210)
 function maskPhoneNumber(phone: string): string {
-  if (!phone || phone.length < 8) return '+91******XXXX';
+  if (!phone || phone.length < 8) return '+91 ******XXXX';
   const prefix = phone.startsWith('+91') ? '+91' : phone.slice(0, 3);
   const suffix = phone.slice(-4);
-  return `${prefix}******${suffix}`;
+  return `${prefix} ******${suffix}`;
 }
 
 // Helper: secure server-side logging without leaking secrets or full numbers
-function logOtpEvent(eventType: 'send' | 'verify', maskedPhone: string, status: string, errorCode?: string | number) {
+function logOtpEvent(eventType: 'send' | 'resend' | 'verify', maskedPhone: string, status: string, errorCode?: string | number) {
   const codeStr = errorCode !== undefined ? ` | Code: ${errorCode}` : '';
   console.log(`[OTP] ${eventType.toUpperCase()} | Phone: ${maskedPhone} | Status: ${status}${codeStr}`);
 }
@@ -233,28 +213,18 @@ function getSecretValue(envNames: string[]): string | undefined {
   return undefined;
 }
 
-// Safe server-side configuration checker: checks if all required Twilio credentials exist
-function getTwilioVerifyConfig(): {
+// Safe server-side configuration checker: checks if required MSG91 credentials exist
+function getMsg91Config(): {
   configured: boolean;
   valid: boolean;
-  accountSid?: string;
-  authToken?: string;
-  serviceSid?: string;
+  authKey?: string;
+  templateId?: string;
   error?: string;
 } {
-  // Primary: exact standard names (as specified in requirement 1 & 2)
-  // Fallbacks: explicit secondary mappings if configured under variant names
-  const accountSid = getSecretValue(['TWILIO_ACCOUNT_SID', 'TWILIO_ACCOUNT_ID', 'TWILIO_SID']);
-  const authToken = getSecretValue(['TWILIO_AUTH_TOKEN', 'TWILIO_TOKEN', 'TWILIO_SECRET']);
-  const serviceSid = getSecretValue([
-    'TWILIO_VERIFY_SERVICE_SID',
-    'TWILIO_VERIFY_SID',
-    'TWILIO_SERVICE_SID',
-    'TWILIO_VERIFICATION_SERVICE_SID'
-  ]);
+  const authKey = getSecretValue(['MSG91_AUTH_KEY', 'MSG91_AUTHKEY']);
+  const templateId = getSecretValue(['MSG91_OTP_TEMPLATE_ID', 'MSG91_TEMPLATE_ID', 'MSG91_OTP_TEMPLATE']);
 
-  // Missing configuration
-  if (!accountSid || !authToken || !serviceSid) {
+  if (!authKey || !templateId) {
     return {
       configured: false,
       valid: false,
@@ -262,155 +232,89 @@ function getTwilioVerifyConfig(): {
     };
   }
 
-  // Validate Service SID format: Twilio Verify Service SID must start with "VA"
-  if (
-    !serviceSid.startsWith('VA') ||
-    serviceSid.startsWith('AC') ||
-    serviceSid.startsWith('SK') ||
-    serviceSid.startsWith('+') ||
-    serviceSid === accountSid
-  ) {
-    return {
-      configured: true,
-      valid: false,
-      error: 'OTP service configuration is invalid.'
-    };
-  }
-
-  // Validate Account SID format: starts with "AC"
-  if (!accountSid.startsWith('AC')) {
-    return {
-      configured: true,
-      valid: false,
-      error: 'OTP service configuration is invalid.'
-    };
-  }
-
   return {
     configured: true,
     valid: true,
-    accountSid,
-    authToken,
-    serviceSid
+    authKey,
+    templateId
   };
 }
 
 // Diagnostic server-side configuration logger (safe, never prints secrets)
-export function runTwilioDiagnosticCheck() {
-  console.log('==================================================');
-  console.log('TRADEPRO TWILIO CONFIGURATION DIAGNOSTIC CHECK');
-  console.log('==================================================');
-  const accountSidRaw = process.env.TWILIO_ACCOUNT_SID;
-  const authTokenRaw = process.env.TWILIO_AUTH_TOKEN;
-  const serviceSidRaw = process.env.TWILIO_VERIFY_SERVICE_SID;
-
-  console.log('Twilio configuration:');
-  console.log(`ACCOUNT_SID: ${accountSidRaw ? 'configured' : 'missing'}`);
-  console.log(`AUTH_TOKEN: ${authTokenRaw ? 'configured' : 'missing'}`);
-  console.log(`VERIFY_SERVICE_SID: ${serviceSidRaw ? 'configured' : 'missing'}`);
-
-  if (accountSidRaw) {
-    const isAC = accountSidRaw.trim().startsWith('AC');
-    console.log(`  -> Format check (starts with 'AC'): ${isAC ? 'VALID' : 'INVALID'}`);
-  }
-  if (serviceSidRaw) {
-    const isVA = serviceSidRaw.trim().startsWith('VA');
-    console.log(`  -> Format check (starts with 'VA'): ${isVA ? 'VALID' : 'INVALID'}`);
-  }
-
-  const missing = [];
-  if (!accountSidRaw) missing.push('TWILIO_ACCOUNT_SID');
-  if (!authTokenRaw) missing.push('TWILIO_AUTH_TOKEN');
-  if (!serviceSidRaw) missing.push('TWILIO_VERIFY_SERVICE_SID');
-
-  if (missing.length > 0) {
-    console.log(`\nDIAGNOSTIC RESULT: 'OTP service is not configured' is appearing because the following environment variables are missing from the server runtime:`);
-    missing.forEach(m => console.log(`   - ${m}`));
-    console.log('Resolution: Add these environment variables to the backend service runtime configuration in Google Cloud Run.');
-  } else {
-    console.log(`\nDIAGNOSTIC RESULT: All required Twilio environment variables are configured and loaded.`);
-  }
-  console.log('==================================================\n');
+export function runMsg91DiagnosticCheck() {
+  logMsg91ConfigurationStatus();
 }
 
-function printSafeTwilioConfigCheck() {
-  runTwilioDiagnosticCheck();
+function printSafeMsg91ConfigCheck() {
+  runMsg91DiagnosticCheck();
 }
 
-// Send OTP Controller (Twilio Verify & Email ID Verify)
+// Server-side debug report cache for MSG91 diagnostic tracking (TASK 10)
+interface Msg91SendDebugReport {
+  timestamp: string;
+  configured: 'YES' | 'NO';
+  authKeyPresent: 'YES' | 'NO';
+  templateIdPresent: 'YES' | 'NO';
+  mobileNormalizedCorrectly: 'YES' | 'NO';
+  endpointReached: 'YES' | 'NO';
+  httpStatus: number | string;
+  acceptedRequest: 'YES' | 'NO';
+  requestId: string | null;
+  safeDiagnosticNote?: string;
+}
+
+let lastMsg91DebugReport: Msg91SendDebugReport = {
+  timestamp: new Date().toISOString(),
+  configured: isMsg91Configured() ? 'YES' : 'NO',
+  authKeyPresent: Boolean(getMsg91AuthKey()) ? 'YES' : 'NO',
+  templateIdPresent: Boolean(getMsg91OtpTemplateId()) ? 'YES' : 'NO',
+  mobileNormalizedCorrectly: 'NO',
+  endpointReached: 'NO',
+  httpStatus: 'N/A',
+  acceptedRequest: 'NO',
+  requestId: null
+};
+
+function printServerSideDebugMode(report: Msg91SendDebugReport) {
+  console.log('=== [MSG91 Server Diagnostic Report] ===');
+  console.log(`MSG91 configured: ${report.configured}`);
+  console.log(`Auth key present: ${report.authKeyPresent}`);
+  console.log(`Template ID present: ${report.templateIdPresent}`);
+  console.log(`Mobile normalized correctly: ${report.mobileNormalizedCorrectly}`);
+  console.log(`MSG91 endpoint reached: ${report.endpointReached}`);
+  console.log(`MSG91 HTTP status: ${report.httpStatus}`);
+  console.log(`MSG91 accepted request: ${report.acceptedRequest}`);
+  console.log(`MSG91 request/reference ID: ${report.requestId || 'none'}`);
+  if (report.safeDiagnosticNote) {
+    console.log(`[MSG91 Diagnostic Note] ${report.safeDiagnosticNote}`);
+  }
+  console.log('========================================');
+}
+
+// Send OTP Controller (MSG91 SMS OTP)
 async function handleSendOtpRequest(req: express.Request, res: express.Response) {
   try {
-    // 1. Check for Email ID authentication
-    const rawEmail = req.body.email;
-    if (rawEmail && typeof rawEmail === 'string' && rawEmail.trim().length > 0) {
-      const email = rawEmail.trim().toLowerCase();
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        return res.status(400).json({ error: 'Enter a valid email address.' });
-      }
-
-      const masked = maskEmail(email);
-      const now = Date.now();
-
-      // Rate Limiting: 30-sec resend cooldown & max 5 requests per 10 min
-      const existing = emailOtpStore.get(email);
-      if (existing) {
-        const elapsed = now - existing.lastSentAt;
-        if (elapsed < 30000) {
-          const remaining = Math.ceil((30000 - elapsed) / 1000);
-          return res.status(429).json({
-            error: `Please wait ${remaining}s before requesting a new OTP.`
-          });
-        }
-
-        const windowElapsed = now - existing.windowStart;
-        if (windowElapsed < 600000 && existing.requestCount >= 5) {
-          logOtpEvent('send', masked, 'rate_limited');
-          return res.status(429).json({
-            error: 'Too many OTP requests. Please wait and try again.'
-          });
-        }
-      }
-
-      // Generate cryptographically secure 6-digit OTP
-      const generatedOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      const windowStart = existing && (now - existing.windowStart < 600000) ? existing.windowStart : now;
-      const requestCount = existing && (now - existing.windowStart < 600000) ? existing.requestCount + 1 : 1;
-
-      emailOtpStore.set(email, {
-        otp: generatedOtp,
-        expiresAt: now + 10 * 60 * 1000, // 10 minutes validity
-        lastSentAt: now,
-        requestCount,
-        windowStart,
-        verifyAttempts: 0
-      });
-
-      logOtpEvent('send', masked, 'sent');
-      console.log(`[EMAIL OTP DISPATCHED] Code ${generatedOtp} sent to ${masked}`);
-
-      return res.json({
-        success: true,
-        status: 'pending',
-        message: `OTP sent successfully to ${masked}`,
-        maskedEmail: masked,
-        email,
-        otpPreview: generatedOtp
-      });
-    }
-
-    // 2. Mobile Phone authentication (Twilio Verify)
-    const rawPhone = req.body.phoneNumber || req.body.phone;
+    const rawPhone = req.body.mobile || req.body.phoneNumber || req.body.phone;
     const countryCode = req.body.countryCode || '+91';
+
+    console.log('[MSG91] Send OTP requested');
 
     const validation = normalizeE164(rawPhone, countryCode);
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error || 'Enter a valid email address or mobile number.' });
+      console.log('[MSG91] Mobile validation failed: invalid format');
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_MOBILE',
+        message: 'Enter a valid mobile number.'
+      });
     }
 
-    const { e164, cleanDigits } = validation;
+    const { e164, cleanDigits, msg91Mobile } = validation;
     const masked = maskPhoneNumber(e164);
     const now = Date.now();
+
+    console.log(`[MSG91] Mobile: ${masked}`);
+    console.log(`[MSG91] Mobile normalized: ${e164}`);
 
     // Rate Limiting & Abuse Prevention
     const existingRateLimit = rateLimitStore.get(e164);
@@ -418,9 +322,11 @@ async function handleSendOtpRequest(req: express.Request, res: express.Response)
       // 1. Resend cooldown: 30 seconds
       const elapsedSinceLast = now - existingRateLimit.lastSentAt;
       if (elapsedSinceLast < 30000) {
-        const remainingSeconds = Math.ceil((30000 - elapsedSinceLast) / 1000);
+        console.log(`[MSG91] Send throttled by 30s cooldown (${Math.round((30000 - elapsedSinceLast) / 1000)}s remaining)`);
         return res.status(429).json({
-          error: `Please wait ${remainingSeconds}s before requesting a new OTP.`
+          success: false,
+          code: 'OTP_RATE_LIMITED',
+          message: 'Too many OTP requests'
         });
       }
 
@@ -428,51 +334,118 @@ async function handleSendOtpRequest(req: express.Request, res: express.Response)
       const windowElapsed = now - existingRateLimit.windowStart;
       if (windowElapsed < 600000 && existingRateLimit.requestCount >= 5) {
         logOtpEvent('send', masked, 'rate_limited');
+        console.log('[MSG91] Send blocked: 10-minute rate limit exceeded (5 requests)');
         return res.status(429).json({
-          error: 'Too many OTP requests. Please wait and try again.'
+          success: false,
+          code: 'OTP_RATE_LIMITED',
+          message: 'Too many OTP requests'
         });
       }
     }
 
-    // Verify Server-Side Configuration
-    const config = getTwilioVerifyConfig();
+    // Server-side environment configuration check
+    const authKey = getMsg91AuthKey();
+    const templateId = getMsg91OtpTemplateId();
+    const isConfigured = Boolean(authKey && templateId);
+    console.log(`[MSG91] Configuration present: ${isConfigured ? 'true' : 'false'}`);
 
-    if (!config.configured) {
+    if (!authKey || !templateId) {
       logOtpEvent('send', masked, 'config_missing');
-      return res.status(500).json({
-        error: 'OTP service is not configured. Please contact support.'
+      logMsg91ConfigurationStatus();
+
+      lastMsg91DebugReport = {
+        timestamp: new Date().toISOString(),
+        configured: 'NO',
+        authKeyPresent: authKey ? 'YES' : 'NO',
+        templateIdPresent: templateId ? 'YES' : 'NO',
+        mobileNormalizedCorrectly: 'YES',
+        endpointReached: 'NO',
+        httpStatus: 'N/A',
+        acceptedRequest: 'NO',
+        requestId: null,
+        safeDiagnosticNote: 'Missing MSG91_AUTH_KEY or MSG91_OTP_TEMPLATE_ID on server'
+      };
+      printServerSideDebugMode(lastMsg91DebugReport);
+
+      return res.status(503).json({
+        success: false,
+        code: 'MSG91_CONFIGURATION_ERROR',
+        message: 'OTP service temporarily unavailable'
       });
     }
 
-    if (!config.valid || !config.accountSid || !config.authToken || !config.serviceSid) {
-      logOtpEvent('send', masked, 'config_invalid');
-      return res.status(500).json({
-        error: config.error || 'OTP service configuration is invalid.'
-      });
-    }
-
-    // Call Twilio Verify API to create and dispatch OTP via SMS
-    const authHeader = 'Basic ' + Buffer.from(`${config.accountSid}:${config.authToken}`).toString('base64');
-    const params = new URLSearchParams();
-    params.append('To', e164);
-    params.append('Channel', 'sms');
+    // Official MSG91 v5 OTP API
+    const msg91Url = `https://control.msg91.com/api/v5/otp?template_id=${encodeURIComponent(templateId)}&mobile=${encodeURIComponent(msg91Mobile)}&otp_length=6`;
 
     try {
-      const twilioRes = await axios.post(
-        `https://verify.twilio.com/v2/Services/${config.serviceSid}/Verifications`,
-        params.toString(),
+      const msg91Res = await axios.post(
+        msg91Url,
+        {
+          template_id: templateId,
+          mobile: msg91Mobile,
+          otp_length: 6
+        },
         {
           headers: {
-            Authorization: authHeader,
-            'Content-Type': 'application/x-www-form-urlencoded'
+            authkey: authKey,
+            'Content-Type': 'application/json'
           },
-          timeout: 10000
+          timeout: 12000
         }
       );
 
-      const twilioStatus = twilioRes.data?.status; // e.g. "pending"
-      if (twilioRes.status === 200 || twilioRes.status === 201 || twilioStatus === 'pending') {
-        // Update rate limiting store on successful send
+      const resType = (msg91Res.data?.type || '').toLowerCase();
+      const resMsg = (msg91Res.data?.message || '').toLowerCase();
+      const isAccepted = msg91Res.status === 200 && (resType === 'success' || (resType !== 'error' && (resMsg.includes('success') || resMsg.includes('sent'))));
+
+      console.log(`[MSG91] MSG91 HTTP status: ${msg91Res.status}`);
+      console.log(`[MSG91] Request accepted: ${isAccepted ? 'true' : 'false'}`);
+
+      // Extract safe request / reference ID if available
+      let requestId: string | null = null;
+      if (msg91Res.data?.requestId) {
+        requestId = String(msg91Res.data.requestId);
+      } else if (msg91Res.data?.request_id) {
+        requestId = String(msg91Res.data.request_id);
+      } else if (typeof msg91Res.data?.message === 'string' && /^[a-f0-9]{12,}$/i.test(msg91Res.data.message)) {
+        requestId = msg91Res.data.message;
+      }
+
+      if (requestId) {
+        console.log(`[MSG91] Request ID: ${requestId}`);
+      }
+
+      // Safe diagnostics note for DLT, balance, or routing issues
+      let safeDiagnosticNote = '';
+      if (resMsg.includes('dlt') || resMsg.includes('template')) {
+        safeDiagnosticNote = 'Ensure DLT template registration is approved and active in MSG91';
+        console.log(`[MSG91] Diagnostic: ${safeDiagnosticNote}`);
+      } else if (resMsg.includes('balance') || resMsg.includes('credit')) {
+        safeDiagnosticNote = 'Insufficient SMS credits / account balance in MSG91 account';
+        console.log(`[MSG91] Diagnostic: ${safeDiagnosticNote}`);
+      } else if (resMsg.includes('sender') || resMsg.includes('header')) {
+        safeDiagnosticNote = 'Sender ID / DLT Header issue detected in MSG91';
+        console.log(`[MSG91] Diagnostic: ${safeDiagnosticNote}`);
+      } else if (isAccepted) {
+        safeDiagnosticNote = 'Request accepted by MSG91 API gateway. SMS delivery proceeds via Indian telecom DLT routing.';
+      }
+
+      lastMsg91DebugReport = {
+        timestamp: new Date().toISOString(),
+        configured: 'YES',
+        authKeyPresent: 'YES',
+        templateIdPresent: 'YES',
+        mobileNormalizedCorrectly: 'YES',
+        endpointReached: 'YES',
+        httpStatus: msg91Res.status,
+        acceptedRequest: isAccepted ? 'YES' : 'NO',
+        requestId,
+        safeDiagnosticNote: safeDiagnosticNote || undefined
+      };
+      printServerSideDebugMode(lastMsg91DebugReport);
+
+      if (isAccepted) {
+        // Update rate limiting store on successful acceptance
         const windowStart = existingRateLimit && (now - existingRateLimit.windowStart < 600000)
           ? existingRateLimit.windowStart
           : now;
@@ -491,220 +464,324 @@ async function handleSendOtpRequest(req: express.Request, res: express.Response)
 
         return res.json({
           success: true,
-          status: 'pending'
+          message: 'OTP sent',
+          requestId: requestId || undefined
         });
       }
 
-      logOtpEvent('send', masked, 'failed', twilioStatus);
-      return res.status(500).json({ error: 'Unable to send OTP. Please try again.' });
-    } catch (twilioErr: any) {
-      const status = twilioErr.response?.status;
-      const twilioCode = twilioErr.response?.data?.code;
+      // MSG91 rejected request
+      logOtpEvent('send', masked, 'failed', resMsg || resType);
 
-      logOtpEvent('send', masked, 'failed', twilioCode || status || 'NETWORK_ERROR');
-
-      // Authentication failure
-      if (status === 401) {
-        return res.status(500).json({
-          error: 'OTP service authentication failed.'
-        });
-      }
-
-      // Invalid or nonexistent Verify Service SID
-      if (status === 404 || twilioCode === 20404) {
-        return res.status(500).json({
-          error: 'OTP service configuration is invalid.'
-        });
-      }
-
-      // Rate limited by Twilio
-      if (status === 429 || twilioCode === 60202 || twilioCode === 60203 || twilioCode === 20429) {
+      if (resMsg.includes('rate') || resMsg.includes('limit') || resMsg.includes('too many') || msg91Res.status === 429) {
         return res.status(429).json({
-          error: 'Too many OTP requests. Please wait and try again.'
+          success: false,
+          code: 'OTP_RATE_LIMITED',
+          message: 'Too many OTP requests'
         });
       }
 
-      // Invalid number format on Twilio side
-      if (twilioCode === 60200 || twilioCode === 21211 || twilioCode === 21614) {
-        return res.status(400).json({
-          error: 'Enter a valid mobile number.'
+      return res.status(400).json({
+        success: false,
+        code: 'MSG91_SEND_FAILED',
+        message: 'Unable to send OTP'
+      });
+    } catch (msg91Err: any) {
+      const status = msg91Err.response?.status || 'NETWORK_ERROR';
+      const dataMsg = (msg91Err.response?.data?.message || '').toLowerCase();
+
+      console.log(`[MSG91] MSG91 HTTP status: ${status}`);
+      console.log('[MSG91] Request accepted: false');
+
+      lastMsg91DebugReport = {
+        timestamp: new Date().toISOString(),
+        configured: 'YES',
+        authKeyPresent: 'YES',
+        templateIdPresent: 'YES',
+        mobileNormalizedCorrectly: 'YES',
+        endpointReached: status !== 'NETWORK_ERROR' ? 'YES' : 'NO',
+        httpStatus: status,
+        acceptedRequest: 'NO',
+        requestId: null,
+        safeDiagnosticNote: status === 401 || status === 403 ? 'MSG91 AuthKey unauthorized or invalid' : undefined
+      };
+      printServerSideDebugMode(lastMsg91DebugReport);
+
+      logOtpEvent('send', masked, 'failed', status);
+
+      if (status === 429 || dataMsg.includes('rate') || dataMsg.includes('limit') || dataMsg.includes('too many')) {
+        return res.status(429).json({
+          success: false,
+          code: 'OTP_RATE_LIMITED',
+          message: 'Too many OTP requests'
         });
       }
 
-      // SMS delivery failure or carrier issue
-      if (twilioCode === 30008 || twilioCode === 60205 || twilioCode === 21608) {
-        return res.status(500).json({
-          error: 'Unable to send OTP. Please try again.'
+      if (status === 401 || status === 403) {
+        return res.status(503).json({
+          success: false,
+          code: 'MSG91_CONFIGURATION_ERROR',
+          message: 'OTP service temporarily unavailable'
         });
       }
 
-      // Generic SMS delivery error
       return res.status(500).json({
-        error: 'Unable to send OTP. Please try again.'
+        success: false,
+        code: 'MSG91_SEND_FAILED',
+        message: 'Unable to send OTP'
       });
     }
   } catch (err: any) {
     return res.status(500).json({
-      error: 'Unable to send OTP. Please try again.'
+      success: false,
+      code: 'MSG91_SEND_FAILED',
+      message: 'Unable to send OTP'
     });
   }
 }
 
-// Verify OTP Controller (Twilio Verify & Email ID Verify)
-async function handleVerifyOtpRequest(req: express.Request, res: express.Response) {
+// Resend OTP Controller (MSG91 Retry API)
+async function handleResendOtpRequest(req: express.Request, res: express.Response) {
   try {
-    // 1. Check for Email ID verification
-    const rawEmail = req.body.email;
-    if (rawEmail && typeof rawEmail === 'string' && rawEmail.trim().length > 0) {
-      const email = rawEmail.trim().toLowerCase();
-      const rawOtp = req.body.otp;
-      if (!rawOtp || typeof rawOtp !== 'string' || rawOtp.trim().length !== 6) {
-        return res.status(400).json({ error: 'Enter the 6-digit OTP.' });
-      }
-
-      const otp = rawOtp.trim();
-      const masked = maskEmail(email);
-      const now = Date.now();
-
-      const record = emailOtpStore.get(email);
-      if (!record) {
-        // Universal demo fallback code for testing
-        if (otp !== '123456' && otp !== '654321') {
-          return res.status(400).json({ error: 'Incorrect or expired OTP. Please request a new one.' });
-        }
-      } else {
-        if (record.verifyAttempts >= 5) {
-          logOtpEvent('verify', masked, 'rate_limited');
-          return res.status(429).json({ error: 'Too many OTP requests. Please wait and try again.' });
-        }
-        if (now > record.expiresAt) {
-          return res.status(400).json({ error: 'Incorrect or expired OTP. Please request a new one.' });
-        }
-        const isValid = (otp === record.otp) || (otp === '123456');
-        if (!isValid) {
-          record.verifyAttempts += 1;
-          logOtpEvent('verify', masked, 'rejected');
-          return res.status(400).json({ error: 'Incorrect or expired OTP. Please try again.' });
-        }
-        // Successfully verified - clear temporary OTP record
-        emailOtpStore.delete(email);
-      }
-
-      logOtpEvent('verify', masked, 'approved');
-
-      // Retrieve or initialize persistent user profile
-      let user = users.get(email);
-      if (!user) {
-        const isAditya = email.includes('aditya') || email.includes('paikaray');
-        const namePart = email.split('@')[0];
-        const displayName = isAditya
-          ? 'Aditya Paikaray'
-          : namePart.charAt(0).toUpperCase() + namePart.slice(1);
-        
-        // Generate consistent institutional account number
-        let hash = 0;
-        for (let i = 0; i < email.length; i++) {
-          hash = (hash * 31 + email.charCodeAt(i)) | 0;
-        }
-        const shortId = Math.abs(hash % 9000 + 1000).toString();
-
-        user = {
-          id: `tp_usr_${shortId}`,
-          name: displayName,
-          email: email,
-          accountNumber: `TP-${shortId}-89`,
-          kycStatus: 'VERIFIED',
-          tier: 'Prestige Member',
-          createdAt: Date.now()
-        };
-        users.set(email, user);
-      }
-
-      // Generate high-entropy application session token
-      const token = 'tp_tok_' + crypto.randomBytes(32).toString('hex');
-      sessions.set(token, user);
-
-      return res.json({
-        success: true,
-        status: 'approved',
-        token,
-        user
-      });
-    }
-
-    // 2. Mobile Phone verification (Twilio Verify)
-    const rawPhone = req.body.phoneNumber || req.body.phone;
+    const rawPhone = req.body.mobile || req.body.phoneNumber || req.body.phone;
     const countryCode = req.body.countryCode || '+91';
-    const rawOtp = req.body.otp;
+
+    console.log('[MSG91] Resend OTP requested');
 
     const validation = normalizeE164(rawPhone, countryCode);
     if (!validation.valid) {
-      return res.status(400).json({ error: validation.error || 'Enter a valid email address or mobile number.' });
+      console.log('[MSG91] Mobile validation failed on resend: invalid format');
+      return res.status(400).json({
+        success: false,
+        code: 'INVALID_MOBILE',
+        message: 'Enter a valid mobile number.'
+      });
     }
 
-    if (!rawOtp || typeof rawOtp !== 'string' || rawOtp.trim().length !== 6) {
-      return res.status(400).json({ error: 'Incorrect or expired OTP. Please try again.' });
-    }
-
-    const { e164, cleanDigits } = validation;
-    const otp = rawOtp.trim();
+    const { e164, cleanDigits, msg91Mobile } = validation;
     const masked = maskPhoneNumber(e164);
     const now = Date.now();
+
+    console.log(`[MSG91] Mobile: ${masked}`);
+    console.log(`[MSG91] Mobile normalized: ${e164}`);
+
+    // Rate Limiting & Abuse Prevention
+    const existingRateLimit = rateLimitStore.get(e164);
+    if (existingRateLimit) {
+      const elapsedSinceLast = now - existingRateLimit.lastSentAt;
+      if (elapsedSinceLast < 30000) {
+        console.log(`[MSG91] Resend throttled by 30s cooldown (${Math.round((30000 - elapsedSinceLast) / 1000)}s remaining)`);
+        return res.status(429).json({
+          success: false,
+          code: 'OTP_RATE_LIMITED',
+          message: 'Too many OTP requests'
+        });
+      }
+
+      const windowElapsed = now - existingRateLimit.windowStart;
+      if (windowElapsed < 600000 && existingRateLimit.requestCount >= 5) {
+        logOtpEvent('resend', masked, 'rate_limited');
+        console.log('[MSG91] Resend blocked: 10-minute rate limit exceeded (5 requests)');
+        return res.status(429).json({
+          success: false,
+          code: 'OTP_RATE_LIMITED',
+          message: 'Too many OTP requests'
+        });
+      }
+    }
+
+    // Server-side environment configuration check
+    const authKey = getMsg91AuthKey();
+    if (!authKey) {
+      logOtpEvent('resend', masked, 'config_missing');
+      logMsg91ConfigurationStatus();
+      return res.status(503).json({
+        success: false,
+        code: 'MSG91_CONFIGURATION_ERROR',
+        message: 'OTP service temporarily unavailable'
+      });
+    }
+
+    // Official MSG91 Retry OTP API
+    const retryUrl = `https://control.msg91.com/api/v5/otp/retry?retrytype=text&mobile=${encodeURIComponent(msg91Mobile)}&authkey=${encodeURIComponent(authKey)}`;
+
+    try {
+      const msg91Res = await axios.get(retryUrl, {
+        headers: {
+          authkey: authKey
+        },
+        timeout: 12000
+      });
+
+      const resType = (msg91Res.data?.type || '').toLowerCase();
+      const resMsg = (msg91Res.data?.message || '').toLowerCase();
+      const isAccepted = msg91Res.status === 200 && (resType === 'success' || (resType !== 'error' && (resMsg.includes('success') || resMsg.includes('sent'))));
+
+      console.log(`[MSG91] MSG91 HTTP status: ${msg91Res.status}`);
+      console.log(`[MSG91] Request accepted: ${isAccepted ? 'true' : 'false'}`);
+
+      let requestId: string | null = null;
+      if (msg91Res.data?.requestId) {
+        requestId = String(msg91Res.data.requestId);
+      } else if (msg91Res.data?.request_id) {
+        requestId = String(msg91Res.data.request_id);
+      } else if (typeof msg91Res.data?.message === 'string' && /^[a-f0-9]{12,}$/i.test(msg91Res.data.message)) {
+        requestId = msg91Res.data.message;
+      }
+
+      if (requestId) {
+        console.log(`[MSG91] Request ID: ${requestId}`);
+      }
+
+      if (isAccepted) {
+        const windowStart = existingRateLimit && (now - existingRateLimit.windowStart < 600000)
+          ? existingRateLimit.windowStart
+          : now;
+        const requestCount = existingRateLimit && (now - existingRateLimit.windowStart < 600000)
+          ? existingRateLimit.requestCount + 1
+          : 1;
+
+        rateLimitStore.set(e164, {
+          lastSentAt: now,
+          requestCount,
+          windowStart,
+          verifyAttempts: 0
+        });
+
+        logOtpEvent('resend', masked, 'pending');
+
+        return res.json({
+          success: true,
+          message: 'OTP sent',
+          requestId: requestId || undefined
+        });
+      }
+
+      logOtpEvent('resend', masked, 'failed', resMsg || resType);
+
+      if (resMsg.includes('rate') || resMsg.includes('limit') || resMsg.includes('too many') || msg91Res.status === 429) {
+        return res.status(429).json({
+          success: false,
+          code: 'OTP_RATE_LIMITED',
+          message: 'Too many OTP requests'
+        });
+      }
+
+      return res.status(400).json({
+        success: false,
+        code: 'MSG91_SEND_FAILED',
+        message: 'Unable to send OTP'
+      });
+    } catch (msg91Err: any) {
+      const status = msg91Err.response?.status || 'NETWORK_ERROR';
+      console.log(`[MSG91] MSG91 HTTP status: ${status}`);
+      console.log('[MSG91] Request accepted: false');
+
+      logOtpEvent('resend', masked, 'failed', status);
+
+      if (status === 429) {
+        return res.status(429).json({
+          success: false,
+          code: 'OTP_RATE_LIMITED',
+          message: 'Too many OTP requests'
+        });
+      }
+
+      return res.status(500).json({
+        success: false,
+        code: 'MSG91_SEND_FAILED',
+        message: 'Unable to send OTP'
+      });
+    }
+  } catch (err: any) {
+    return res.status(500).json({
+      success: false,
+      code: 'MSG91_SEND_FAILED',
+      message: 'Unable to send OTP'
+    });
+  }
+}
+
+// Verify OTP Controller (MSG91 Verify OTP API)
+async function handleVerifyOtpRequest(req: express.Request, res: express.Response) {
+  try {
+    const rawPhone = req.body.mobile || req.body.phoneNumber || req.body.phone;
+    const countryCode = req.body.countryCode || '+91';
+    const rawOtp = req.body.otp;
+
+    console.log('[MSG91] Verify OTP requested');
+
+    const validation = normalizeE164(rawPhone, countryCode);
+    if (!validation.valid) {
+      return res.status(400).json({
+        success: false,
+        error: 'Enter a valid mobile number.'
+      });
+    }
+
+    if (!rawOtp || typeof rawOtp !== 'string' || rawOtp.trim().length !== 6 || !/^\d{6}$/.test(rawOtp.trim())) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid or expired OTP.'
+      });
+    }
+
+    const { e164, cleanDigits, msg91Mobile } = validation;
+    const otp = rawOtp.trim();
+    const masked = maskPhoneNumber(e164);
+
+    console.log(`[MSG91] Mobile: ${masked}`);
+    console.log(`[MSG91] Mobile normalized: ${e164}`);
 
     // Abuse protection: check failed verify attempt threshold
     const rateLimit = rateLimitStore.get(e164);
     if (rateLimit && rateLimit.verifyAttempts >= 5) {
       logOtpEvent('verify', masked, 'rate_limited');
+      console.log('[MSG91] Verification blocked: too many failed attempts');
       return res.status(429).json({
-        error: 'Too many OTP requests. Please wait and try again.'
+        success: false,
+        error: 'Too many OTP requests. Please wait before trying again.'
       });
     }
 
-    // Verify Server-Side Configuration
-    const config = getTwilioVerifyConfig();
-
-    if (!config.configured) {
+    // Server-side environment configuration check
+    const authKey = getMsg91AuthKey();
+    if (!authKey) {
       logOtpEvent('verify', masked, 'config_missing');
-      return res.status(500).json({
-        error: 'OTP service is not configured. Please contact support.'
+      logMsg91ConfigurationStatus();
+      return res.status(503).json({
+        success: false,
+        error: 'OTP service is temporarily unavailable. Please try again later.'
       });
     }
 
-    if (!config.valid || !config.accountSid || !config.authToken || !config.serviceSid) {
-      logOtpEvent('verify', masked, 'config_invalid');
-      return res.status(500).json({
-        error: config.error || 'OTP service configuration is invalid.'
-      });
-    }
-
-    // Call Twilio Verify API to verify the OTP code directly through Twilio
-    const authHeader = 'Basic ' + Buffer.from(`${config.accountSid}:${config.authToken}`).toString('base64');
-    const params = new URLSearchParams();
-    params.append('To', e164);
-    params.append('Code', otp);
+    // Official MSG91 Verify OTP API directly from backend
+    // Doc: https://docs.msg91.com/otp/verify-otp
+    const verifyUrl = `https://control.msg91.com/api/v5/otp/verify?otp=${encodeURIComponent(otp)}&mobile=${encodeURIComponent(msg91Mobile)}`;
 
     try {
-      const twilioRes = await axios.post(
-        `https://verify.twilio.com/v2/Services/${config.serviceSid}/VerificationCheck`,
-        params.toString(),
-        {
-          headers: {
-            Authorization: authHeader,
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          timeout: 10000
-        }
-      );
+      const msg91Res = await axios.get(verifyUrl, {
+        headers: {
+          authkey: authKey
+        },
+        timeout: 10000
+      });
 
-      const verificationStatus = twilioRes.data?.status; // e.g. "approved", "pending", "canceled"
+      const resType = (msg91Res.data?.type || '').toLowerCase();
+      const resMsg = (msg91Res.data?.message || '').toLowerCase();
 
-      if (verificationStatus === 'approved') {
+      // Check for success condition from MSG91
+      const isApproved = resType === 'success' || resMsg.includes('success') || resMsg.includes('verified');
+
+      console.log(`[MSG91] MSG91 HTTP status: ${msg91Res.status}`);
+      console.log(`[MSG91] Verification result: ${isApproved ? 'approved' : 'rejected'}`);
+
+      if (isApproved) {
         logOtpEvent('verify', masked, 'approved');
 
         // Clear rate limit record upon successful verification
         rateLimitStore.delete(e164);
 
-        // Retrieve or initialize user profile
+        // Retrieve or initialize persistent user profile
         let user = usersByPhone.get(e164);
         if (!user) {
           const shortId = cleanDigits.slice(-4);
@@ -713,7 +790,7 @@ async function handleVerifyOtpRequest(req: express.Request, res: express.Respons
             phone: e164,
             countryCode: validation.countryCode,
             mobileNumber: cleanDigits,
-            name: cleanDigits === '9876543210' ? 'Aditya Paikaray' : `Investor ${shortId}`,
+            name: cleanDigits === '8249181397' || cleanDigits === '9876543210' ? 'Aditya Paikaray' : `Investor ${shortId}`,
             email: `${cleanDigits}@investor.tradepro.com`,
             accountNumber: `TP-${shortId}-89`,
             kycStatus: 'VERIFIED',
@@ -727,6 +804,14 @@ async function handleVerifyOtpRequest(req: express.Request, res: express.Respons
         const token = 'tp_tok_' + crypto.randomBytes(32).toString('hex');
         sessions.set(token, user);
 
+        // Set secure HTTP-only cookie for persistent browser session
+        res.cookie('tradepro_session', token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+        });
+
         return res.json({
           success: true,
           status: 'approved',
@@ -737,42 +822,40 @@ async function handleVerifyOtpRequest(req: express.Request, res: express.Respons
 
       // Verification check did not approve (wrong code or expired)
       if (rateLimit) {
-        rateLimit.verifyAttempts += 1;
+        rateLimit.verifyAttempts = (rateLimit.verifyAttempts || 0) + 1;
       }
-      logOtpEvent('verify', masked, 'rejected', verificationStatus);
+      logOtpEvent('verify', masked, 'rejected', resMsg || resType);
+
       return res.status(400).json({
-        error: 'Incorrect or expired OTP. Please try again.'
+        success: false,
+        error: 'Invalid or expired OTP.'
       });
-    } catch (twilioErr: any) {
-      const status = twilioErr.response?.status;
-      const twilioCode = twilioErr.response?.data?.code;
-
+    } catch (verifyErr: any) {
       if (rateLimit) {
-        rateLimit.verifyAttempts += 1;
+        rateLimit.verifyAttempts = (rateLimit.verifyAttempts || 0) + 1;
       }
 
-      logOtpEvent('verify', masked, 'failed', twilioCode || status);
+      const status = verifyErr.response?.status;
+      logOtpEvent('verify', masked, 'failed', status);
+      console.log(`[MSG91] MSG91 HTTP status: ${status || 'FAILED'}`);
+      console.log('[MSG91] Verification result: rejected');
 
-      if (status === 401) {
-        return res.status(500).json({
-          error: 'OTP service authentication failed.'
-        });
-      }
-
-      if (status === 429 || twilioCode === 60202 || twilioCode === 60203 || twilioCode === 20429) {
+      if (status === 429) {
         return res.status(429).json({
-          error: 'Too many OTP requests. Please wait and try again.'
+          success: false,
+          error: 'Too many OTP requests. Please wait before trying again.'
         });
       }
 
-      // 404 or Twilio verification expired/invalid code
       return res.status(400).json({
-        error: 'Incorrect or expired OTP. Please try again.'
+        success: false,
+        error: 'Invalid or expired OTP.'
       });
     }
   } catch (err: any) {
     return res.status(500).json({
-      error: 'Unable to verify OTP. Please try again.'
+      success: false,
+      error: 'Invalid or expired OTP.'
     });
   }
 }
@@ -781,9 +864,28 @@ async function handleVerifyOtpRequest(req: express.Request, res: express.Respons
 app.post('/api/auth/send-otp', handleSendOtpRequest);
 app.post('/api/auth/otp/send', handleSendOtpRequest);
 
-// 2. Verify OTP Endpoints (standard & legacy alias)
+// 2. Resend OTP Endpoints
+app.post('/api/auth/resend-otp', handleResendOtpRequest);
+app.post('/api/auth/otp/retry', handleResendOtpRequest);
+
+// 3. Verify OTP Endpoints (standard & legacy alias)
 app.post('/api/auth/verify-otp', handleVerifyOtpRequest);
 app.post('/api/auth/otp/verify', handleVerifyOtpRequest);
+
+// 4. Safe Diagnostic configuration endpoint (TASK 8)
+app.get('/api/auth/diagnostic', (req, res) => {
+  const diag = getMsg91Diagnostic();
+  res.json({
+    msg91Configured: diag.msg91Configured,
+    authKeyPresent: diag.authKeyPresent,
+    templateIdPresent: diag.templateIdPresent
+  });
+});
+
+// 5. Safe Server-Side Diagnostic Debug Endpoint (TASK 10)
+app.get('/api/auth/debug-otp', (req, res) => {
+  res.json(lastMsg91DebugReport);
+});
 
 app.post('/api/auth/signup', (req, res) => {
   const { name, email, password } = req.body;
@@ -1648,7 +1750,7 @@ async function startServer() {
 
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
-    printSafeTwilioConfigCheck();
+    printSafeMsg91ConfigCheck();
   });
 }
 

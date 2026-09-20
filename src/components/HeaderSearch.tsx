@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Search, X, TrendingUp, TrendingDown, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useMarketData } from '../hooks/useMarketData.ts';
+import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
 import { Stock, IndexQuote } from '../types.ts';
 
@@ -14,7 +15,9 @@ const HeaderSearch: React.FC = () => {
   
   const searchRef = useRef<HTMLDivElement>(null);
   const { stocks, indices } = useMarketData();
+  const { marketContext } = usePortfolio();
   const { navigate } = useNavigation();
+  const isIndia = marketContext === 'IN';
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -40,18 +43,22 @@ const HeaderSearch: React.FC = () => {
   }, [query]);
 
   const filteredStocks = query.length > 0 
-    ? stocks.filter(stock => 
-        stock.symbol.toLowerCase().includes(query.toLowerCase()) || 
-        stock.name.toLowerCase().includes(query.toLowerCase())
-      )
+    ? stocks
+        .filter(s => isIndia ? (s.currency === '₹' || s.country === 'India') : (s.currency === '$' || s.country === 'USA'))
+        .filter(stock => 
+          stock.symbol.toLowerCase().includes(query.toLowerCase()) || 
+          stock.name.toLowerCase().includes(query.toLowerCase())
+        )
     : [];
 
   const filteredIndices = query.length > 0
-    ? indices.filter(idx => 
-        idx.symbol.toLowerCase().includes(query.toLowerCase()) || 
-        idx.name.toLowerCase().includes(query.toLowerCase()) ||
-        idx.displaySymbol.toLowerCase().includes(query.toLowerCase())
-      )
+    ? indices
+        .filter(idx => isIndia ? (idx.region === 'India' || idx.currency === '₹') : (idx.region === 'US' || idx.currency === '$'))
+        .filter(idx => 
+          idx.symbol.toLowerCase().includes(query.toLowerCase()) || 
+          idx.name.toLowerCase().includes(query.toLowerCase()) ||
+          idx.displaySymbol.toLowerCase().includes(query.toLowerCase())
+        )
     : [];
 
   const combinedResults = [...filteredStocks, ...filteredIndices].slice(0, 5);

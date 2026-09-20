@@ -7,6 +7,7 @@ import React, { useMemo } from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { useMarketData } from '../contexts/MarketContext.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { getRegionalMarketStatus } from '../utils/marketHours.ts';
 import { Stock } from '../types.ts';
 
 interface BottomMarketTickerProps {
@@ -29,56 +30,60 @@ interface TickerDisplayItem {
 
 export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade }) => {
   const { stocks, indices, priceTicks, indexTicks, marketStatus, lastUpdated } = useMarketData();
-  const { isWatchlisted } = usePortfolio();
+  const { isWatchlisted, marketContext } = usePortfolio();
+  const isIndia = marketContext === 'IN';
 
-  // Combine real-time indices and highlighted market stocks
+  // Combine real-time indices and highlighted market stocks for active region
   const tickerItems = useMemo<TickerDisplayItem[]>(() => {
     const list: TickerDisplayItem[] = [];
 
-    // 1. Major global and domestic indices
-    indices.forEach(idx => {
-      const isPos = (idx.percentChange ?? 0) >= 0;
-      list.push({
-        id: `idx-${idx.key}`,
-        symbol: idx.displaySymbol || idx.symbol || idx.name,
-        name: idx.name,
-        currency: idx.currency || (idx.region === 'India' ? '₹' : '$'),
-        price: idx.price,
-        change: idx.change,
-        percentChange: idx.percentChange,
-        isPositive: isPos,
-        tick: indexTicks[idx.key],
-        isIndex: true,
-      });
-    });
-
-    // 2. Actively traded stocks
-    const prioritySymbols = [
-      'RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'TITAN', 'TATAMOTORS',
-      'AMD', 'NVDA', 'AAPL', 'TSLA', 'MSFT', 'GOOGL'
-    ];
-
-    stocks.forEach(stock => {
-      if (prioritySymbols.includes(stock.symbol.toUpperCase())) {
-        const isPos = (stock.changePercent ?? 0) >= 0;
+    // 1. Major indices strictly matching the active market region
+    indices
+      .filter(idx => isIndia ? (idx.region === 'India' || idx.currency === '₹') : (idx.region === 'US' || idx.currency === '$'))
+      .forEach(idx => {
+        const isPos = (idx.percentChange ?? 0) >= 0;
         list.push({
-          id: `stock-${stock.symbol}`,
-          symbol: stock.symbol,
-          name: stock.name,
-          currency: stock.currency || (stock.country === 'India' ? '₹' : '$'),
-          price: stock.price,
-          change: stock.change,
-          percentChange: stock.changePercent,
+          id: `idx-${idx.key}`,
+          symbol: idx.displaySymbol || idx.symbol || idx.name,
+          name: idx.name,
+          currency: idx.currency || (idx.region === 'India' ? '₹' : '$'),
+          price: idx.price,
+          change: idx.change,
+          percentChange: idx.percentChange,
           isPositive: isPos,
-          tick: priceTicks[stock.symbol],
-          stockRef: stock,
-          isIndex: false,
+          tick: indexTicks[idx.key],
+          isIndex: true,
         });
-      }
-    });
+      });
+
+    // 2. Actively traded stocks for the active region
+    const prioritySymbols = isIndia
+      ? ['RELIANCE', 'TCS', 'INFY', 'HDFCBANK', 'TITAN', 'TATAMOTORS', 'ICICIBANK', 'BHARTIARTL', 'WIPRO', 'ITC']
+      : ['AAPL', 'MSFT', 'NVDA', 'AMZN', 'GOOGL', 'META', 'TSLA', 'SPY', 'QQQ', 'AMD', 'BRK-B', 'AVGO'];
+
+    stocks
+      .filter(stock => isIndia ? (stock.currency === '₹' || stock.country === 'India') : (stock.currency === '$' || stock.country === 'USA'))
+      .forEach(stock => {
+        if (prioritySymbols.includes(stock.symbol.toUpperCase())) {
+          const isPos = (stock.changePercent ?? 0) >= 0;
+          list.push({
+            id: `stock-${stock.symbol}`,
+            symbol: stock.symbol,
+            name: stock.name,
+            currency: stock.currency || (stock.country === 'India' ? '₹' : '$'),
+            price: stock.price,
+            change: stock.change,
+            percentChange: stock.changePercent,
+            isPositive: isPos,
+            tick: priceTicks[stock.symbol],
+            stockRef: stock,
+            isIndex: false,
+          });
+        }
+      });
 
     return list;
-  }, [stocks, indices, priceTicks, indexTicks]);
+  }, [stocks, indices, priceTicks, indexTicks, isIndia]);
 
   const formatPrice = (val: number, curr: string) => {
     if (val === undefined || isNaN(val)) return '—';
@@ -195,37 +200,41 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
       {/* Real-time Status Anchor */}
       <div className="flex items-center h-full px-3 md:px-4 border-r border-[#182030] shrink-0 bg-[#07090E] z-20 shadow-[4px_0_12px_rgba(0,0,0,0.4)]">
         {(() => {
-          let label = 'CONNECTING';
-          let detail = 'CONNECTING...';
-          let color = 'bg-amber-500';
-          let bgColor = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
-          let ping = true;
+          const regStatus = getRegionalMarketStatus(marketContext);
+          let label = 'CLOSED';
+          let detail = regStatus.timezoneLabel;
+          let color = 'bg-slate-500';
+          let bgColor = 'bg-slate-800/60 text-slate-400 border-slate-700/60';
+          let ping = false;
 
-          if (stocks.length > 0) {
-            const isOpen = marketStatus?.nse === 'REGULAR' || marketStatus?.nyse === 'REGULAR' || marketStatus?.nse === 'OPEN' || marketStatus?.nyse === 'OPEN';
-            const isRealtime = stocks.some(s => s.isRealtime);
-
-            if (!isOpen) {
-              label = 'CLOSED';
-              detail = 'MARKET CLOSED';
-              color = 'bg-slate-500';
-              bgColor = 'bg-slate-800/60 text-slate-400 border-slate-700/60';
-              ping = false;
-            } else if (!isRealtime) {
-              label = 'DELAYED';
-              detail = '15 MIN';
-              color = 'bg-amber-500';
-              bgColor = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
-            } else {
-              label = 'LIVE';
-              detail = 'STREAMING';
-              color = 'bg-[#00D084]';
-              bgColor = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
-            }
+          if (regStatus.isOpen) {
+            label = 'LIVE';
+            detail = 'STREAMING';
+            color = 'bg-[#00D084]';
+            bgColor = 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30';
+            ping = true;
+          } else if (regStatus.status === 'Pre-Market') {
+            label = 'PRE-MKT';
+            detail = 'SESSION ACTIVE';
+            color = 'bg-amber-500';
+            bgColor = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+            ping = true;
+          } else if (regStatus.status === 'After Hours' || regStatus.status === 'Post-Market') {
+            label = 'AFTER-HRS';
+            detail = 'POST-SESSION';
+            color = 'bg-amber-500';
+            bgColor = 'bg-amber-500/15 text-amber-400 border-amber-500/30';
+            ping = false;
+          } else {
+            label = 'CLOSED';
+            detail = regStatus.nextEvent.toUpperCase();
+            color = 'bg-slate-500';
+            bgColor = 'bg-slate-800/60 text-slate-400 border-slate-700/60';
+            ping = false;
           }
 
           return (
-            <div className="flex items-center gap-2" title={lastUpdated ? "Last Updated: " + new Date(lastUpdated).toLocaleTimeString() : ""}>
+            <div className="flex items-center gap-2" title={`${regStatus.sessionNote} • ${regStatus.timeString}`}>
               <span className="relative flex h-2 w-2">
                 {ping && <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${color}`} />}
                 <span className={`relative inline-flex rounded-full h-2 w-2 ${color}`} />

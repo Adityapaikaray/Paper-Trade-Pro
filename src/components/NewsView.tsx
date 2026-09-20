@@ -4,13 +4,15 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Newspaper, ExternalLink, Clock, RefreshCw, AlertTriangle, TrendingUp, Filter, ChevronRight } from 'lucide-react';
+import { Newspaper, ExternalLink, Clock, RefreshCw, AlertTriangle, TrendingUp, Filter, ChevronRight, Globe } from 'lucide-react';
+import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { NewsArticle } from '../types.ts';
 
 const CATEGORIES = ['Trending', 'Markets', 'Technology', 'Earnings', 'Economy'];
 const SPECIFIC_CATEGORIES = ['Markets', 'Technology', 'Earnings', 'Economy'];
 
 const NewsView = () => {
+  const { marketContext } = usePortfolio();
   const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [categoryHighlights, setCategoryHighlights] = useState<Record<string, NewsArticle>>({});
   const [loading, setLoading] = useState(true);
@@ -18,11 +20,15 @@ const NewsView = () => {
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState('Trending');
 
+  const isIndia = marketContext === 'IN';
+  const regionTag = isIndia ? 'IN' : 'US';
+
   const fetchHighlights = async () => {
     setLoadingHighlights(true);
     try {
       const promises = SPECIFIC_CATEGORIES.map(async (cat) => {
-        const response = await fetch(`/api/news?q=${encodeURIComponent(cat + ' market')}&count=1`);
+        const query = isIndia ? `India ${cat} market` : `US ${cat} Wall Street market`;
+        const response = await fetch(`/api/news?q=${encodeURIComponent(query)}&region=${regionTag}&count=1`);
         if (!response.ok) return { category: cat, article: null };
         const data = await response.json();
         return { category: cat, article: data[0] || null };
@@ -45,8 +51,13 @@ const NewsView = () => {
     setLoading(true);
     setError(null);
     try {
-      const query = category === 'Trending' ? 'finance' : `${category} market`;
-      const response = await fetch(`/api/news?q=${encodeURIComponent(query)}&count=25`);
+      let query = '';
+      if (isIndia) {
+        query = category === 'Trending' ? 'Indian stock market NSE BSE' : `India ${category} stock market`;
+      } else {
+        query = category === 'Trending' ? 'US stock market Wall Street S&P 500' : `US ${category} Wall Street`;
+      }
+      const response = await fetch(`/api/news?q=${encodeURIComponent(query)}&region=${regionTag}&count=25`);
       if (!response.ok) throw new Error('Failed to fetch news');
       const data = await response.json();
       setArticles(data || []);
@@ -59,11 +70,8 @@ const NewsView = () => {
 
   useEffect(() => {
     fetchNews(activeCategory);
-  }, [activeCategory]);
-
-  useEffect(() => {
     fetchHighlights();
-  }, []);
+  }, [activeCategory, marketContext]);
 
   const formatTime = (unixTime: number) => {
     const date = new Date(unixTime * 1000);
@@ -88,8 +96,8 @@ const NewsView = () => {
                 In the News
               </h2>
             </div>
-            <p className="text-text-muted mt-2 text-sm font-medium tracking-wide">
-              Live market intelligence and trending financial headlines
+            <p className="text-text-muted mt-2 text-sm font-medium tracking-wide flex items-center gap-1.5">
+              <span>{isIndia ? '🇮🇳 Indian Market Focus: Dalal Street, NSE & BSE headlines' : '🇺🇸 U.S. Market Focus: Wall Street, S&P 500 & Nasdaq headlines'}</span>
             </p>
           </div>
           <button 

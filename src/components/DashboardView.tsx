@@ -96,8 +96,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
 
   const recentOrders = useMemo(() => {
     const orders = profile?.orders || [];
-    return orders.slice(-5).reverse();
-  }, [profile?.orders]);
+    return orders
+      .filter(o => !o.currency || o.currency === currencySymbol)
+      .slice(-5)
+      .reverse();
+  }, [profile?.orders, currencySymbol]);
 
   return (
     <div className="pb-16 max-w-[1600px] mx-auto w-full space-y-6">

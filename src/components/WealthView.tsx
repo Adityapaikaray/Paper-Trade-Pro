@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { FutureWealthProjection } from './FutureWealthProjection.tsx';
 import { WealthAnalytics } from './WealthAnalytics.tsx';
+import { formatCurrency as globalFormatCurrency, formatCompactCurrency as globalFormatCompactCurrency } from '../utils/formatters.ts';
 
 interface FinancialGoal {
   id: string;
@@ -21,8 +22,23 @@ interface FinancialGoal {
   targetAmount: number;
   currentAmount: number;
   targetYear: number;
+  monthlyContrib?: number;
   icon: string;
 }
+
+const DEFAULT_US_GOALS: FinancialGoal[] = [
+  { id: 'g1', name: 'Retirement', targetAmount: 1500000, currentAmount: 250000, targetYear: 2045, monthlyContrib: 2500, icon: '🏖️' },
+  { id: 'g2', name: 'Home Down Payment', targetAmount: 750000, currentAmount: 125000, targetYear: 2030, monthlyContrib: 1500, icon: '🏠' },
+  { id: 'g3', name: 'Education', targetAmount: 150000, currentAmount: 35000, targetYear: 2032, monthlyContrib: 800, icon: '🎓' },
+  { id: 'g4', name: 'Emergency Fund', targetAmount: 30000, currentAmount: 12500, targetYear: 2026, monthlyContrib: 500, icon: '🛡️' },
+];
+
+const DEFAULT_IN_GOALS: FinancialGoal[] = [
+  { id: 'g1', name: 'Retirement', targetAmount: 10000000, currentAmount: 2500000, targetYear: 2045, monthlyContrib: 25000, icon: '🏖️' },
+  { id: 'g2', name: 'Home Down Payment', targetAmount: 5000000, currentAmount: 1250000, targetYear: 2030, monthlyContrib: 15000, icon: '🏠' },
+  { id: 'g3', name: 'Education', targetAmount: 2500000, currentAmount: 500000, targetYear: 2032, monthlyContrib: 10000, icon: '🎓' },
+  { id: 'g4', name: 'Emergency Fund', targetAmount: 500000, currentAmount: 200000, targetYear: 2026, monthlyContrib: 5000, icon: '🛡️' },
+];
 
 const PIE_COLORS = ['#D4AF37', '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#64748B', '#A78BFA'];
 
@@ -33,54 +49,58 @@ export const WealthView: React.FC = () => {
   const { stocks } = useMarketData();
   const { navigate, goBack } = useNavigation();
 
-  const currencySymbol = marketContext === 'US' ? '$' : '₹';
+  const isIndia = marketContext === 'IN';
+  const currencySymbol = isIndia ? '₹' : '$';
 
   const [step, setStep] = useState<WealthStep>('DASHBOARD');
   const [hideBalances, setHideBalances] = useState(false);
   const [timeframe, setTimeframe] = useState<'1M' | '6M' | '1Y' | '3Y' | '5Y' | 'All'>('1Y');
 
-  // Goals State (Mocking persistence using LocalStorage for standalone wealth module)
+  // Goals State (Persistent per market region)
   const [goals, setGoals] = useState<FinancialGoal[]>([]);
   const [selectedGoal, setSelectedGoal] = useState<FinancialGoal | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('papertrade_wealth_goals');
+    const storageKey = `papertrade_wealth_goals_${marketContext}`;
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
         setGoals(JSON.parse(saved));
+        return;
       } catch (e) {}
-    } else {
-      // Default Goals
-      setGoals([
-        { id: 'g1', name: 'Retirement', targetAmount: 10000000, currentAmount: summary.currentValue * 0.4, targetYear: 2045, icon: '🏖️' },
-        { id: 'g2', name: 'Home Down Payment', targetAmount: 2500000, currentAmount: summary.currentValue * 0.15, targetYear: 2028, icon: '🏠' }
-      ]);
     }
-  }, [summary.currentValue]);
+    setGoals(marketContext === 'US' ? DEFAULT_US_GOALS : DEFAULT_IN_GOALS);
+  }, [marketContext]);
 
   useEffect(() => {
     if (goals.length > 0) {
-      localStorage.setItem('papertrade_wealth_goals', JSON.stringify(goals));
+      localStorage.setItem(`papertrade_wealth_goals_${marketContext}`, JSON.stringify(goals));
     }
-  }, [goals]);
+  }, [goals, marketContext]);
 
   // Derived Portfolio Data for Wealth Context
   const displayPositions = useMemo(() => {
-    return (profile.holdings || []).map(holding => {
-      const stock = stocks.find(s => s.symbol === holding.symbol);
-      const currentPrice = stock?.price || holding.averagePrice;
-      const currentValue = currentPrice * holding.shares;
-      
-      let category = 'Equities';
-      if (holding.symbol.includes('BEES') || holding.symbol.includes('ETF')) category = 'ETFs';
-      else if (holding.symbol.includes('BTC') || holding.symbol.includes('ETH')) category = 'Crypto';
-      else if (holding.symbol.includes('MUTUAL') || holding.symbol.includes('FUND')) category = 'Mutual Funds';
-      else if (holding.symbol.includes('GOLD')) category = 'Gold';
-      else if (holding.symbol.includes('BOND') || holding.symbol.includes('GS')) category = 'Bonds';
+    return (profile.holdings || [])
+      .filter(holding => {
+        const stock = stocks.find(s => s.symbol.toUpperCase() === holding.symbol.toUpperCase());
+        const stockCurrency = stock?.currency || (['AMD', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL', 'META', 'SPY', 'QQQ', 'VTI', 'VOO', 'IWM', 'BND'].includes(holding.symbol.toUpperCase()) ? '$' : '₹');
+        return stockCurrency === currencySymbol;
+      })
+      .map(holding => {
+        const stock = stocks.find(s => s.symbol.toUpperCase() === holding.symbol.toUpperCase());
+        const currentPrice = stock?.price || holding.averagePrice;
+        const currentValue = currentPrice * holding.shares;
+        
+        let category = isIndia ? 'Indian Equities' : 'U.S. Equities';
+        if (holding.symbol.includes('BEES') || holding.symbol.includes('ETF') || ['SPY', 'QQQ', 'VTI', 'VOO', 'IWM'].includes(holding.symbol.toUpperCase())) category = 'ETFs';
+        else if (holding.symbol.includes('BTC') || holding.symbol.includes('ETH')) category = 'Crypto';
+        else if (holding.symbol.includes('MUTUAL') || holding.symbol.includes('FUND')) category = 'Mutual Funds';
+        else if (holding.symbol.includes('GOLD')) category = 'Gold';
+        else if (holding.symbol.includes('BOND') || holding.symbol.includes('GS') || ['BND', 'TLT', 'AGG'].includes(holding.symbol.toUpperCase())) category = 'Bonds';
 
-      return { ...holding, currentPrice, currentValue, category, stock };
-    }).filter(h => h.shares > 0);
-  }, [profile.holdings, stocks]);
+        return { ...holding, currentPrice, currentValue, category, stock };
+      }).filter(h => h.shares > 0);
+  }, [profile.holdings, stocks, currencySymbol, isIndia]);
 
   const assetAllocation = useMemo(() => {
     const alloc = displayPositions.reduce((acc, pos) => {
@@ -108,15 +128,15 @@ export const WealthView: React.FC = () => {
   // Formatters
   const formatCurrency = (val: number = 0, maxDigits = 2) => {
     if (hideBalances) return '••••••';
-    return `${currencySymbol}${val.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: maxDigits })}`;
+    return globalFormatCurrency(val, marketContext, {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: maxDigits,
+    });
   };
 
   const formatCompactCurrency = (val: number = 0) => {
     if (hideBalances) return '••••••';
-    if (val >= 10000000) return `${currencySymbol}${(val / 10000000).toFixed(2)}Cr`;
-    if (val >= 100000) return `${currencySymbol}${(val / 100000).toFixed(2)}L`;
-    if (val >= 1000) return `${currencySymbol}${(val / 1000).toFixed(2)}K`;
-    return `${currencySymbol}${val.toFixed(2)}`;
+    return globalFormatCompactCurrency(val, marketContext);
   };
 
   // Chart Data Generator
@@ -229,7 +249,7 @@ export const WealthView: React.FC = () => {
                       type="number" 
                       value={newGoalTarget}
                       onChange={(e) => setNewGoalTarget(e.target.value)}
-                      placeholder="e.g. 5000000"
+                      placeholder={isIndia ? "e.g. 5000000" : "e.g. 100000"}
                       className="w-full bg-ui-bg border border-ui-border rounded-xl p-3 pl-8 text-sm font-mono font-bold text-text-main focus:outline-none focus:border-primary/50"
                     />
                   </div>
@@ -253,7 +273,7 @@ export const WealthView: React.FC = () => {
                       type="number" 
                       value={newGoalCurrent}
                       onChange={(e) => setNewGoalCurrent(e.target.value)}
-                      placeholder="e.g. 100000"
+                      placeholder={isIndia ? "e.g. 100000" : "e.g. 10000"}
                       className="w-full bg-ui-bg border border-ui-border rounded-xl p-3 pl-8 text-sm font-mono font-bold text-text-main focus:outline-none focus:border-primary/50"
                     />
                   </div>
@@ -374,7 +394,7 @@ export const WealthView: React.FC = () => {
                   </div>
                   <div className="min-w-[140px]">
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Available Cash</p>
-                    <p className="text-lg font-mono font-bold text-text-main">{hideBalances ? '••••••••' : formatCompactCurrency(160000)}</p>
+                    <p className="text-lg font-mono font-bold text-text-main">{hideBalances ? '••••••••' : formatCompactCurrency(summary.availableCash)}</p>
                   </div>
                 </div>
               </div>
@@ -475,11 +495,11 @@ export const WealthView: React.FC = () => {
                   </div>
                   <div className="bg-ui-bg p-4 rounded-2xl border border-ui-border">
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Cash</p>
-                    <p className="text-sm font-mono font-bold text-text-main">{hideBalances ? '••••••••' : formatCompactCurrency(160000)}</p>
+                    <p className="text-sm font-mono font-bold text-text-main">{hideBalances ? '••••••••' : formatCompactCurrency(summary.availableCash)}</p>
                   </div>
                   <div className="bg-ui-bg p-4 rounded-2xl border border-ui-border">
                     <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Today's P&L</p>
-                    <p className="text-sm font-mono font-bold text-positive">+₹4,250</p>
+                    <p className="text-sm font-mono font-bold text-positive">+{formatCurrency(isIndia ? 4250 : 285, 0)}</p>
                   </div>
                 </div>
               </div>
@@ -510,7 +530,7 @@ export const WealthView: React.FC = () => {
                               ))}
                             </Pie>
                             <Tooltip 
-                              formatter={(value: number) => [hideBalances ? '••••••••' : `${currencySymbol}${value.toLocaleString(undefined, { maximumFractionDigits: 0 })}`, 'Value']}
+                              formatter={(value: number) => [hideBalances ? '••••••••' : formatCurrency(value, 0), 'Value']}
                               contentStyle={{ backgroundColor: 'var(--color-ui-surface)', borderColor: 'var(--color-ui-border)', borderRadius: '12px' }}
                               itemStyle={{ color: 'var(--color-text-main)', fontWeight: 'bold' }}
                             />
@@ -559,7 +579,7 @@ export const WealthView: React.FC = () => {
                   <div className="space-y-4 flex-1">
                     <div className="bg-ui-bg border border-ui-border p-5 rounded-2xl hover:border-primary/50 transition-colors cursor-pointer group" onClick={() => navigate('portfolio')}>
                       <div className="flex justify-between items-start mb-4">
-                        <h4 className="text-sm font-bold text-text-main">Stocks</h4>
+                        <h4 className="text-sm font-bold text-text-main">{isIndia ? 'Indian Stocks' : 'U.S. Stocks'}</h4>
                         <p className="text-lg font-mono font-black text-text-main">{hideBalances ? '••••••••' : formatCompactCurrency(summary.currentValue)}</p>
                       </div>
                       <div className="flex justify-between items-end border-t border-ui-border/50 pt-3">
@@ -579,13 +599,13 @@ export const WealthView: React.FC = () => {
 
                     <div className="bg-ui-bg border border-ui-border p-5 rounded-2xl opacity-50 cursor-pointer hover:opacity-100 transition-opacity" onClick={() => navigate('market')}>
                       <div className="flex justify-between items-start mb-4">
-                        <h4 className="text-sm font-bold text-text-main">Mutual Funds</h4>
-                        <p className="text-lg font-mono font-black text-text-main">{hideBalances ? '••••••••' : '₹0'}</p>
+                        <h4 className="text-sm font-bold text-text-main">{isIndia ? 'Mutual Funds' : 'Index Funds & ETFs'}</h4>
+                        <p className="text-lg font-mono font-black text-text-main">{hideBalances ? '••••••••' : formatCurrency(0, 0)}</p>
                       </div>
                       <div className="flex justify-between items-end border-t border-ui-border/50 pt-3">
                         <div>
                           <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-1">Invested</p>
-                          <p className="text-sm font-mono font-bold text-text-main">{hideBalances ? '••••••••' : '₹0'}</p>
+                          <p className="text-sm font-mono font-bold text-text-main">{hideBalances ? '••••••••' : formatCurrency(0, 0)}</p>
                         </div>
                         <div className="text-right">
                           <span className="text-[10px] font-bold text-primary uppercase tracking-widest bg-primary/10 px-3 py-1 rounded-full">Explore</span>
@@ -631,7 +651,7 @@ export const WealthView: React.FC = () => {
                                 <div className="text-2xl">{goal.icon}</div>
                                 <div>
                                   <h4 className="text-sm font-bold text-text-main uppercase tracking-wider">{goal.name}</h4>
-                                  <p className="text-[10px] text-text-muted font-bold mt-1 uppercase tracking-widest">Target: {new Date(goal.targetDate).getFullYear()}</p>
+                                  <p className="text-[10px] text-text-muted font-bold mt-1 uppercase tracking-widest">Target: {goal.targetYear || 2030}</p>
                                 </div>
                               </div>
                               <div className="text-right">
@@ -654,7 +674,7 @@ export const WealthView: React.FC = () => {
                             </div>
                             
                             <div className="flex justify-between items-center text-[10px] text-text-muted font-bold uppercase tracking-widest border-t border-ui-border/50 pt-3">
-                              <span>Monthly Contrib: {hideBalances ? '••••••••' : `₹${(25000).toLocaleString('en-IN')}`}</span>
+                              <span>Monthly Contrib: {hideBalances ? '••••••••' : formatCurrency(goal.monthlyContrib || (isIndia ? 25000 : 2500), 0)}</span>
                               <span className="text-primary group-hover:underline">View Detail</span>
                             </div>
                           </div>

@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
+import { formatCurrency as formatRegionalCurrency, formatCompactCurrency as formatRegionalCompact } from '../utils/formatters.ts';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell 
@@ -151,15 +152,12 @@ const PortfolioView: React.FC = () => {
   // Formatters
   const formatCurrency = (val: number) => {
     if (hideBalances) return '••••••';
-    return `${currencySymbol}${val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    return formatRegionalCurrency(val, marketContext);
   };
   
   const formatCompactCurrency = (val: number) => {
     if (hideBalances) return '••••••';
-    if (val >= 10000000) return `${currencySymbol}${(val / 10000000).toFixed(2)}Cr`;
-    if (val >= 100000) return `${currencySymbol}${(val / 100000).toFixed(2)}L`;
-    if (val >= 1000) return `${currencySymbol}${(val / 1000).toFixed(2)}K`;
-    return `${currencySymbol}${val.toFixed(2)}`;
+    return formatRegionalCompact(val, marketContext);
   };
 
   const formatPercent = (val: number) => `${val >= 0 ? '+' : ''}${val.toFixed(2)}%`;
@@ -531,44 +529,56 @@ const PortfolioView: React.FC = () => {
           {activeTab === 'Activity' && (
             <div className="bg-ui-surface border border-ui-border rounded-2xl md:rounded-3xl p-4 md:p-6">
               <h3 className="text-sm font-bold text-text-main uppercase tracking-widest mb-6">Recent Transactions</h3>
-              {profile.transactions.length === 0 ? (
-                <div className="text-center py-10">
-                  <p className="text-text-muted text-sm">No recent activity.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {profile.transactions.slice().reverse().map(tx => (
-                    <div key={tx.id} className="flex items-center justify-between p-4 bg-ui-bg rounded-xl border border-ui-border hover:border-primary/30 transition-colors">
-                      <div className="flex items-center gap-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                          tx.type === 'BUY' ? 'bg-primary/10 text-primary' : 'bg-rose-500/10 text-rose-500'
-                        }`}>
-                          {tx.type === 'BUY' ? 'B' : 'S'}
-                        </div>
-                        <div>
-                          <p className="font-bold text-text-main">{tx.symbol}</p>
-                          <p className="text-xs text-text-muted">
-                            {tx.type === 'BUY' ? 'Bought' : 'Sold'} {tx.shares} shares @ {currencySymbol}{tx.price.toLocaleString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right flex flex-col items-end">
-                        <p className={`font-mono font-bold ${tx.type === 'BUY' ? 'text-text-main' : 'text-positive'}`}>
-                          {tx.type === 'BUY' ? '-' : '+'}{formatCurrency(tx.shares * tx.price)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <p className="text-[10px] text-text-muted font-mono">
-                            {new Date(tx.timestamp).toLocaleDateString()}
-                          </p>
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-positive/10 text-positive uppercase tracking-wider">
-                            Completed
-                          </span>
-                        </div>
-                      </div>
+              {(() => {
+                const regionalTxs = profile.transactions.filter(tx => {
+                  const s = stocks.find(stock => stock.symbol.toUpperCase() === tx.symbol.toUpperCase());
+                  const stockCurrency = s?.currency || (['AMD', 'NVDA', 'AAPL', 'MSFT', 'TSLA', 'AMZN', 'GOOGL', 'META', 'SPY', 'QQQ'].includes(tx.symbol.toUpperCase()) ? '$' : '₹');
+                  return stockCurrency === currencySymbol;
+                });
+
+                if (regionalTxs.length === 0) {
+                  return (
+                    <div className="text-center py-10">
+                      <p className="text-text-muted text-sm">No recent activity for this market.</p>
                     </div>
-                  ))}
-                </div>
-              )}
+                  );
+                }
+
+                return (
+                  <div className="space-y-4">
+                    {regionalTxs.slice().reverse().map(tx => (
+                      <div key={tx.id} className="flex items-center justify-between p-4 bg-ui-bg rounded-xl border border-ui-border hover:border-primary/30 transition-colors">
+                        <div className="flex items-center gap-4">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                            tx.type === 'BUY' ? 'bg-primary/10 text-primary' : 'bg-rose-500/10 text-rose-500'
+                          }`}>
+                            {tx.type === 'BUY' ? 'B' : 'S'}
+                          </div>
+                          <div>
+                            <p className="font-bold text-text-main">{tx.symbol}</p>
+                            <p className="text-xs text-text-muted">
+                              {tx.type === 'BUY' ? 'Bought' : 'Sold'} {tx.shares} shares @ {currencySymbol}{tx.price.toLocaleString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right flex flex-col items-end">
+                          <p className={`font-mono font-bold ${tx.type === 'BUY' ? 'text-text-main' : 'text-positive'}`}>
+                            {tx.type === 'BUY' ? '-' : '+'}{formatCurrency(tx.shares * tx.price)}
+                          </p>
+                          <div className="flex items-center gap-2 mt-1">
+                            <p className="text-[10px] text-text-muted font-mono">
+                              {new Date(tx.timestamp).toLocaleDateString()}
+                            </p>
+                            <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-positive/10 text-positive uppercase tracking-wider">
+                              Completed
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 

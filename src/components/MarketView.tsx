@@ -4,10 +4,12 @@ import { motion } from 'framer-motion';
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { Search, Star, TrendingUp, TrendingDown, PlusCircle, Bell, ChevronDown, ChevronUp, RefreshCw, Radio } from 'lucide-react';
+import React, { useMemo } from 'react';
+import { Search, Star, TrendingUp, TrendingDown, PlusCircle, Bell, ChevronDown, ChevronUp, RefreshCw, Radio, Clock, Globe } from 'lucide-react';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { getRegionalMarketStatus } from '../utils/marketHours.ts';
+import { formatCurrency } from '../utils/formatters.ts';
 import { Stock } from '../types.ts';
 import AlertModal from './AlertModal.tsx';
 import StockChart from './StockChart.tsx';
@@ -26,19 +28,39 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
   const [alertStock, setAlertStock] = React.useState<Stock | null>(null);
   const [expandedSymbol, setExpandedSymbol] = React.useState<string | null>(null);
 
-  const exchanges = ['All', 'NSE', 'BSE', ...new Set(stocks.filter(s => s.exchange && s.exchange !== 'NSE' && s.exchange !== 'BSE').map(s => s.exchange))];
-  const sectors = ['All', ...new Set(stocks.map(s => s.sector))].sort();
+  const isIndia = marketContext === 'IN';
+  const regionalStatus = getRegionalMarketStatus(marketContext);
 
-  
-  const contextExchange = marketContext === 'IN' ? 'NSE' : (marketContext === 'US' ? 'US' : 'All');
+  // Region-specific stock filtering: strictly isolate US from India
+  const regionalStocks = useMemo(() => {
+    return stocks.filter(s => {
+      if (isIndia) {
+        return s.country === 'India' || s.currency === '₹' || s.exchange === 'NSE' || s.exchange === 'BSE';
+      } else {
+        return s.country === 'USA' || s.currency === '$' || s.exchange === 'NASDAQ' || s.exchange === 'NYSE';
+      }
+    });
+  }, [stocks, isIndia]);
 
-  const filteredStocks = stocks.filter(s => {
-    const matchesSearch = s.symbol.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          s.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesExchange = contextExchange !== 'All' ? s.exchange === contextExchange : (selectedExchange === 'All' || s.exchange === selectedExchange);
-    const matchesSector = selectedSector === 'All' || s.sector === selectedSector;
-    return matchesSearch && matchesExchange && matchesSector;
-  });
+  // Regional exchange options
+  const exchanges = useMemo(() => {
+    return isIndia ? ['All', 'NSE', 'BSE'] : ['All', 'NASDAQ', 'NYSE'];
+  }, [isIndia]);
+
+  // Dynamic sectors for active region
+  const sectors = useMemo(() => {
+    return ['All', ...new Set(regionalStocks.map(s => s.sector).filter(Boolean))].sort();
+  }, [regionalStocks]);
+
+  const filteredStocks = useMemo(() => {
+    return regionalStocks.filter(s => {
+      const matchesSearch = s.symbol.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                            s.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesExchange = selectedExchange === 'All' || s.exchange === selectedExchange;
+      const matchesSector = selectedSector === 'All' || s.sector === selectedSector;
+      return matchesSearch && matchesExchange && matchesSector;
+    });
+  }, [regionalStocks, searchTerm, selectedExchange, selectedSector]);
 
 
   const toggleExpand = (symbol: string) => {
@@ -65,18 +87,21 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
           </div>
 
           <div className="flex flex-wrap items-center gap-2 md:gap-4">
-            {/* Market exchange status tags */}
-            <div className="flex flex-col md:flex-row md:items-center gap-2 px-3 py-2 md:px-3.5 rounded-xl bg-ui-surface border border-ui-border text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none">
-              <span className="text-text-muted text-[8px] md:text-[9px]">NYSE:</span>
-              <span className={`px-2 py-0.5 rounded-md font-mono ${marketStatus.nyse === 'OPEN' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}`}>
-                {marketStatus.nyse}
+            {/* Regional Market Session Pill */}
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-ui-surface border border-ui-border text-[9px] font-black uppercase tracking-wider">
+              <Clock size={12} className="text-primary" />
+              <span className="text-text-muted">{regionalStatus.timezoneLabel}:</span>
+              <span className={`px-2 py-0.5 rounded-md font-mono ${
+                regionalStatus.isOpen
+                  ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
+                  : regionalStatus.status === 'Pre-Market' || regionalStatus.status === 'After Hours'
+                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                  : 'bg-slate-500/10 text-slate-400 border border-slate-500/30'
+              }`}>
+                {regionalStatus.status}
               </span>
-            </div>
-
-            <div className="flex flex-col md:flex-row md:items-center gap-2 px-3 py-2 md:px-3.5 rounded-xl bg-ui-surface border border-ui-border text-[9px] font-black uppercase tracking-wider flex-1 md:flex-none">
-              <span className="text-text-muted text-[8px] md:text-[9px]">NSE:</span>
-              <span className={`px-2 py-0.5 rounded-md font-mono ${marketStatus.nse === 'OPEN' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/10 text-amber-400 border border-amber-500/30'}`}>
-                {marketStatus.nse}
+              <span className="hidden sm:inline-block text-[8.5px] text-text-muted font-normal">
+                ({regionalStatus.timeString})
               </span>
             </div>
 
@@ -84,6 +109,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
               onClick={() => refresh()}
               disabled={isLoading}
               className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-ui-surface hover:bg-ui-bg border border-ui-border text-text-muted hover:text-primary transition-all text-[9px] font-black uppercase tracking-wider shadow-sm w-full md:w-auto mt-2 md:mt-0"
+              title="Refresh live quotes"
             >
               <RefreshCw size={13} className={isLoading ? 'animate-spin text-primary' : ''} />
               <span>{formattedTime}</span>

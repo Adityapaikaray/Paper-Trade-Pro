@@ -4,27 +4,50 @@ import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Info, TrendingUp, ArrowUpRight, Target, PieChart as PieChartIcon, Search, ArrowLeft, ArrowRight } from 'lucide-react';
+import { formatCurrency as globalFormatCurrency, formatCompactCurrency as globalFormatCompactCurrency } from '../utils/formatters.ts';
 
 type ProjectionMode = 'SIP' | 'LUMPSUM' | 'SIP_LUMPSUM';
 
 export const FutureWealthProjection: React.FC = () => {
-  const { summary, profile } = usePortfolio();
+  const { summary, profile, marketContext } = usePortfolio();
   const { navigate } = useNavigation();
+
+  const isIndia = marketContext === 'IN';
+  const currencySymbol = isIndia ? '₹' : '$';
   
   const [mode, setMode] = useState<ProjectionMode>('SIP_LUMPSUM');
   
-  const [projContrib, setProjContrib] = useState('25000');
-  const [projLumpsum, setProjLumpsum] = useState('0');
+  const [projContrib, setProjContrib] = useState(marketContext === 'US' ? '2500' : '25000');
+  const [projLumpsum, setProjLumpsum] = useState(marketContext === 'US' ? '25000' : '2500000');
   const [projYears, setProjYears] = useState('15');
   const [projReturn, setProjReturn] = useState('13');
   const [useCurrentPortfolio, setUseCurrentPortfolio] = useState(true);
+
+  // Sync inputs when market region changes
+  useEffect(() => {
+    if (isIndia) {
+      setProjContrib(prev => (prev === '2500' ? '25000' : prev));
+      if (useCurrentPortfolio && summary) {
+        setProjLumpsum(Math.round(summary.currentValue).toString());
+      } else {
+        setProjLumpsum(prev => (prev === '25000' ? '2500000' : prev));
+      }
+    } else {
+      setProjContrib(prev => (prev === '25000' ? '2500' : prev));
+      if (useCurrentPortfolio && summary) {
+        setProjLumpsum(Math.round(summary.currentValue).toString());
+      } else {
+        setProjLumpsum(prev => (prev === '2500000' ? '25000' : prev));
+      }
+    }
+  }, [marketContext, isIndia]);
 
   // Initialize lumpsum with current portfolio value if flag is set
   useEffect(() => {
     if (useCurrentPortfolio && summary) {
       setProjLumpsum(Math.round(summary.currentValue).toString());
     }
-  }, [summary, useCurrentPortfolio]);
+  }, [summary?.currentValue, useCurrentPortfolio]);
 
   const { chartData, totalInvested, projectedValue, estimatedGrowth, multiplier, lumpsumGrowth, sipGrowth, sipInvested } = useMemo(() => {
     const SIP = mode === 'LUMPSUM' ? 0 : (parseFloat(projContrib) || 0);
@@ -98,19 +121,27 @@ export const FutureWealthProjection: React.FC = () => {
   }, [mode, projContrib, projLumpsum, projYears, projReturn]);
 
   const formatCurrency = (val: number, maxDigits = 2) => {
-    return `₹${val.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: maxDigits })}`;
+    return globalFormatCurrency(val, marketContext, {
+      minimumFractionDigits: maxDigits === 0 ? 0 : 2,
+      maximumFractionDigits: maxDigits,
+    });
   };
 
   const formatCompactCurrency = (val: number) => {
-    if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)}Cr`;
-    if (val >= 100000) return `₹${(val / 100000).toFixed(2)}L`;
-    if (val >= 1000) return `₹${(val / 1000).toFixed(2)}K`;
-    return `₹${val.toFixed(2)}`;
+    return globalFormatCompactCurrency(val, marketContext);
   };
 
   const formatYAxis = (tickItem: number) => {
     return formatCompactCurrency(tickItem);
   };
+
+  const marketTransactions = useMemo(() => {
+    return (profile.transactions || []).filter(t => {
+      if (t.currency) return t.currency === currencySymbol;
+      const isUSStock = ['AAPL', 'MSFT', 'NVDA', 'AMD', 'TSLA', 'AMZN', 'GOOGL', 'META', 'SPY', 'QQQ', 'VTI', 'VOO', 'IWM', 'BND'].includes(t.symbol?.toUpperCase());
+      return marketContext === 'US' ? isUSStock : !isUSStock;
+    });
+  }, [profile.transactions, currencySymbol, marketContext]);
 
   return (
     <div className="bg-ui-surface border border-ui-border rounded-2xl p-4 md:p-6 shadow-lg">
@@ -348,11 +379,11 @@ export const FutureWealthProjection: React.FC = () => {
                 >
                   <div className="flex justify-between items-center mb-1.5 mt-1">
                     <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block">
-                      {mode === 'SIP_LUMPSUM' ? 'Current Portfolio' : 'Lumpsum Invest'}
+                      {mode === 'SIP_LUMPSUM' ? 'Current Portfolio' : (isIndia ? 'Lumpsum Invest' : 'One-Time Investment')}
                     </label>
                   </div>
                   <div className="relative mb-2">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted font-mono font-bold text-[11px]">₹</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted font-mono font-bold text-[11px]">{currencySymbol}</span>
                     <input 
                       type="number" 
                       value={projLumpsum} 
@@ -393,9 +424,11 @@ export const FutureWealthProjection: React.FC = () => {
                   exit={{ opacity: 0, height: 0 }}
                   className="overflow-hidden"
                 >
-                  <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block mb-1.5 mt-1">Monthly SIP Amount</label>
+                  <label className="text-[9px] font-bold text-text-muted uppercase tracking-wider block mb-1.5 mt-1">
+                    {isIndia ? 'Monthly SIP Amount' : 'Monthly Investment'}
+                  </label>
                   <div className="relative">
-                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted font-mono font-bold text-[11px]">₹</span>
+                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted font-mono font-bold text-[11px]">{currencySymbol}</span>
                     <input 
                       type="number" 
                       value={projContrib} 
@@ -589,8 +622,8 @@ export const FutureWealthProjection: React.FC = () => {
             </div>
             
             <div className="space-y-2">
-              {profile.transactions && profile.transactions.length > 0 ? (
-                profile.transactions.slice(0, 3).map((activity, i) => (
+              {marketTransactions && marketTransactions.length > 0 ? (
+                marketTransactions.slice(0, 3).map((activity, i) => (
                   <div key={i} className="flex items-center justify-between p-3 bg-ui-surface border border-ui-border rounded-xl hover:border-primary/30 transition-colors">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-ui-bg border border-ui-border flex items-center justify-center shadow-sm shrink-0">
@@ -605,7 +638,7 @@ export const FutureWealthProjection: React.FC = () => {
                     </div>
                     <div className="text-right shrink-0 pl-2">
                       <p className={`text-sm font-mono font-bold ${activity.type === 'SELL' ? 'text-positive' : 'text-text-main'}`}>
-                        {activity.type === 'SELL' ? '+' : ''}{formatCompactCurrency(activity.shares * activity.price)}
+                        {activity.type === 'SELL' ? '+' : ''}{formatCurrency(activity.shares * activity.price, 2)}
                       </p>
                     </div>
                   </div>

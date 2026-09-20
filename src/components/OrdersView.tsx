@@ -15,7 +15,12 @@ export const OrdersView: React.FC<OrdersViewProps> = ({ onTrade }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');
 
-  const orders = profile.orders || [];
+  const isIndia = marketContext === 'IN';
+  const targetCurrency = isIndia ? '₹' : '$';
+
+  const orders = useMemo(() => {
+    return (profile.orders || []).filter(o => !o.currency || o.currency === targetCurrency);
+  }, [profile.orders, targetCurrency]);
 
   // Summary counts
   const openCount = useMemo(() => orders.filter(o => o.status === 'PENDING').length, [orders]);

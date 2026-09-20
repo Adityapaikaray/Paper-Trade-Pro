@@ -7,7 +7,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, ShieldCheck, TrendingUp, Zap, PieChart, Lock, 
   ChevronDown, QrCode, CheckCircle2, RotateCw, AlertCircle, 
-  Sun, Moon, X, FileText, Shield, Mail, Smartphone, Sparkles
+  Sun, Moon, X, FileText, Shield, Smartphone
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext.tsx';
@@ -31,8 +31,6 @@ const COUNTRIES: CountryCode[] = [
   { country: 'Germany', code: '+49', flag: '🇩🇪', digits: 10 }
 ];
 
-type AuthMethod = 'email' | 'mobile';
-
 type LoginState = 
   | 'ENTER_INPUT'
   | 'SENDING_OTP'
@@ -44,25 +42,9 @@ interface LoginPageProps {
   onSuccess?: () => void;
 }
 
-function maskEmail(email: string): string {
-  if (!email || !email.includes('@')) return email || '';
-  const [localPart, domain] = email.split('@');
-  if (localPart.length <= 2) {
-    return `${localPart[0]}*@${domain}`;
-  }
-  const visibleStart = localPart.slice(0, 2);
-  const visibleEnd = localPart.slice(-1);
-  const maskedMiddle = '*'.repeat(Math.min(6, Math.max(2, localPart.length - 3)));
-  return `${visibleStart}${maskedMiddle}${visibleEnd}@${domain}`;
-}
-
 export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
-  const { sendOtp, verifyOtp } = useAuth();
+  const { sendOtp, resendOtp, verifyOtp } = useAuth();
   const { theme, toggleTheme } = useTheme();
-
-  // Primary authentication method: Email ID by default
-  const [authMethod, setAuthMethod] = useState<AuthMethod>('email');
-  const [email, setEmail] = useState<string>('adityapaikaray31@gmail.com');
 
   // Mobile number input state
   const [selectedCountry, setSelectedCountry] = useState<CountryCode>(COUNTRIES[0]);
@@ -74,7 +56,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
   const [otpDigits, setOtpDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [activeOtpIndex, setActiveOtpIndex] = useState<number>(0);
   const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
-  const [receivedOtpCode, setReceivedOtpCode] = useState<string | null>('123456');
   
   // Resend timer state
   const [resendCountdown, setResendCountdown] = useState<number>(30);
@@ -119,12 +100,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     return () => clearInterval(interval);
   }, [loginState, resendCountdown]);
 
-  // Handle email input change
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEmail(e.target.value);
-    setErrorMessage(null);
-  };
-
   // Handle mobile number change (allow digits only)
   const handleMobileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const rawVal = e.target.value.replace(/\D/g, '');
@@ -134,24 +109,18 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     }
   };
 
-  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
   const isMobileValid = mobileNumber.length === selectedCountry.digits;
-  const isInputValid = authMethod === 'email' ? isEmailValid : isMobileValid;
-
-  const maskedPhone = selectedCountry.code === '+91' ? '+91 XXXXX XXXXX' : `${selectedCountry.code} ••••• •••••`;
-  const maskedTarget = authMethod === 'email' ? maskEmail(email.trim()) : maskedPhone;
+  const last4 = mobileNumber.slice(-4);
+  const maskedTarget = mobileNumber.length >= 4 
+    ? `${selectedCountry.code} ******${last4}`
+    : `${selectedCountry.code} ******XXXX`;
 
   // Send OTP handler
   const handleSendOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
     setIsTouched(true);
 
-    if (authMethod === 'email' && !isEmailValid) {
-      setErrorMessage('Enter a valid email address.');
-      return;
-    }
-
-    if (authMethod === 'mobile' && !isMobileValid) {
+    if (!isMobileValid) {
       setErrorMessage('Enter a valid mobile number.');
       return;
     }
@@ -160,18 +129,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     setStatusMessage(null);
     setLoginState('SENDING_OTP');
 
-    const identifier = authMethod === 'email' ? email.trim() : mobileNumber;
-    const res = await sendOtp(identifier, selectedCountry.code);
+    const res = await sendOtp(mobileNumber, selectedCountry.code);
 
     if (res.success) {
       setLoginState('OTP_SENT');
       setResendCountdown(30);
       setCanResend(false);
       setOtpDigits(['', '', '', '', '', '']);
-      if (res.otpPreview) {
-        setReceivedOtpCode(res.otpPreview);
-      }
-      setStatusMessage(`OTP sent to ${authMethod === 'email' ? maskEmail(email.trim()) : maskedPhone}`);
+      setStatusMessage('OTP request accepted. Check your SMS.');
       setTimeout(() => {
         otpInputRefs.current[0]?.focus();
       }, 150);
@@ -188,14 +153,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     setResendCountdown(30);
     setErrorMessage(null);
 
-    const identifier = authMethod === 'email' ? email.trim() : mobileNumber;
-    const res = await sendOtp(identifier, selectedCountry.code);
+    const res = await resendOtp(mobileNumber, selectedCountry.code);
     if (res.success) {
       setOtpDigits(['', '', '', '', '', '']);
-      if (res.otpPreview) {
-        setReceivedOtpCode(res.otpPreview);
-      }
-      setStatusMessage(`OTP sent to ${authMethod === 'email' ? maskEmail(email.trim()) : maskedPhone}`);
+      setStatusMessage('OTP request accepted. Check your SMS.');
       otpInputRefs.current[0]?.focus();
     } else {
       setErrorMessage(res.error || 'Unable to send OTP. Please try again.');
@@ -247,14 +208,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     }
   };
 
-  // Quick fill demo code helper
-  const handleAutoFillCode = (code: string) => {
-    const digits = code.slice(0, 6).split('');
-    setOtpDigits(digits);
-    setErrorMessage(null);
-    otpInputRefs.current[5]?.focus();
-  };
-
   // Verify OTP submission
   const handleVerifyOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -267,8 +220,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     setErrorMessage(null);
     setLoginState('VERIFYING_OTP');
 
-    const identifier = authMethod === 'email' ? email.trim() : mobileNumber;
-    const res = await verifyOtp(identifier, selectedCountry.code, fullOtp);
+    const res = await verifyOtp(mobileNumber, fullOtp, selectedCountry.code);
 
     if (res.success) {
       setLoginState('AUTHENTICATED');
@@ -468,222 +420,122 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                 </h2>
                 <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1.5 font-medium">
                   {loginState === 'OTP_SENT' || loginState === 'VERIFYING_OTP'
-                    ? `Enter the 6-digit OTP sent to your ${authMethod === 'email' ? 'email' : 'mobile'}`
-                    : 'Log in with your email address to continue'}
+                    ? 'Enter the 6-digit OTP sent to your mobile'
+                    : 'Enter your mobile number to continue'}
                 </p>
               </div>
 
-              {/* View 1: Enter Email or Mobile */}
+              {/* View 1: Enter Mobile Number */}
               {(loginState === 'ENTER_INPUT' || loginState === 'SENDING_OTP') && (
                 <form onSubmit={handleSendOtp} className="space-y-5">
                   
-                  {/* Method Switcher: Email ID vs Mobile */}
-                  <div className="grid grid-cols-2 gap-1.5 p-1 bg-[var(--ui-surface-hover)] border border-[var(--ui-border)] rounded-2xl mb-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMethod('email');
-                        setErrorMessage(null);
-                      }}
-                      className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                        authMethod === 'email'
-                          ? 'bg-[var(--ui-surface)] text-primary shadow-xs border border-[var(--ui-border)]'
-                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                      }`}
+                  {/* Mobile Number Input */}
+                  <div>
+                    <label 
+                      htmlFor="mobile-input" 
+                      className="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2"
                     >
-                      <Mail size={14} />
-                      <span>Email ID</span>
-                      <span className="text-[9px] uppercase px-1.5 py-0.2 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 rounded-full font-semibold">Active</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMethod('mobile');
-                        setErrorMessage(null);
-                      }}
-                      className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all ${
-                        authMethod === 'mobile'
-                          ? 'bg-[var(--ui-surface)] text-primary shadow-xs border border-[var(--ui-border)]'
-                          : 'text-[var(--text-muted)] hover:text-[var(--text-main)]'
-                      }`}
-                    >
-                      <Smartphone size={14} />
-                      <span>Mobile</span>
-                    </button>
-                  </div>
-
-                  {/* Email Input Field */}
-                  {authMethod === 'email' ? (
-                    <div>
-                      <div className="flex items-center justify-between mb-2">
-                        <label 
-                          htmlFor="email-input" 
-                          className="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)]"
-                        >
-                          EMAIL ADDRESS
-                        </label>
-                        {email !== 'adityapaikaray31@gmail.com' && (
-                          <button
-                            type="button"
-                            onClick={() => setEmail('adityapaikaray31@gmail.com')}
-                            className="text-[11px] text-primary hover:underline font-medium"
-                          >
-                            Use adityapaikaray31@gmail.com
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="relative flex items-center rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-xs overflow-visible">
-                        <div className="pl-3.5 pr-2 text-[var(--text-muted)] flex items-center pointer-events-none">
-                          <Mail size={17} />
-                        </div>
-                        <input
-                          id="email-input"
-                          type="email"
-                          autoComplete="email"
-                          value={email}
-                          onChange={handleEmailChange}
-                          placeholder="adityapaikaray31@gmail.com"
-                          className="w-full h-13 px-2 bg-transparent text-sm sm:text-base font-medium text-[var(--text-main)] placeholder:text-[var(--text-muted)]/60 outline-none"
-                        />
-                        {email && (
-                          <button
-                            type="button"
-                            onClick={() => setEmail('')}
-                            className="mr-3 p-1 rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--ui-surface-hover)]"
-                            aria-label="Clear email"
-                          >
-                            <X size={14} />
-                          </button>
-                        )}
-                      </div>
-
-                      <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--text-muted)]">
-                        <span>Instant 6-digit OTP verification</span>
-                        <span className="font-mono text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-md font-medium">Ready</span>
-                      </div>
-
-                      {/* Inline Validation Error */}
-                      {errorMessage && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: -4 }} 
-                          animate={{ opacity: 1, y: 0 }} 
-                          className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-rose-500"
-                        >
-                          <AlertCircle size={13} className="shrink-0" />
-                          <span>{errorMessage}</span>
-                        </motion.div>
-                      )}
-                    </div>
-                  ) : (
-                    /* Mobile Number Input */
-                    <div>
-                      <label 
-                        htmlFor="mobile-input" 
-                        className="block text-[11px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-2"
-                      >
-                        MOBILE NUMBER
-                      </label>
+                      MOBILE NUMBER
+                    </label>
+                    
+                    <div className="relative flex items-center rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-xs overflow-visible">
                       
-                      <div className="relative flex items-center rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-surface)] focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all shadow-xs overflow-visible">
-                        
-                        {/* Country Code Trigger */}
-                        <div className="relative" ref={countryDropdownRef}>
-                          <button
-                            type="button"
-                            onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
-                            className="h-13 px-3.5 flex items-center gap-1.5 bg-[var(--ui-surface-hover)] border-r border-[var(--ui-border)] text-sm font-bold text-[var(--text-main)] hover:bg-[var(--ui-border)]/30 transition-colors rounded-l-2xl outline-none"
-                            aria-haspopup="listbox"
-                            aria-expanded={isCountryDropdownOpen}
-                          >
-                            <span className="text-base">{selectedCountry.flag}</span>
-                            <span>{selectedCountry.code}</span>
-                            <ChevronDown size={14} className="text-[var(--text-muted)] ml-0.5" />
-                          </button>
+                      {/* Country Code Trigger */}
+                      <div className="relative" ref={countryDropdownRef}>
+                        <button
+                          type="button"
+                          onClick={() => setIsCountryDropdownOpen(!isCountryDropdownOpen)}
+                          className="h-13 px-3.5 flex items-center gap-1.5 bg-[var(--ui-surface-hover)] border-r border-[var(--ui-border)] text-sm font-bold text-[var(--text-main)] hover:bg-[var(--ui-border)]/30 transition-colors rounded-l-2xl outline-none"
+                          aria-haspopup="listbox"
+                          aria-expanded={isCountryDropdownOpen}
+                        >
+                          <span className="text-base">{selectedCountry.flag}</span>
+                          <span>{selectedCountry.code}</span>
+                          <ChevronDown size={14} className="text-[var(--text-muted)] ml-0.5" />
+                        </button>
 
-                          {/* Country Code Dropdown Popover */}
-                          <AnimatePresence>
-                            {isCountryDropdownOpen && (
-                              <motion.div
-                                initial={{ opacity: 0, y: 6, scale: 0.96 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                                transition={{ duration: 0.15 }}
-                                className="absolute left-0 top-full mt-2 w-56 bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-2xl shadow-xl z-50 overflow-hidden py-1 max-h-64 overflow-y-auto"
-                              >
-                                <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider border-b border-[var(--ui-border)]">
-                                  Select Country
-                                </div>
-                                {COUNTRIES.map((c) => (
-                                  <button
-                                    key={c.country}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedCountry(c);
-                                      setIsCountryDropdownOpen(false);
-                                      setMobileNumber('');
-                                      setErrorMessage(null);
-                                    }}
-                                    className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[var(--ui-surface-hover)] transition-colors ${
-                                      selectedCountry.code === c.code ? 'font-bold text-primary bg-primary/5' : 'text-[var(--text-main)]'
-                                    }`}
-                                  >
-                                    <span className="flex items-center gap-2">
-                                      <span className="text-base">{c.flag}</span>
-                                      <span>{c.country}</span>
-                                    </span>
-                                    <span className="font-mono text-[var(--text-muted)]">{c.code}</span>
-                                  </button>
-                                ))}
-                              </motion.div>
-                            )}
-                          </AnimatePresence>
-                        </div>
-
-                        {/* Large Input Field */}
-                        <input
-                          id="mobile-input"
-                          type="tel"
-                          inputMode="numeric"
-                          autoComplete="tel"
-                          value={mobileNumber}
-                          onChange={handleMobileChange}
-                          placeholder={`Enter ${selectedCountry.digits}-digit number`}
-                          className="w-full h-13 px-4 bg-transparent text-sm sm:text-base font-medium text-[var(--text-main)] placeholder:text-[var(--text-muted)]/60 outline-none"
-                        />
-
-                        {mobileNumber && (
-                          <button
-                            type="button"
-                            onClick={() => setMobileNumber('')}
-                            className="mr-3 p-1 rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--ui-surface-hover)]"
-                            aria-label="Clear mobile number"
-                          >
-                            <X size={14} />
-                          </button>
-                        )}
+                        {/* Country Code Dropdown Popover */}
+                        <AnimatePresence>
+                          {isCountryDropdownOpen && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                              transition={{ duration: 0.15 }}
+                              className="absolute left-0 top-full mt-2 w-56 bg-[var(--ui-surface)] border border-[var(--ui-border)] rounded-2xl shadow-xl z-50 overflow-hidden py-1 max-h-64 overflow-y-auto"
+                            >
+                              <div className="px-3 py-1.5 text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider border-b border-[var(--ui-border)]">
+                                Select Country
+                              </div>
+                              {COUNTRIES.map((c) => (
+                                <button
+                                  key={c.country}
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedCountry(c);
+                                    setIsCountryDropdownOpen(false);
+                                    setMobileNumber('');
+                                    setErrorMessage(null);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-[var(--ui-surface-hover)] transition-colors ${
+                                    selectedCountry.code === c.code ? 'font-bold text-primary bg-primary/5' : 'text-[var(--text-main)]'
+                                  }`}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <span className="text-base">{c.flag}</span>
+                                    <span>{c.country}</span>
+                                  </span>
+                                  <span className="font-mono text-[var(--text-muted)]">{c.code}</span>
+                                </button>
+                              ))}
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                       </div>
 
-                      {/* Inline Validation Error */}
-                      {errorMessage && (
-                        <motion.div 
-                          initial={{ opacity: 0, y: -4 }} 
-                          animate={{ opacity: 1, y: 0 }} 
-                          className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-rose-500"
+                      {/* Large Input Field */}
+                      <input
+                        id="mobile-input"
+                        type="tel"
+                        inputMode="numeric"
+                        autoComplete="tel"
+                        value={mobileNumber}
+                        onChange={handleMobileChange}
+                        placeholder={`Enter ${selectedCountry.digits}-digit number`}
+                        className="w-full h-13 px-4 bg-transparent text-sm sm:text-base font-medium text-[var(--text-main)] placeholder:text-[var(--text-muted)]/60 outline-none"
+                      />
+
+                      {mobileNumber && (
+                        <button
+                          type="button"
+                          onClick={() => setMobileNumber('')}
+                          className="mr-3 p-1 rounded-full text-[var(--text-muted)] hover:text-[var(--text-main)] hover:bg-[var(--ui-surface-hover)]"
+                          aria-label="Clear mobile number"
                         >
-                          <AlertCircle size={13} className="shrink-0" />
-                          <span>{errorMessage}</span>
-                        </motion.div>
+                          <X size={14} />
+                        </button>
                       )}
                     </div>
-                  )}
+
+                    {/* Inline Validation Error */}
+                    {errorMessage && (
+                      <motion.div 
+                        initial={{ opacity: 0, y: -4 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        className="flex items-center gap-1.5 mt-2 text-xs font-semibold text-rose-500"
+                      >
+                        <AlertCircle size={13} className="shrink-0" />
+                        <span>{errorMessage}</span>
+                      </motion.div>
+                    )}
+                  </div>
 
                   {/* Primary CTA: Send OTP */}
                   <button
                     type="submit"
-                    disabled={!isInputValid || loginState === 'SENDING_OTP'}
+                    disabled={!isMobileValid || loginState === 'SENDING_OTP'}
                     className={`w-full py-3.5 px-6 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.99] ${
-                      isInputValid && loginState !== 'SENDING_OTP'
+                      isMobileValid && loginState !== 'SENDING_OTP'
                         ? 'bg-gradient-to-r from-[#D4A72C] to-[#B88E1F] hover:from-[#E5BE4A] hover:to-[#C59B27] text-white cursor-pointer shadow-[0_8px_20px_rgba(212,167,44,0.3)]'
                         : 'bg-[var(--ui-border)] text-[var(--text-muted)] cursor-not-allowed opacity-70'
                     }`}
@@ -735,7 +587,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                   <div className="p-3.5 rounded-2xl bg-[var(--ui-surface-hover)] border border-[var(--ui-border)] flex items-center justify-between">
                     <div>
                       <div className="text-[10px] uppercase font-bold text-[var(--text-muted)] tracking-wider">
-                        {authMethod === 'email' ? 'VERIFY YOUR EMAIL' : 'VERIFY YOUR NUMBER'}
+                        VERIFY YOUR NUMBER
                       </div>
                       <div className="text-xs text-[var(--text-muted)] mt-0.5">
                         Enter the 6-digit OTP sent to:
@@ -767,23 +619,6 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
                       <CheckCircle2 size={14} className="shrink-0 text-emerald-500" />
                       <span className="font-medium">{statusMessage}</span>
                     </motion.div>
-                  )}
-
-                  {/* Quick Auto-Fill Helper for instant testing */}
-                  {receivedOtpCode && (
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs flex items-center justify-between">
-                      <div className="flex items-center gap-1.5 text-amber-800 dark:text-amber-200">
-                        <Sparkles size={13} className="shrink-0 text-[#C59B27]" />
-                        <span>OTP Code: <strong className="font-mono tracking-wider font-bold">{receivedOtpCode}</strong></span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => handleAutoFillCode(receivedOtpCode)}
-                        className="px-2 py-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-100 rounded-lg text-[11px] font-bold transition-colors cursor-pointer"
-                      >
-                        Auto-fill
-                      </button>
-                    </div>
                   )}
 
                   {/* 6 Individual Digit Boxes */}

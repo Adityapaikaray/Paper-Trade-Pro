@@ -15,6 +15,8 @@ export interface Instrument {
   bse_scrip_code?: string;
   isin?: string;
   sector?: string;
+  country?: string;
+  currency?: string;
   is_active: boolean;
 }
 
