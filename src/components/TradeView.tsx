@@ -311,12 +311,16 @@ const TradeView: React.FC<TradeViewProps> = ({ stock, onClose, onBack, initialSi
                 </div>
               </div>
 
-              {/* Chart Card */}
-              <div className="bg-ui-surface border border-ui-border rounded-2xl md:rounded-3xl p-5 md:p-6 shadow-sm">
-                <div className="h-[250px] md:h-[350px] w-full">
-                  <StockChart stock={liveStock} showDetails={false} showTimeframes={true} />
-                </div>
-              </div>
+              {/* Professional Candlestick Trading Chart */}
+              <StockChart
+                ticker={liveStock.symbol}
+                exchange={(liveStock as any).exchange || (liveStock.country === 'India' ? 'NSE' : 'NASDAQ')}
+                currentPrice={liveStock.price}
+                stock={liveStock}
+                height={380}
+                showDetails={true}
+                showTimeframes={true}
+              />
             </div>
 
             {/* Right Column: Trading Panel */}

@@ -1256,28 +1256,106 @@ app.get("/api/chart/:symbol", async (req, res) => {
       return res.status(400).json({ error: "Symbol is required" });
     }
 
-    const range = (req.query.range as string) || "1d";
+    const requestedRange = (req.query.range as string || "1D").toUpperCase();
+    let range = "1d";
     let interval = (req.query.interval as string);
-    if (!interval) {
-      if (range === "1d") interval = "5m";
-      else if (range === "5d") interval = "15m";
-      else if (range === "1mo") interval = "1d";
-      else if (range === "1y") interval = "1wk";
-      else interval = "5m";
+
+    if (requestedRange === "1D") {
+      range = "1d";
+      interval = interval || "5m";
+    } else if (requestedRange === "1W" || requestedRange === "5D") {
+      range = "5d";
+      interval = interval || "15m";
+    } else if (requestedRange === "1M") {
+      range = "1mo";
+      interval = interval || "1d";
+    } else if (requestedRange === "3M") {
+      range = "3mo";
+      interval = interval || "1d";
+    } else if (requestedRange === "1Y") {
+      range = "1y";
+      interval = interval || "1d";
+    } else if (requestedRange === "5Y") {
+      range = "5y";
+      interval = interval || "1wk";
+    } else if (requestedRange === "ALL" || requestedRange === "MAX") {
+      range = "max";
+      interval = interval || "1mo";
+    } else {
+      range = (req.query.range as string) || "1d";
+      interval = interval || "5m";
     }
 
     const ticker = mapToYahooTicker(rawSymbol);
     const yahooUrl = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}?interval=${interval}&range=${range}`;
 
-    const response = await axios.get(yahooUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
-      },
-      timeout: 4500
-    });
+    let result: any = null;
+    try {
+      const response = await axios.get(yahooUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+        },
+        timeout: 6000
+      });
+      result = response.data?.chart?.result?.[0];
+    } catch (directErr: any) {
+      console.warn(`Direct Yahoo chart call failed for ${ticker}, attempting library fallback:`, directErr?.message);
+    }
 
-    const result = response.data?.chart?.result?.[0];
+    // Fallback to yahooFinance.chart if direct request fails
     if (!result || !result.meta) {
+      try {
+        const queryOptions: any = {
+          period1: new Date(Date.now() - (requestedRange === "1D" ? 5 * 86400000 : 365 * 86400000)),
+          interval: interval as any
+        };
+        const yfChart = await yahooFinance.chart(ticker, queryOptions);
+        if (yfChart && yfChart.quotes && yfChart.quotes.length > 0) {
+          const quotes = yfChart.quotes;
+          const candles = quotes
+            .filter((q: any) => typeof q.open === "number" && typeof q.close === "number")
+            .map((q: any) => {
+              const ts = new Date(q.date).getTime();
+              return {
+                timestamp: ts,
+                time: Math.floor(ts / 1000),
+                open: Number(q.open.toFixed(2)),
+                high: Number((q.high ?? Math.max(q.open, q.close)).toFixed(2)),
+                low: Number((q.low ?? Math.min(q.open, q.close)).toFixed(2)),
+                close: Number(q.close.toFixed(2)),
+                volume: q.volume || 0
+              };
+            });
+
+          const lastCandle = candles[candles.length - 1];
+          const firstCandle = candles[0];
+          const currentPrice = lastCandle ? lastCandle.close : 0;
+          const prevClose = firstCandle ? firstCandle.open : currentPrice;
+          const rawChange = currentPrice - prevClose;
+          const rawPercentChange = prevClose !== 0 ? (rawChange / prevClose) * 100 : 0;
+
+          return res.json({
+            symbol: rawSymbol,
+            ticker,
+            range: requestedRange,
+            interval,
+            currency: ticker.endsWith(".NS") || ticker.endsWith(".BO") ? "₹" : "$",
+            price: Number(currentPrice.toFixed(2)),
+            previousClose: Number(prevClose.toFixed(2)),
+            change: Number(rawChange.toFixed(2)),
+            percentChange: Number(rawPercentChange.toFixed(2)),
+            candles,
+            points: candles.map(c => ({
+              time: new Date(c.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+              timestamp: c.timestamp,
+              price: c.close,
+              volume: c.volume
+            }))
+          });
+        }
+      } catch (fbErr: any) {
+        console.error(`Library fallback also failed for ${ticker}:`, fbErr?.message);
+      }
       return res.status(404).json({ error: "Chart data unavailable for symbol" });
     }
 
@@ -1289,41 +1367,65 @@ app.get("/api/chart/:symbol", async (req, res) => {
 
     const quotes = result.indicators?.quote?.[0];
     const timestamps = result.timestamp || [];
+    const candles: { timestamp: number; time: number; open: number; high: number; low: number; close: number; volume: number }[] = [];
     const points: { time: string; timestamp: number; price: number; volume?: number }[] = [];
 
-    if (quotes && quotes.close && Array.isArray(quotes.close)) {
-      for (let i = 0; i < quotes.close.length; i++) {
-        const val = quotes.close[i];
-        if (typeof val === "number" && !isNaN(val)) {
-          const t = timestamps[i] ? new Date(timestamps[i] * 1000) : new Date();
-          const timeLabel = range === "1d" 
+    if (quotes && quotes.open && quotes.close && Array.isArray(quotes.close)) {
+      for (let i = 0; i < timestamps.length; i++) {
+        const o = quotes.open[i];
+        const h = quotes.high?.[i];
+        const l = quotes.low?.[i];
+        const c = quotes.close[i];
+        const v = quotes.volume?.[i] || 0;
+
+        if (typeof o === "number" && typeof c === "number" && !isNaN(o) && !isNaN(c)) {
+          const ts = timestamps[i] * 1000;
+          const candleHigh = typeof h === "number" && !isNaN(h) ? h : Math.max(o, c);
+          const candleLow = typeof l === "number" && !isNaN(l) ? l : Math.min(o, c);
+
+          candles.push({
+            timestamp: ts,
+            time: timestamps[i], // seconds for lightweight-charts
+            open: Number(o.toFixed(2)),
+            high: Number(candleHigh.toFixed(2)),
+            low: Number(candleLow.toFixed(2)),
+            close: Number(c.toFixed(2)),
+            volume: v
+          });
+
+          const t = new Date(ts);
+          const timeLabel = requestedRange === "1D" 
             ? t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-            : range === "5d"
+            : requestedRange === "1W"
             ? `${t.toLocaleDateString([], { weekday: "short" })} ${t.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}`
             : t.toLocaleDateString([], { month: "short", day: "numeric" });
 
           points.push({
             time: timeLabel,
-            timestamp: timestamps[i] ? timestamps[i] * 1000 : Date.now(),
-            price: Number(val.toFixed(2)),
-            volume: quotes.volume?.[i] || undefined
+            timestamp: ts,
+            price: Number(c.toFixed(2)),
+            volume: v
           });
         }
       }
     }
 
+    const exchange = ticker.endsWith(".NS") ? "NSE" : ticker.endsWith(".BO") ? "BSE" : (meta.exchangeName || "NASDAQ");
+
     res.json({
       symbol: rawSymbol,
       ticker,
-      range,
+      exchange,
+      range: requestedRange,
       interval,
-      currency: meta.currency || "$",
+      currency: meta.currency === "INR" || ticker.endsWith(".NS") || ticker.endsWith(".BO") ? "₹" : "$",
       price: Number(currentPrice.toFixed(2)),
       previousClose: Number(prevClose.toFixed(2)),
       change: Number(rawChange.toFixed(2)),
       percentChange: Number(rawPercentChange.toFixed(2)),
       dayHigh: meta.regularMarketDayHigh ? Number(meta.regularMarketDayHigh.toFixed(2)) : undefined,
       dayLow: meta.regularMarketDayLow ? Number(meta.regularMarketDayLow.toFixed(2)) : undefined,
+      candles,
       points
     });
   } catch (err: any) {
