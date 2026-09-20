@@ -39,6 +39,7 @@ import { ThemeProvider } from './contexts/ThemeContext.tsx';
 import { MarketProvider } from './contexts/MarketContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SplashScreen from './components/SplashScreen.tsx';
+import { TradeProDashboardReveal } from './components/startup/TradeProDashboardReveal.tsx';
 import MarketSelection from './components/MarketSelection.tsx';
 import { NavigationProvider } from './contexts/NavigationContext.tsx';
 
@@ -166,93 +167,86 @@ function AppContent() {
       )}
       
       {(!showSplash && marketContext !== null) && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="flex h-screen bg-ui-bg text-text-main overflow-hidden transition-colors duration-300 border-t-2 border-[#1A1F29]"
-          >
-            <Sidebar />
-            
-            <main className="flex-1 flex flex-col min-w-0 pb-10 relative">
-              <TopBar onSearchFocus={() => setIsCommandPaletteOpen(true)} />
-              
-              <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar pb-12">
-                <div className="w-full max-w-[2000px] mx-auto pb-4">
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={activeTab}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      transition={{ duration: 0.25, ease: "easeOut" }}
-                      className="w-full"
-                    >
-                      <Suspense fallback={
-                        <div className="w-full h-80 flex flex-col items-center justify-center gap-3">
-                          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                          <span className="text-xs font-mono font-semibold text-text-muted">Loading module...</span>
-                        </div>
-                      }>
-                        {renderView()}
-                      </Suspense>
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-                
-                {/* Global Footer */}
-                <footer className="w-full max-w-[2000px] mx-auto py-8 border-t border-ui-border flex flex-col lg:flex-row items-center justify-between text-xs font-semibold text-text-muted mt-8 mb-12 md:mb-10 gap-4 text-center lg:text-left">
-                  <div className="flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#00D084] animate-pulse" />
-                    Live market data &middot; Updated just now
-                  </div>
-                  
-                  <div className="flex items-center gap-4 lg:gap-6 flex-wrap justify-center">
-                    <span className="flex gap-2"><span>New York</span> <span className="text-text-main">10:42 AM</span></span>
-                    <span className="flex gap-2"><span>Mumbai</span> <span className="text-text-main">08:12 PM</span></span>
-                    <span className="flex gap-2"><span>London</span> <span className="text-text-main">03:42 PM</span></span>
-                  </div>
-                  
-                  <div className="flex flex-col items-center lg:items-end gap-1.5">
-                    <span className="text-primary-dark italic font-serif text-sm">
-                      Trade smarter. A brighter tomorrow.
-                    </span>
-                    <span className="text-[9px] text-text-muted font-sans font-bold uppercase tracking-[0.15em]">
-                      Designed & Created by Aditya Paikaray
-                    </span>
-                  </div>
-                </footer>
+        <TradeProDashboardReveal
+          sidebar={<Sidebar />}
+          topBar={<TopBar onSearchFocus={() => setIsCommandPaletteOpen(true)} />}
+          content={
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 custom-scrollbar pb-12">
+              <div className="w-full max-w-[2000px] mx-auto pb-4">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                    className="w-full"
+                  >
+                    <Suspense fallback={
+                      <div className="w-full h-80 flex flex-col items-center justify-center gap-3">
+                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-xs font-mono font-semibold text-text-muted">Loading module...</span>
+                      </div>
+                    }>
+                      {renderView()}
+                    </Suspense>
+                  </motion.div>
+                </AnimatePresence>
               </div>
               
-              
-            </main>
-
-            <MobileNavigationDrawer />
-
-            <CommandPalette 
-              isOpen={isCommandPaletteOpen}
-              onClose={() => setIsCommandPaletteOpen(false)}
-              onNavigate={(tab) => {
-                // @ts-ignore
-                navigate(tab);
-              }}
-              onTrade={(stock, side) => {
-                navigate('trade', { stock, side });
-              }}
-            />
-            <UIManager />
-            <NotificationManager />
-            <PortfolioHistoryRecorder />
-            <AICopilot 
-              onNavigate={(tab) => {
-                // @ts-ignore
-                navigate(tab);
-              }}
-              onOpenTrade={(stock) => navigate('trade', { stock })}
-            />
-            <BottomMarketTicker onTrade={(stock) => navigate('trade', { stock })} />
-          </motion.div>
-          )}
+              {/* Global Footer */}
+              <footer className="w-full max-w-[2000px] mx-auto py-8 border-t border-ui-border flex flex-col lg:flex-row items-center justify-between text-xs font-semibold text-text-muted mt-8 mb-12 md:mb-10 gap-4 text-center lg:text-left">
+                <div className="flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#00D084] animate-pulse" />
+                  Live market data &middot; Updated just now
+                </div>
+                
+                <div className="flex items-center gap-4 lg:gap-6 flex-wrap justify-center">
+                  <span className="flex gap-2"><span>New York</span> <span className="text-text-main">10:42 AM</span></span>
+                  <span className="flex gap-2"><span>Mumbai</span> <span className="text-text-main">08:12 PM</span></span>
+                  <span className="flex gap-2"><span>London</span> <span className="text-text-main">03:42 PM</span></span>
+                </div>
+                
+                <div className="flex flex-col items-center lg:items-end gap-1.5">
+                  <span className="text-primary-dark italic font-serif text-sm">
+                    Trade smarter. A brighter tomorrow.
+                  </span>
+                  <span className="text-[9px] text-text-muted font-sans font-bold uppercase tracking-[0.15em]">
+                    Designed & Created by Aditya Paikaray
+                  </span>
+                </div>
+              </footer>
+            </div>
+          }
+          auxiliary={
+            <>
+              <MobileNavigationDrawer />
+              <CommandPalette 
+                isOpen={isCommandPaletteOpen}
+                onClose={() => setIsCommandPaletteOpen(false)}
+                onNavigate={(tab) => {
+                  // @ts-ignore
+                  navigate(tab);
+                }}
+                onTrade={(stock, side) => {
+                  navigate('trade', { stock, side });
+                }}
+              />
+              <UIManager />
+              <NotificationManager />
+              <PortfolioHistoryRecorder />
+              <AICopilot 
+                onNavigate={(tab) => {
+                  // @ts-ignore
+                  navigate(tab);
+                }}
+                onOpenTrade={(stock) => navigate('trade', { stock })}
+              />
+            </>
+          }
+          bottomTicker={<BottomMarketTicker onTrade={(stock) => navigate('trade', { stock })} />}
+        />
+      )}
     </>
   );
 }

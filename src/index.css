@@ -21,6 +21,7 @@
     
     /* Splash Screen Tokens */
     --splash-background: linear-gradient(180deg, #FCFAF7 0%, #F6F2EA 55%, #EDE7DC 100%);
+    --splash-surface: transparent;
     --splash-brand-text: #111C2E;
     --splash-tagline-text: #17243A;
     
@@ -36,6 +37,7 @@
   html.light,
   .light {
     --splash-background: linear-gradient(180deg, #FCFAF7 0%, #F6F2EA 55%, #EDE7DC 100%);
+    --splash-surface: transparent;
     --splash-brand-text: #111C2E;
     --splash-tagline-text: #17243A;
   }
@@ -61,6 +63,7 @@
     
     /* Splash Screen Tokens */
     --splash-background: linear-gradient(180deg, #0D0E12 0%, #050608 100%);
+    --splash-surface: transparent;
     --splash-brand-text: #F5F5F0;
     --splash-tagline-text: #E8ECF2;
     
@@ -99,6 +102,7 @@
   --color-positive-dark: var(--color-positive-dark);
   --color-negative: var(--color-negative);
 
+  --color-splash-surface: var(--splash-surface);
   --color-splash-brand-text: var(--splash-brand-text);
   --color-splash-tagline-text: var(--splash-tagline-text);
 }
@@ -140,7 +144,9 @@
 
   /* GPU-Accelerated Splash Screen Transitions */
   .splash-gpu-transform {
-    will-change: transform;
+    will-change: transform, opacity;
+    backface-visibility: hidden;
+    transform-style: preserve-3d;
     transition-property: transform, opacity;
     transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
   }
@@ -149,6 +155,7 @@
     .splash-gpu-transform {
       will-change: auto !important;
       transform: none !important;
+      backface-visibility: visible !important;
       transition-property: opacity !important;
       transition-duration: 150ms !important;
     }
