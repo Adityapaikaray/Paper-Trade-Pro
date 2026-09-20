@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
-import { Crown } from 'lucide-react';
+import { Crown, Sun, Moon } from 'lucide-react';
 import { useUI } from '../contexts/UIContext.tsx';
+import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useNavigation, RouteId } from '../contexts/NavigationContext.tsx';
 import { primaryNavigation, secondaryNavigation } from '../config/navigation.ts';
+import TradeProLogo from './TradeProLogo.tsx';
 
 const Sidebar: React.FC = () => {
   const { openModal } = useUI();
+  const { theme, toggleTheme } = useTheme();
   const { navigate, currentRoute } = useNavigation();
   const [isExpanded, setIsExpanded] = useState(true);
 
@@ -15,18 +18,15 @@ const Sidebar: React.FC = () => {
         isExpanded ? 'w-[240px]' : 'w-[80px]'
       }`}
     >
-      <div className={`pt-6 pb-8 sticky top-0 bg-[var(--ui-sidebar)] z-10 flex ${isExpanded ? 'px-6' : 'justify-center'}`}>
+      <div className={`pt-[22px] pb-6 sticky top-0 bg-[var(--ui-sidebar)] z-10 flex ${isExpanded ? 'px-[22px]' : 'justify-center px-2'}`}>
         <button 
           onClick={() => setIsExpanded(!isExpanded)} 
-          className="flex items-center transition-transform active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
+          className="flex items-center text-left transition-transform active:scale-95 outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-lg"
           aria-label="Toggle navigation"
           aria-expanded={isExpanded}
+          title={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
         >
-          {isExpanded ? (
-            <img src="/tradepro-logo.jpg" alt="TRADEPRO" className="w-[180px] h-[46px] object-contain object-left" />
-          ) : (
-            <img src="/tradepro-icon.jpg" alt="TradePro" className="w-10 h-10 rounded-lg object-contain" />
-          )}
+          <TradeProLogo isCollapsed={!isExpanded} />
         </button>
       </div>
       
@@ -98,7 +98,32 @@ const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      <div className="p-3 mt-auto relative z-10">
+      {/* Theme Mode Toggle Button */}
+      <div className={`px-3 py-2 ${isExpanded ? 'px-3' : 'px-2'}`}>
+        <button
+          onClick={toggleTheme}
+          title={isExpanded ? undefined : (theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode')}
+          className={`w-full flex items-center ${isExpanded ? 'px-3 justify-between' : 'justify-center'} py-2 rounded-xl bg-ui-surface hover:bg-ui-surface-hover border border-ui-border transition-all duration-200 text-text-muted hover:text-text-main shadow-xs group`}
+        >
+          <div className="flex items-center gap-2.5">
+            <div className="w-6 h-6 rounded-lg bg-ui-bg flex items-center justify-center text-primary shrink-0 transition-transform group-hover:scale-110">
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
+            </div>
+            {isExpanded && (
+              <span className="text-xs font-semibold tracking-wide">
+                {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+              </span>
+            )}
+          </div>
+          {isExpanded && (
+            <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-ui-bg text-primary border border-primary/20 uppercase">
+              {theme}
+            </span>
+          )}
+        </button>
+      </div>
+
+      <div className="p-3 relative z-10">
         <div 
           className={`${isExpanded ? 'p-3.5' : 'p-2'} rounded-2xl bg-ui-surface border border-primary/40 shadow-sm flex flex-col relative group cursor-pointer hover:border-primary transition-all duration-200`} 
           onClick={() => openModal('upgrade')} 

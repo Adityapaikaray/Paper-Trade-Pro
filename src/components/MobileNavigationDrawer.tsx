@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useNavigation, RouteId } from '../contexts/NavigationContext.tsx';
 import { primaryNavigation, secondaryNavigation } from '../config/navigation.ts';
+import TradeProLogo from './TradeProLogo.tsx';
 
 const MobileNavigationDrawer: React.FC = () => {
   const { isMenuOpen, setMenuOpen, navigate, currentRoute } = useNavigation();
@@ -60,7 +61,7 @@ const MobileNavigationDrawer: React.FC = () => {
             aria-label="Navigation Menu"
           >
             <div className="flex items-center justify-between px-6 py-6 border-b border-ui-border">
-              <img src="/tradepro-logo.jpg" alt="TRADEPRO" className="w-[140px] h-[36px] object-contain object-left" />
+              <TradeProLogo onClick={() => { navigate('dashboard'); setMenuOpen(false); }} />
               <button 
                 onClick={() => setMenuOpen(false)}
                 className="w-8 h-8 flex items-center justify-center rounded-full bg-ui-surface hover:bg-ui-surface-hover text-text-muted hover:text-text-main transition-colors"

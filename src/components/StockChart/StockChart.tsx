@@ -18,6 +18,7 @@ import {
 } from 'lightweight-charts';
 import { RefreshCw, AlertCircle, TrendingUp } from 'lucide-react';
 import { Stock } from '../../types.ts';
+import { useTheme } from '../../contexts/ThemeContext.tsx';
 import { useStockHistory, Timeframe } from '../../hooks/useStockHistory.ts';
 import { OHLCVCandle } from '../../services/marketData.ts';
 import {
@@ -56,6 +57,9 @@ export const StockChart: React.FC<StockChartProps> = ({
   const resolvedExchange = propExchange || (stock as any)?.exchange || (stock?.country === 'India' ? 'NSE' : 'NASDAQ');
   const resolvedPrice = propCurrentPrice ?? stock?.price;
   const currency = stock?.currency || (resolvedExchange === 'NSE' || resolvedExchange === 'BSE' ? '₹' : '$');
+
+  const { theme } = useTheme();
+  const isDark = theme === 'dark';
 
   // Chart configuration state
   const [chartType, setChartType] = useState<ChartType>('candlestick');
@@ -132,12 +136,13 @@ export const StockChart: React.FC<StockChartProps> = ({
       chartInstanceRef.current = null;
     }
 
-    // Determine dark mode
-    const isDark = document.documentElement.classList.contains('dark');
-    const bgColor = isDark ? '#0a0a0a' : '#ffffff';
-    const textColor = isDark ? '#a0aec0' : '#4a5568';
-    const gridColor = isDark ? '#1a202c' : '#f0f3fa';
-    const borderColor = isDark ? '#2d3748' : '#e2e8f0';
+    // High contrast theme-aligned chart palette
+    const bgColor = isDark ? '#0A0A0A' : '#FFFFFF';
+    const textColor = isDark ? '#8C8C8C' : '#6E7C90';
+    const gridColor = isDark ? '#1F1F1F' : '#F0F3FA';
+    const borderColor = isDark ? '#242424' : '#E5E0D6';
+    const crosshairColor = isDark ? '#4A5568' : '#94A3B8';
+    const crosshairLabelBg = isDark ? '#1F2937' : '#1E293B';
 
     const chart = createChart(container, {
       width: container.clientWidth || 600,
@@ -267,7 +272,46 @@ export const StockChart: React.FC<StockChartProps> = ({
         chartInstanceRef.current = null;
       }
     };
-  }, [chartType, height, isFullscreen, selectedTimeframe]);
+  }, [chartType, height, isFullscreen, selectedTimeframe, theme]);
+
+  // Dynamically synchronize chart colors and contrast whenever theme toggles
+  useEffect(() => {
+    if (!chartInstanceRef.current) return;
+    const isDark = theme === 'dark';
+    const bgColor = isDark ? '#0A0A0A' : '#FFFFFF';
+    const textColor = isDark ? '#8C8C8C' : '#6E7C90';
+    const gridColor = isDark ? '#1F1F1F' : '#F0F3FA';
+    const borderColor = isDark ? '#242424' : '#E5E0D6';
+    const crosshairColor = isDark ? '#4A5568' : '#94A3B8';
+    const crosshairLabelBg = isDark ? '#1F2937' : '#1E293B';
+
+    chartInstanceRef.current.applyOptions({
+      layout: {
+        background: { type: ColorType.Solid, color: bgColor },
+        textColor: textColor,
+      },
+      grid: {
+        vertLines: { color: gridColor },
+        horzLines: { color: gridColor },
+      },
+      crosshair: {
+        vertLine: {
+          color: crosshairColor,
+          labelBackgroundColor: crosshairLabelBg,
+        },
+        horzLine: {
+          color: crosshairColor,
+          labelBackgroundColor: crosshairLabelBg,
+        },
+      },
+      rightPriceScale: {
+        borderColor: borderColor,
+      },
+      timeScale: {
+        borderColor: borderColor,
+      },
+    });
+  }, [theme]);
 
   // Update Series Data whenever candles change
   useEffect(() => {

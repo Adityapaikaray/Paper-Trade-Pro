@@ -19,9 +19,9 @@ export const secondaryNavigation: NavItem[] = [
   { id: 'orders', label: 'Orders', icon: TrendingUp, isMore: true },
   { id: 'watchlist', label: 'Watchlist', icon: ListTodo, isMore: true },
   { id: 'alerts', label: 'Alerts', icon: BellRing, isMore: true },
-  { id: 'transactions', label: 'Transactions', icon: History, isMore: true },
+  { id: 'transactions', label: 'History', icon: History, isMore: true },
   { id: 'settings', label: 'Settings', icon: Settings, isMore: true },
-  { id: 'help', label: 'Help & Support', icon: HelpCircle, isMore: true },
+  { id: 'help', label: 'Help', icon: HelpCircle, isMore: true },
 ];
 
 export const allNavigation = [...primaryNavigation, ...secondaryNavigation];

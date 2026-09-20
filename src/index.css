@@ -19,6 +19,11 @@
     --text-dark: #0D1624;
     --text-muted: #6E7C90; /* Secondary muted text */
     
+    /* Splash Screen Tokens */
+    --splash-background: linear-gradient(180deg, #FCFAF7 0%, #F6F2EA 55%, #EDE7DC 100%);
+    --splash-brand-text: #111C2E;
+    --splash-tagline-text: #17243A;
+    
     --color-positive: #00B887; /* Emerald green */
     --color-positive-dark: #00966D;
     --color-negative: #E15B5B; /* Muted red */
@@ -27,7 +32,17 @@
     --shadow-color: rgba(23, 36, 58, 0.04);
   }
 
-  :root.dark {
+  :root.light,
+  html.light,
+  .light {
+    --splash-background: linear-gradient(180deg, #FCFAF7 0%, #F6F2EA 55%, #EDE7DC 100%);
+    --splash-brand-text: #111C2E;
+    --splash-tagline-text: #17243A;
+  }
+
+  :root.dark,
+  html.dark,
+  .dark {
     /* Dark Mode Variables */
     --color-primary: #D4AF37; /* Champagne Gold */
     --color-primary-light: #F0C75E; /* Bright Gold */
@@ -43,6 +58,11 @@
     --text-main: #F5F5F0; 
     --text-dark: #FFFFFF; 
     --text-muted: #8C8C8C; 
+    
+    /* Splash Screen Tokens */
+    --splash-background: linear-gradient(180deg, #0D0E12 0%, #050608 100%);
+    --splash-brand-text: #F5F5F0;
+    --splash-tagline-text: #E8ECF2;
     
     --color-positive: #00D084; /* Emerald */
     --color-positive-dark: #007A50; /* Deep emerald */
@@ -78,6 +98,9 @@
   --color-positive: var(--color-positive);
   --color-positive-dark: var(--color-positive-dark);
   --color-negative: var(--color-negative);
+
+  --color-splash-brand-text: var(--splash-brand-text);
+  --color-splash-tagline-text: var(--splash-tagline-text);
 }
 
 @layer components {
@@ -113,6 +136,22 @@
   }
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-ui-border rounded-full hover:bg-text-muted;
+  }
+
+  /* GPU-Accelerated Splash Screen Transitions */
+  .splash-gpu-transform {
+    will-change: transform;
+    transition-property: transform, opacity;
+    transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .splash-gpu-transform {
+      will-change: auto !important;
+      transform: none !important;
+      transition-property: opacity !important;
+      transition-duration: 150ms !important;
+    }
   }
 }
 

@@ -240,9 +240,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
       <div className="w-full px-6 py-4 flex items-center justify-between z-20">
         <div className="lg:hidden flex items-center">
           <img 
-            src="/tradepro-logo.jpg" 
+            src="/tradepro-logo.svg" 
             alt="TRADEPRO" 
-            className="h-8 w-auto object-contain rounded-sm" 
+            className="h-8 w-auto object-contain" 
           />
         </div>
         <div className="hidden lg:block">
@@ -272,9 +272,9 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
             {/* Logo */}
             <div>
               <img 
-                src="/tradepro-logo.jpg" 
+                src="/tradepro-logo.svg" 
                 alt="TRADEPRO" 
-                className="h-12 w-auto object-contain rounded-md shadow-xs" 
+                className="h-12 w-auto object-contain" 
               />
             </div>
 

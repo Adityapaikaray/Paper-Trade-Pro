@@ -216,20 +216,32 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
           </AnimatePresence>
         </div>
 
-        {/* Theme Toggle Switch */}
+        {/* Theme Toggle Switch (Desktop & Tablet Pill) */}
         <div 
           onClick={toggleTheme}
-          className="hidden sm:flex items-center bg-ui-surface border border-ui-border rounded-full p-1 cursor-pointer shadow-md transition-all relative w-16 h-8 hover:border-primary/50"
+          className="hidden sm:flex items-center bg-ui-surface border border-ui-border rounded-full p-1 cursor-pointer shadow-xs transition-all relative w-16 h-8 hover:border-primary/50 select-none"
           title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          role="button"
+          aria-label="Toggle theme"
         >
           <div className="w-full flex justify-between px-1.5 z-10 text-text-muted">
-            <Sun size={14} strokeWidth={theme === 'light' ? 2 : 1.5} className={theme === 'light' ? 'text-primary' : 'opacity-50'} />
-            <Moon size={14} strokeWidth={theme === 'dark' ? 2 : 1.5} className={theme === 'dark' ? 'text-primary' : 'opacity-50'} />
+            <Sun size={14} strokeWidth={theme === 'light' ? 2 : 1.5} className={theme === 'light' ? 'text-primary' : 'opacity-40'} />
+            <Moon size={14} strokeWidth={theme === 'dark' ? 2 : 1.5} className={theme === 'dark' ? 'text-primary' : 'opacity-40'} />
           </div>
           <div 
-            className={`absolute w-6 h-6 rounded-full bg-ui-surface-hover border border-primary/30 shadow-[0_0_10px_rgba(212,175,55,0.2)] transition-transform duration-500 ease-in-out ${theme === 'dark' ? 'translate-x-8' : 'translate-x-0'}`} 
+            className={`absolute w-6 h-6 rounded-full bg-ui-surface-hover border border-primary/30 shadow-[0_0_8px_rgba(212,175,55,0.25)] transition-transform duration-300 ease-in-out ${theme === 'dark' ? 'translate-x-8' : 'translate-x-0'}`} 
           />
         </div>
+
+        {/* Mobile Theme Toggle Button */}
+        <button
+          onClick={toggleTheme}
+          className="sm:hidden w-10 h-10 rounded-full bg-ui-surface text-text-muted hover:text-primary hover:bg-ui-surface-hover border border-ui-border flex items-center justify-center transition-all shadow-xs"
+          title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          aria-label="Toggle theme"
+        >
+          {theme === 'dark' ? <Sun size={17} className="text-primary" /> : <Moon size={17} className="text-primary" />}
+        </button>
         
         {/* Notifications Bell & Dropdown */}
         <div className="relative" ref={notifRef}>
@@ -405,7 +417,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
           aria-label="Toggle navigation"
           aria-expanded={isMenuOpen}
         >
-          <img src="/tradepro-logo.jpg" alt="TradePro" className="w-[100px] h-[26px] object-contain object-left" />
+          <img src="/tradepro-logo.svg" alt="TradePro" className="w-[110px] h-[30px] object-contain object-left" />
         </button>
 
         <div className="hidden lg:flex items-center gap-2 shrink-0">

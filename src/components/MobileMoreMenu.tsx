@@ -2,14 +2,16 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, TrendingUp, ListTodo, BellRing, History, 
-  Settings, HelpCircle, LogOut 
+  Settings, HelpCircle, LogOut, Sun, Moon 
 } from 'lucide-react';
 import { useNavigation, RouteId } from '../contexts/NavigationContext.tsx';
 import { useAuth } from '../contexts/AuthContext.tsx';
+import { useTheme } from '../contexts/ThemeContext.tsx';
 
 const MobileMoreMenu: React.FC = () => {
   const { isMenuOpen, setMenuOpen, navigate, currentRoute } = useNavigation();
   const { logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const handleNavigate = (route: RouteId) => {
     navigate(route);
@@ -85,6 +87,12 @@ const MobileMoreMenu: React.FC = () => {
                     icon={Settings} label="Settings" 
                     isActive={currentRoute.id === 'settings'}
                     onClick={() => handleNavigate('settings')} 
+                  />
+                  <MenuRow 
+                    icon={theme === 'dark' ? Sun : Moon} 
+                    label={`Appearance: ${theme === 'dark' ? 'Dark' : 'Light'} Mode`} 
+                    isActive={false}
+                    onClick={toggleTheme} 
                   />
                   <MenuRow 
                     icon={HelpCircle} label="Help & Support" 

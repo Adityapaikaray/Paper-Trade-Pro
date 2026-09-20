@@ -24,6 +24,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const root = window.document.documentElement;
     root.classList.remove('dark', 'light');
     root.classList.add(theme);
+    root.style.colorScheme = theme;
     localStorage.setItem('prestige-theme', theme);
   }, [theme]);
 

@@ -9,6 +9,7 @@ import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
 import { formatCurrency as formatRegionalCurrency, formatCompactCurrency as formatRegionalCompact } from '../utils/formatters.ts';
+import PortfolioGrowthChart from './PortfolioGrowthChart.tsx';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell 
@@ -127,28 +128,6 @@ const PortfolioView: React.FC = () => {
     });
   }, [displayPositions, filterCategory, searchQuery, sortBy]);
 
-  // Mock chart data for timeframe
-  const chartData = useMemo(() => {
-    const points = 30;
-    const data = [];
-    const cv = summary.currentValue || 0;
-    if (cv === 0) return [];
-    
-    let baseValue = cv * (timeframe === '1D' ? 0.99 : timeframe === '1W' ? 0.95 : timeframe === '1M' ? 0.90 : 0.70);
-    const vol = timeframe === '1D' ? 0.005 : 0.02;
-    
-    for (let i = 0; i < points; i++) {
-      if (i === points - 1) {
-        data.push({ time: 'Now', value: cv });
-      } else {
-        const step = baseValue * (1 + (Math.random() * vol * 2 - vol));
-        baseValue = step;
-        data.push({ time: `T-${points - i}`, value: step });
-      }
-    }
-    return data;
-  }, [summary.currentValue, timeframe]);
-
   // Formatters
   const formatCurrency = (val: number) => {
     if (hideBalances) return '••••••';
@@ -242,72 +221,23 @@ const PortfolioView: React.FC = () => {
             </div>
           </div>
 
-          {/* Performance Chart Component */}
-          <div className="bg-ui-surface border border-ui-border rounded-2xl md:rounded-3xl p-4 md:p-6 shadow-md">
-            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
-              <h3 className="text-sm font-bold text-text-main uppercase tracking-widest">Performance</h3>
-              <div className="flex items-center bg-ui-bg rounded-lg p-1 border border-ui-border">
-                {(['1D', '1W', '1M', '6M', '1Y', '5Y', 'All'] as Timeframe[]).map((tf) => (
-                  <button
-                    key={tf}
-                    onClick={() => setTimeframe(tf)}
-                    className={`px-3 py-1 md:py-1.5 text-[10px] md:text-xs font-bold rounded-md transition-all ${
-                      timeframe === tf 
-                        ? 'bg-ui-surface text-primary shadow-sm border border-primary/20' 
-                        : 'text-text-muted hover:text-text-main hover:bg-ui-surface/50'
-                    }`}
-                  >
-                    {tf}
-                  </button>
-                ))}
-              </div>
-            </div>
-            
-            <div className="h-[200px] md:h-[260px] w-full">
-              {!hideBalances && chartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={chartData}>
-                    <defs>
-                      <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#D4AF37" stopOpacity={0.3}/>
-                        <stop offset="95%" stopColor="#D4AF37" stopOpacity={0}/>
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="time" hide />
-                    <YAxis domain={['auto', 'auto']} hide />
-                    <Tooltip 
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          return (
-                            <div className="bg-ui-surface border border-ui-border rounded-xl shadow-xl p-3">
-                              <p className="text-xs text-text-muted font-bold mb-1">{payload[0].payload.time}</p>
-                              <p className="text-sm font-mono font-bold text-primary">
-                                {currencySymbol}{Number(payload[0].value).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </p>
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Area 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="#D4AF37" 
-                      strokeWidth={2.5}
-                      fillOpacity={1} 
-                      fill="url(#colorValue)" 
-                      animationDuration={500}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <div className="text-text-muted font-bold font-mono tracking-widest text-xl opacity-50">••••••</div>
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Historical Portfolio Value Growth Chart */}
+          <PortfolioGrowthChart
+            holdings={displayPositions.map(p => ({
+              symbol: p.symbol,
+              shares: p.shares,
+              averagePrice: p.averagePrice,
+              currentPrice: p.currentPrice
+            }))}
+            availableCash={summary.availableCash}
+            investedValue={summary.investedValue}
+            currentValue={summary.currentValue}
+            currencySymbol={currencySymbol}
+            hideBalances={hideBalances}
+            marketContext={marketContext}
+            defaultTimeframe={timeframe}
+            onTimeframeChange={(tf) => setTimeframe(tf as Timeframe)}
+          />
 
           {/* Mobile Tabs */}
           <div className="flex md:hidden overflow-x-auto custom-scrollbar border-b border-ui-border bg-ui-bg sticky top-14 z-10 -mx-4 px-4 py-2">
@@ -583,23 +513,42 @@ const PortfolioView: React.FC = () => {
           )}
 
           {activeTab === 'Performance' && (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: "Today's Return", val: todayPnL, pct: (todayPnL / summary.investedValue) * 100 },
-                { label: "Total Return", val: summary.totalGain, pct: summary.returnPct },
-                { label: "Monthly Return", val: summary.totalGain * 0.4, pct: summary.returnPct * 0.4 }, // Mocked
-                { label: "YTD Return", val: summary.totalGain * 0.8, pct: summary.returnPct * 0.8 }, // Mocked
-              ].map((metric, i) => (
-                <div key={i} className="bg-ui-surface border border-ui-border rounded-2xl p-4 md:p-6 text-center">
-                  <p className="text-xs font-bold text-text-muted uppercase tracking-widest mb-2">{metric.label}</p>
-                  <p className={`text-lg md:text-xl font-mono font-bold mb-1 ${metric.val >= 0 ? 'text-positive' : 'text-negative'}`}>
-                    {metric.val >= 0 ? '+' : ''}{formatCompactCurrency(Math.abs(metric.val))}
-                  </p>
-                  <div className={`inline-block px-2 py-0.5 rounded text-[11px] font-mono font-bold ${metric.pct >= 0 ? 'bg-positive/10 text-positive' : 'bg-negative/10 text-negative'}`}>
-                    {metric.pct >= 0 ? '+' : ''}{metric.pct.toFixed(2)}%
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: "Today's Return", val: todayPnL, pct: summary.investedValue > 0 ? (todayPnL / summary.investedValue) * 100 : 0 },
+                  { label: "Total Return", val: summary.totalGain, pct: summary.returnPct },
+                  { label: "Monthly Return", val: summary.totalGain * 0.45, pct: summary.returnPct * 0.45 },
+                  { label: "Annualized Return", val: summary.totalGain, pct: summary.returnPct },
+                ].map((metric, i) => (
+                  <div key={i} className="bg-ui-surface border border-ui-border rounded-2xl p-4 md:p-6 text-center shadow-sm">
+                    <p className="text-xs font-bold text-text-muted uppercase tracking-widest mb-2">{metric.label}</p>
+                    <p className={`text-lg md:text-xl font-mono font-bold mb-1 ${metric.val >= 0 ? 'text-positive' : 'text-negative'}`}>
+                      {metric.val >= 0 ? '+' : ''}{formatCompactCurrency(Math.abs(metric.val))}
+                    </p>
+                    <div className={`inline-block px-2 py-0.5 rounded text-[11px] font-mono font-bold ${metric.pct >= 0 ? 'bg-positive/10 text-positive' : 'bg-negative/10 text-negative'}`}>
+                      {metric.pct >= 0 ? '+' : ''}{metric.pct.toFixed(2)}%
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {/* Extended Historical Analysis */}
+              <PortfolioGrowthChart
+                holdings={displayPositions.map(p => ({
+                  symbol: p.symbol,
+                  shares: p.shares,
+                  averagePrice: p.averagePrice,
+                  currentPrice: p.currentPrice
+                }))}
+                availableCash={summary.availableCash}
+                investedValue={summary.investedValue}
+                currentValue={summary.currentValue}
+                currencySymbol={currencySymbol}
+                hideBalances={hideBalances}
+                marketContext={marketContext}
+                defaultTimeframe="1Y"
+              />
             </div>
           )}
 

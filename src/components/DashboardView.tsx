@@ -243,13 +243,6 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
               </div>
               <p className="text-[10px] font-bold uppercase tracking-wider text-text-muted">Available Cash</p>
             </div>
-            <button 
-              onClick={() => addFunds(isIndia ? 100000 : 10000, currencySymbol)} 
-              className="text-primary hover:bg-ui-surface-hover p-1 rounded-lg transition-colors border border-transparent hover:border-primary/30" 
-              title="Add virtual funds"
-            >
-              <Plus size={13} strokeWidth={2.5} />
-            </button>
           </div>
           <p className="text-xl xl:text-2xl font-mono font-bold text-text-main leading-none mb-2">
             {currencySymbol}{summary.availableCash.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
