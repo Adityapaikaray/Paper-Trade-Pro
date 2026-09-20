@@ -1231,13 +1231,13 @@ app.get("/api/market-status", (req, res) => {
 
 // Key global and domestic indices
 const KEY_INDICES = [
-  { key: "dow", name: "Dow Jones", symbol: "^DJI", displaySymbol: "DOW 30", region: "US", currency: "$", baselinePrice: 52064.10, baselineChange: -316.60, baselinePct: -0.60 },
-  { key: "sandp500", name: "S&P 500", symbol: "^GSPC", displaySymbol: "S&P 500", region: "US", currency: "$", baselinePrice: 7591.70, baselineChange: -44.66, baselinePct: -0.58 },
-  { key: "nasdaq", name: "Nasdaq", symbol: "^IXIC", displaySymbol: "NASDAQ", region: "US", currency: "$", baselinePrice: 26081.72, baselineChange: -171.62, baselinePct: -0.65 },
-  { key: "dax", name: "DAX 40", symbol: "^GDAXI", displaySymbol: "DAX", region: "Europe", currency: "€", baselinePrice: 25361.15, baselineChange: -215.25, baselinePct: -0.84 },
-  { key: "nifty", name: "Nifty 50", symbol: "^NSEI", displaySymbol: "NIFTY 50", region: "India", currency: "₹", baselinePrice: 23349.20, baselineChange: -128.60, baselinePct: -0.55 },
-  { key: "sensex", name: "BSE Sensex", symbol: "^BSESN", displaySymbol: "SENSEX", region: "India", currency: "₹", baselinePrice: 74541.24, baselineChange: -361.35, baselinePct: -0.48 },
-  { key: "niftybank", name: "Nifty Bank", symbol: "^NSEBANK", displaySymbol: "BANK NIFTY", region: "India", currency: "₹", baselinePrice: 56154.30, baselineChange: -317.65, baselinePct: -0.56 }
+  { key: "dow", name: "Dow Jones", symbol: "^DJI", displaySymbol: "DOW 30", region: "US", currency: "$", baselinePrice: 51682.64, baselineChange: -95.40, baselinePct: -0.18 },
+  { key: "sandp500", name: "S&P 500", symbol: "^GSPC", displaySymbol: "S&P 500", region: "US", currency: "$", baselinePrice: 7650.50, baselineChange: 12.74, baselinePct: 0.17 },
+  { key: "nasdaq", name: "Nasdaq", symbol: "^IXIC", displaySymbol: "NASDAQ", region: "US", currency: "$", baselinePrice: 26522.55, baselineChange: 104.24, baselinePct: 0.39 },
+  { key: "dax", name: "DAX 40", symbol: "^GDAXI", displaySymbol: "DAX", region: "Europe", currency: "€", baselinePrice: 25304.06, baselineChange: -233.74, baselinePct: -0.92 },
+  { key: "nifty", name: "Nifty 50", symbol: "^NSEI", displaySymbol: "NIFTY 50", region: "India", currency: "₹", baselinePrice: 23346.40, baselineChange: 75.80, baselinePct: 0.33 },
+  { key: "sensex", name: "BSE Sensex", symbol: "^BSESN", displaySymbol: "SENSEX", region: "India", currency: "₹", baselinePrice: 74294.96, baselineChange: -41.54, baselinePct: -0.06 },
+  { key: "niftybank", name: "Nifty Bank", symbol: "^NSEBANK", displaySymbol: "BANK NIFTY", region: "India", currency: "₹", baselinePrice: 56358.70, baselineChange: 302.95, baselinePct: 0.54 }
 ];
 
 
@@ -1593,7 +1593,8 @@ app.get("/api/quotes", async (req, res) => {
   if (!symbolsParam || typeof symbolsParam !== 'string') return res.status(400).json({ error: "No symbols" });
   
   const pairs = symbolsParam.split(',').map(s => {
-    const parts = s.split(':');
+    const decoded = decodeURIComponent(s).trim();
+    const parts = decoded.split(':');
     return parts.length === 2 ? { exchange: parts[0], symbol: parts[1] } : { exchange: 'NSE', symbol: parts[0] };
   });
   

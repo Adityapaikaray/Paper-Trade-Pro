@@ -1,16 +1,20 @@
 import yf from 'yahoo-finance2';
-const yahooFinance = new (yf as any)();
-
-
+const YahooFinanceClass = (yf as any).default || yf;
+const yahooFinance = new YahooFinanceClass({ suppressNotices: ['yahooSurvey'] });
 
 import { MarketDataProvider, MarketQuote, HistoricalCandle } from './provider.ts';
 
 export class YahooProvider implements MarketDataProvider {
   
   private formatSymbol(exchange: string, symbol: string) {
-    if (exchange.toUpperCase() === 'NSE') return `${symbol}.NS`;
-    if (exchange.toUpperCase() === 'BSE') return `${symbol}.BO`;
-    return symbol;
+    const s = decodeURIComponent(symbol).trim();
+    if (s.startsWith('^') || s === 'GC=F' || s === 'SI=F' || s === 'SPY') return s;
+    if (s === 'GOLD' || s === 'XAU/USD') return 'GC=F';
+    if (s === 'SILVER' || s === 'XAG/USD') return 'SI=F';
+    if (s === 'TATAMOTORS' || s === 'TATAMOTORS:NSE') return 'TMCV.NS';
+    if (exchange.toUpperCase() === 'NSE') return `${s}.NS`;
+    if (exchange.toUpperCase() === 'BSE') return `${s}.BO`;
+    return s;
   }
 
   async getQuote(exchange: string, symbol: string): Promise<MarketQuote | null> {
@@ -21,7 +25,7 @@ export class YahooProvider implements MarketDataProvider {
       return {
         symbol: symbol,
         exchange: exchange.toUpperCase(),
-        price: result.regularMarketPrice || 0,
+        price: result.regularMarketPrice ?? result.regularMarketPreviousClose ?? 0,
         change: result.regularMarketChange || 0,
         changePercent: result.regularMarketChangePercent || 0,
         open: result.regularMarketOpen || 0,
@@ -63,7 +67,7 @@ export class YahooProvider implements MarketDataProvider {
             const rawSymbol = result.symbol.replace('.NS', '').replace('.BO', '');
 
             const quoteObj: MarketQuote = {
-              symbol: rawSymbol,
+              symbol: rawSymbol === 'TMCV' ? 'TATAMOTORS' : rawSymbol,
               exchange,
               price: result.regularMarketPrice ?? result.regularMarketPreviousClose ?? 0,
               change: result.regularMarketChange ?? 0,
@@ -84,6 +88,14 @@ export class YahooProvider implements MarketDataProvider {
             records[`${exchange}:${rawSymbol}`] = quoteObj;
             records[`${result.symbol}`] = quoteObj;
             records[`${rawSymbol}`] = quoteObj;
+            records[`UNKNOWN:${result.symbol}`] = quoteObj;
+            
+            if (rawSymbol === 'TMCV') {
+              records['NSE:TATAMOTORS'] = quoteObj;
+              records['TATAMOTORS'] = quoteObj;
+              records['TMCV.NS'] = quoteObj;
+            }
+
             if (!isIndian) {
               records[`US:${rawSymbol}`] = quoteObj;
               records[`NASDAQ:${rawSymbol}`] = quoteObj;

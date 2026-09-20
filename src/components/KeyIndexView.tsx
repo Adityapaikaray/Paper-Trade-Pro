@@ -20,10 +20,12 @@ import {
   Clock,
   Layers,
   ArrowUpRight,
-  Sparkles
+  Sparkles,
+  LayoutGrid
 } from 'lucide-react';
 import { IndexQuote, Stock } from '../types.ts';
 import IndexChart from './IndexChart.tsx';
+import StockHeatmapView from './StockHeatmapView.tsx';
 
 interface KeyIndexViewProps {
   onTrade?: (stock: Stock) => void;
@@ -44,6 +46,7 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
   const { indices, indexTicks, stocks, isLive, lastUpdated, refresh, isLoading, marketStatus } = useMarketData();
   const { marketContext } = usePortfolio();
   const [selectedKey, setSelectedKey] = useState<string>('dow');
+  const [viewMode, setViewMode] = useState<'chart' | 'heatmap'>('chart');
   const [regionFilter, setRegionFilter] = useState<string>(marketContext === 'IN' ? 'India' : (marketContext === 'US' ? 'US' : 'ALL'));
 
   React.useEffect(() => {
@@ -127,6 +130,32 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
             </div>
           </div>
 
+          {/* View Mode Toggle: Charts vs Stock Heatmap */}
+          <div className="flex items-center bg-ui-surface border border-ui-border rounded-2xl p-1 shadow-sm">
+            <button
+              onClick={() => setViewMode('chart')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
+                viewMode === 'chart'
+                  ? 'bg-primary text-ui-bg font-black shadow-xs'
+                  : 'text-text-muted hover:text-text-main'
+              }`}
+            >
+              <BarChart3 size={14} />
+              <span>Real-Time Charts</span>
+            </button>
+            <button
+              onClick={() => setViewMode('heatmap')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all ${
+                viewMode === 'heatmap'
+                  ? 'bg-primary text-ui-bg font-black shadow-xs'
+                  : 'text-text-muted hover:text-text-main'
+              }`}
+            >
+              <LayoutGrid size={14} />
+              <span>Stock Heatmap</span>
+            </button>
+          </div>
+
           <button
             id="key-index-refresh-btn"
             onClick={() => refresh()}
@@ -139,6 +168,10 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
         </div>
       </header>
 
+      {viewMode === 'heatmap' ? (
+        <StockHeatmapView defaultIndexKey={selectedKey} onTrade={onTrade} embedded={true} />
+      ) : (
+        <>
       {/* Hero Featured Index Chart Section */}
       {selectedIndex && (
         <section id="hero-index-chart-section" className="bg-ui-surface border border-ui-border rounded-3xl p-8 shadow-2xl backdrop-blur-2xl relative overflow-hidden">
@@ -560,6 +593,32 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
           </table>
         </div>
       </section>
+
+      {/* Quick Treemap Heatmap Navigation Callout */}
+      <div className="p-6 rounded-3xl bg-ui-surface border border-ui-border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0">
+            <LayoutGrid size={20} />
+          </div>
+          <div>
+            <h4 className="text-sm font-serif italic font-bold text-text-main">
+              Visual Treemap of Index Constituents
+            </h4>
+            <p className="text-xs font-mono text-text-muted">
+              Analyze market capitalization weighting and sector distributions in the interactive Stock Heatmap.
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setViewMode('heatmap')}
+          className="px-4 py-2 rounded-xl bg-primary hover:bg-primary-light text-ui-bg font-mono font-bold text-xs shadow-xs transition-all flex items-center gap-2 shrink-0"
+        >
+          <span>Open Stock Heatmap</span>
+          <span>&rarr;</span>
+        </button>
+      </div>
+      </>
+      )}
     </div>
   );
 };

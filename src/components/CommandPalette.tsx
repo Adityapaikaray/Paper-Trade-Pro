@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Command, X, TrendingUp, TrendingDown, LayoutDashboard, Briefcase, History, Settings, Moon, Sun, ArrowRight, BarChart3 } from 'lucide-react';
+import { Search, Command, X, TrendingUp, TrendingDown, LayoutDashboard, Briefcase, History, Settings, Moon, Sun, ArrowRight, BarChart3, LayoutGrid } from 'lucide-react';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { Stock } from '../types.ts';
 import { useTheme } from '../contexts/ThemeContext.tsx';
@@ -34,6 +34,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
 
   const navigationItems = [
     { id: 'dashboard', label: 'Go to Dashboard', icon: LayoutDashboard, category: 'Navigation' },
+    { id: 'heatmap', label: 'Go to Stock Heatmap of Index (Treemap & Constituents)', icon: LayoutGrid, category: 'Navigation' },
     { id: 'key-index', label: 'Go to Key Index (All Indices & Live Graphs)', icon: BarChart3, category: 'Navigation' },
     { id: 'market', label: 'Go to Market', icon: TrendingUp, category: 'Navigation' },
     { id: 'portfolio', label: 'Go to Portfolio', icon: Briefcase, category: 'Navigation' },

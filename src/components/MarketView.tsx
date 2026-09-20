@@ -5,9 +5,10 @@ import { motion } from 'framer-motion';
  */
 
 import React, { useMemo } from 'react';
-import { Search, Star, TrendingUp, TrendingDown, PlusCircle, Bell, ChevronDown, ChevronUp, RefreshCw, Radio, Clock, Globe } from 'lucide-react';
+import { Search, Star, TrendingUp, TrendingDown, PlusCircle, Bell, ChevronDown, ChevronUp, RefreshCw, Radio, Clock, Globe, LayoutGrid } from 'lucide-react';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { useNavigation } from '../contexts/NavigationContext.tsx';
 import { getRegionalMarketStatus } from '../utils/marketHours.ts';
 import { formatCurrency } from '../utils/formatters.ts';
 import { Stock } from '../types.ts';
@@ -22,6 +23,7 @@ interface MarketViewProps {
 const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
   const { stocks, isLive, lastUpdated, priceTicks, refresh, isLoading, marketStatus } = useMarketData();
   const { toggleWatchlist, isWatchlisted, marketContext } = usePortfolio();
+  const { navigate } = useNavigation();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [selectedExchange, setSelectedExchange] = React.useState('All');
   const [selectedSector, setSelectedSector] = React.useState('All');
@@ -113,6 +115,15 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
             >
               <RefreshCw size={13} className={isLoading ? 'animate-spin text-primary' : ''} />
               <span>{formattedTime}</span>
+            </button>
+
+            <button
+              onClick={() => navigate('heatmap')}
+              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-primary/10 hover:bg-primary/20 border border-primary/30 text-primary transition-all text-[9px] font-black uppercase tracking-wider shadow-sm w-full md:w-auto mt-2 md:mt-0"
+              title="Open Stock Heatmap of Index"
+            >
+              <LayoutGrid size={13} />
+              <span>Index Heatmap</span>
             </button>
           </div>
         </div>

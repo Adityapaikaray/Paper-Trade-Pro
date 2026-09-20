@@ -17,7 +17,9 @@ export type RouteId =
   | 'research'
   | 'tools'
   | 'news'
-  | 'login';
+  | 'login'
+  | 'key-index'
+  | 'heatmap';
 
 export interface RouteState {
   id: RouteId;
@@ -51,7 +53,7 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
        if (id === 'dashboard' || id === 'market' || id === 'portfolio' || id === 'wealth' || id === 'more') {
          return id as TopLevelTab;
        }
-       if (['orders', 'watchlist', 'alerts', 'transactions', 'settings', 'help', 'analytics', 'research', 'tools', 'news'].includes(id)) {
+       if (['orders', 'watchlist', 'alerts', 'transactions', 'settings', 'help', 'analytics', 'research', 'tools', 'news', 'heatmap', 'key-index'].includes(id)) {
          return 'more';
        }
     }

@@ -24,6 +24,7 @@ const ToolsView = lazy(() => import('./components/ToolsView.tsx').then(m => ({ d
 const HistoryView = lazy(() => import('./components/HistoryView.tsx'));
 const NewsView = lazy(() => import('./components/NewsView.tsx'));
 const HelpSupportView = lazy(() => import('./components/HelpSupportView.tsx'));
+const StockHeatmapView = lazy(() => import('./components/StockHeatmapView.tsx'));
 
 import TradeView from './components/TradeView.tsx';
 import NotificationManager from './components/NotificationManager.tsx';
@@ -85,7 +86,8 @@ function AppContent() {
       watchlist: 'Watchlist',
       transactions: 'Transactions',
       settings: 'Settings',
-      help: 'Help & Support'
+      help: 'Help & Support',
+      heatmap: 'Index Heatmap'
     };
     const pageName = titles[currentRoute.id] || currentRoute.id.charAt(0).toUpperCase() + currentRoute.id.slice(1);
     document.title = `TradePro — ${pageName}`;
@@ -147,6 +149,8 @@ function AppContent() {
         return <SettingsView />;
       case 'help':
         return <HelpSupportView />;
+      case 'heatmap':
+        return <StockHeatmapView onTrade={handleTrade} />;
       default:
         return <DashboardView onTrade={handleTrade} />;
     }
