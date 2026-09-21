@@ -8,596 +8,803 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutGrid,
   Search,
-  SlidersHorizontal,
-  TrendingUp,
-  TrendingDown,
-  RefreshCw,
-  Maximize2,
-  Minimize2,
-  ExternalLink,
   ChevronDown,
-  Info,
   Layers,
   ArrowUpRight,
   ArrowDownRight,
-  Sparkles,
-  Zap,
   Globe,
   Filter,
   Check,
   Star,
-  Activity
+  Activity,
+  Maximize2,
+  Minimize2,
+  RefreshCw,
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Sparkles,
+  BarChart2,
+  SlidersHorizontal,
+  X,
+  PieChart,
+  Eye
 } from 'lucide-react';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
-import { INITIAL_INDICES } from '../contexts/MarketContext.tsx';
-import { MOCK_STOCKS } from '../constants.ts';
-import { Stock, IndexQuote } from '../types.ts';
+import { Stock } from '../types.ts';
 import {
   INDEX_HEATMAP_CONFIG,
-  parseMarketCapToNumber,
+  INDIA_INDEX_KEYS,
+  US_INDEX_KEYS,
+  IndexDefinition,
+  IndexConstituent,
   getPerformanceHeatColor,
-  IndexDefinition
+  calculateTimeframeReturn,
+  parseMarketCapToNumber,
+  parseVolumeToNumber
 } from '../data/indexHeatmapData.ts';
 import { formatCurrency, formatCompactCurrency } from '../utils/formatters.ts';
+import { PositionDetailsModal } from './PositionDetailsModal.tsx';
 
 interface StockHeatmapViewProps {
   onTrade?: (stock: Stock, side?: 'BUY' | 'SELL') => void;
   defaultIndexKey?: string;
-  embedded?: boolean; // When rendered inside KeyIndexView or a widget
+  embedded?: boolean;
 }
 
-type SizingMode = 'market_cap' | 'equal';
+type SizingMode = 'weight' | 'market_cap' | 'volume';
 type DirectionFilter = 'all' | 'gainers' | 'losers' | 'high_movers';
-type TimeframeMetric = '1D' | '1W' | '1M' | 'VOL';
+type TimeframeMetric = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y';
+type HeatmapMode = 'stocks' | 'sectors';
+
+const RECENT_INDEX_KEY = 'tradepro_recent_heatmap_index';
+const FAVORITE_INDICES_KEY = 'tradepro_favorite_indices';
 
 export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
   onTrade,
   defaultIndexKey,
   embedded = false
 }) => {
-  const { stocks, indices, priceTicks, indexTicks, isLive, lastUpdated, refresh, isLoading } = useMarketData();
-  const { marketContext, toggleWatchlist, isWatchlisted } = usePortfolio();
+  const { stocks, indices, isLive, lastUpdated, refresh, isLoading, marketStatus } = useMarketData();
+  const { marketContext, setMarketContext, toggleWatchlist, isWatchlisted } = usePortfolio();
 
-  // Determine initial index
+  // Favorite indices stored in local preferences
+  const [favoriteIndices, setFavoriteIndices] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(FAVORITE_INDICES_KEY);
+      return saved ? JSON.parse(saved) : ['nifty', 'sandp500', 'niftybank', 'nasdaq'];
+    } catch {
+      return ['nifty', 'sandp500', 'niftybank', 'nasdaq'];
+    }
+  });
+
+  const toggleFavorite = (indexId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setFavoriteIndices(prev => {
+      const next = prev.includes(indexId) ? prev.filter(k => k !== indexId) : [...prev, indexId];
+      try {
+        localStorage.setItem(FAVORITE_INDICES_KEY, JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  // Determine initial index selection
   const initialIndexKey = useMemo(() => {
     if (defaultIndexKey && INDEX_HEATMAP_CONFIG[defaultIndexKey]) {
       return defaultIndexKey;
     }
-    if (marketContext === 'IN') {
-      return 'nifty';
-    }
-    return 'sandp500';
+    try {
+      const saved = sessionStorage.getItem(RECENT_INDEX_KEY);
+      if (saved && INDEX_HEATMAP_CONFIG[saved]) {
+        // Only restore if compatible with market context or if all
+        const config = INDEX_HEATMAP_CONFIG[saved];
+        if (marketContext === 'IN' && config.region === 'IN') return saved;
+        if (marketContext === 'US' && config.region === 'US') return saved;
+      }
+    } catch {}
+
+    return marketContext === 'IN' ? 'nifty' : 'sandp500';
   }, [defaultIndexKey, marketContext]);
 
   const [selectedIndexKey, setSelectedIndexKey] = useState<string>(initialIndexKey);
-  const [regionFilter, setRegionFilter] = useState<'ALL' | 'US' | 'IN'>(
-    marketContext === 'IN' ? 'IN' : marketContext === 'US' ? 'US' : 'ALL'
+  const [activeMarketRegion, setActiveMarketRegion] = useState<'IN' | 'US' | 'ALL'>(
+    marketContext === 'IN' ? 'IN' : marketContext === 'US' ? 'US' : 'IN'
   );
+
+  const [heatmapMode, setHeatmapMode] = useState<HeatmapMode>('stocks');
   const [selectedSector, setSelectedSector] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [sizingMode, setSizingMode] = useState<SizingMode>('market_cap');
+  const [sizingMode, setSizingMode] = useState<SizingMode>('weight');
   const [directionFilter, setDirectionFilter] = useState<DirectionFilter>('all');
   const [timeframeMetric, setTimeframeMetric] = useState<TimeframeMetric>('1D');
-  const [hoveredStock, setHoveredStock] = useState<Stock | null>(null);
-  const [mousePos, setMousePos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [pinnedStock, setPinnedStock] = useState<Stock | null>(null);
+  const [hoveredStock, setHoveredStock] = useState<IndexConstituent | null>(null);
+  const [inspectedConstituent, setInspectedConstituent] = useState<IndexConstituent | null>(null);
+  const [detailModalStock, setDetailModalStock] = useState<Stock | null>(null);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState<boolean>(false);
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
 
-  // Sync index if market context changes and no custom index is locked
+  // Close "MORE" popover on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target as Node)) {
+        setIsMoreMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Sync market context when activeMarketRegion changes
+  const handleMarketRegionChange = (region: 'IN' | 'US' | 'ALL') => {
+    setActiveMarketRegion(region);
+    if (region === 'IN') {
+      if (marketContext !== 'IN') setMarketContext('IN');
+      if (INDEX_HEATMAP_CONFIG[selectedIndexKey]?.region !== 'IN') {
+        const target = favoriteIndices.find(k => INDEX_HEATMAP_CONFIG[k]?.region === 'IN') || 'nifty';
+        setSelectedIndexKey(target);
+      }
+    } else if (region === 'US') {
+      if (marketContext !== 'US') setMarketContext('US');
+      if (INDEX_HEATMAP_CONFIG[selectedIndexKey]?.region !== 'US') {
+        const target = favoriteIndices.find(k => INDEX_HEATMAP_CONFIG[k]?.region === 'US') || 'sandp500';
+        setSelectedIndexKey(target);
+      }
+    }
+  };
+
+  // Sync index if external market context changes
   useEffect(() => {
     if (!defaultIndexKey) {
-      if (marketContext === 'IN' && selectedIndexKey !== 'nifty' && selectedIndexKey !== 'sensex' && selectedIndexKey !== 'niftybank') {
+      if (marketContext === 'IN' && INDEX_HEATMAP_CONFIG[selectedIndexKey]?.region !== 'IN') {
         setSelectedIndexKey('nifty');
-        setRegionFilter('IN');
-      } else if (marketContext === 'US' && selectedIndexKey !== 'sandp500' && selectedIndexKey !== 'nasdaq' && selectedIndexKey !== 'dow') {
+        setActiveMarketRegion('IN');
+      } else if (marketContext === 'US' && INDEX_HEATMAP_CONFIG[selectedIndexKey]?.region !== 'US') {
         setSelectedIndexKey('sandp500');
-        setRegionFilter('US');
+        setActiveMarketRegion('US');
       }
     }
   }, [marketContext, defaultIndexKey]);
 
-  const currentIndexConfig = INDEX_HEATMAP_CONFIG[selectedIndexKey] || INDEX_HEATMAP_CONFIG.sandp500;
-  
-  // Real-time Index quote object from market data
-  const currentIndexQuote = useMemo(() => {
-    return indices.find(idx => idx.key === selectedIndexKey) || 
-           INITIAL_INDICES.find(idx => idx.key === selectedIndexKey) || {
-      key: currentIndexConfig.id,
-      name: currentIndexConfig.name,
-      symbol: currentIndexConfig.symbol,
-      displaySymbol: currentIndexConfig.displaySymbol,
-      region: currentIndexConfig.region === 'IN' ? 'India' : 'US',
-      currency: currentIndexConfig.currency,
-      price: currentIndexConfig.region === 'IN' ? 23346.40 : 7650.50,
-      change: currentIndexConfig.region === 'IN' ? 75.80 : 12.74,
-      percentChange: currentIndexConfig.region === 'IN' ? 0.33 : 0.17
-    };
-  }, [indices, selectedIndexKey, currentIndexConfig]);
+  // Persist recent index
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(RECENT_INDEX_KEY, selectedIndexKey);
+    } catch {}
+  }, [selectedIndexKey]);
 
-  // Resolve constituent stocks with live data
-  const resolvedConstituents = useMemo(() => {
-    const symbolList = currentIndexConfig.constituentSymbols;
-    return symbolList.map(sym => {
-      // Find matching stock from real-time stocks feed or baseline mock stocks
-      const matched = stocks.find(s => 
-        s.symbol.toUpperCase() === sym.toUpperCase() ||
-        s.symbol.toUpperCase().startsWith(`${sym.toUpperCase()}:`) ||
-        s.symbol.toUpperCase() === `${sym.toUpperCase()}:NSE` ||
-        (sym.toUpperCase() === 'TATAMOTORS' && (s.symbol.toUpperCase() === 'TMCV' || s.symbol.toUpperCase() === 'TATAMOTORS'))
-      ) || MOCK_STOCKS.find(s =>
-        s.symbol.toUpperCase() === sym.toUpperCase() ||
-        s.symbol.toUpperCase() === `${sym.toUpperCase()}:NSE` ||
-        (sym.toUpperCase() === 'TATAMOTORS' && s.symbol.toUpperCase() === 'TATAMOTORS')
+  const currentIndexConfig = INDEX_HEATMAP_CONFIG[selectedIndexKey] || INDEX_HEATMAP_CONFIG.nifty;
+
+  // Resolve live constituent list with live data feed
+  const liveConstituents = useMemo(() => {
+    return currentIndexConfig.constituents.map(base => {
+      const liveMatch = stocks.find(s =>
+        s.symbol.toUpperCase() === base.symbol.toUpperCase() ||
+        s.symbol.toUpperCase() === `${base.symbol.toUpperCase()}:NSE` ||
+        (base.symbol.toUpperCase() === 'TATAMOTORS' && (s.symbol.toUpperCase() === 'TMCV' || s.symbol.toUpperCase() === 'TATAMOTORS'))
       );
 
-      if (matched) return matched;
+      if (!liveMatch) {
+        return {
+          ...base,
+          displayReturn: calculateTimeframeReturn(base, timeframeMetric)
+        };
+      }
 
-      // Fallback stock item
+      // Merge real-time quotes from market context
+      const updated: IndexConstituent = {
+        ...base,
+        price: liveMatch.price ?? base.price,
+        change: liveMatch.change ?? base.change,
+        changePercent: liveMatch.changePercent ?? base.changePercent,
+        volume: liveMatch.volume ?? base.volume,
+        dayHigh: liveMatch.dayHigh ?? base.dayHigh,
+        dayLow: liveMatch.dayLow ?? base.dayLow,
+        prevClose: liveMatch.prevClose ?? base.prevClose,
+        marketCap: liveMatch.marketCap ?? base.marketCap,
+        sector: liveMatch.sector || base.sector
+      };
+
       return {
-        symbol: sym,
-        name: sym,
-        price: currentIndexConfig.currency === '₹' ? 1500 : 180,
-        change: 0.5,
-        changePercent: 0.35,
-        volume: '1.5M',
-        marketCap: currentIndexConfig.currency === '₹' ? '3.5T' : '250B',
-        description: `${sym} equity constituent.`,
-        sector: 'General',
-        country: currentIndexConfig.region === 'IN' ? 'India' : 'USA',
-        currency: currentIndexConfig.currency
-      } as Stock;
+        ...updated,
+        displayReturn: calculateTimeframeReturn(updated, timeframeMetric)
+      };
     });
-  }, [currentIndexConfig, stocks]);
+  }, [currentIndexConfig, stocks, timeframeMetric]);
 
-  // Metric calculation for timeframe / metrics
-  const getMetricValue = (stock: Stock): { percent: number; label: string } => {
-    if (timeframeMetric === '1W') {
-      // Modulate with realistic weekly dispersion based on stock beta
-      const hash = stock.symbol.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-      const mod = ((hash % 10) - 4.5) * 0.4;
-      const pct = Number((stock.changePercent * 1.8 + mod).toFixed(2));
-      return { percent: pct, label: `${pct >= 0 ? '+' : ''}${pct}% 1W` };
+  // Set default inspected constituent when index changes or initialized
+  useEffect(() => {
+    if (liveConstituents.length > 0) {
+      setInspectedConstituent(liveConstituents[0]);
     }
-    if (timeframeMetric === '1M') {
-      const hash = stock.symbol.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-      const mod = ((hash % 12) - 5) * 0.8;
-      const pct = Number((stock.changePercent * 2.5 + mod).toFixed(2));
-      return { percent: pct, label: `${pct >= 0 ? '+' : ''}${pct}% 1M` };
-    }
-    if (timeframeMetric === 'VOL') {
-      // Sized/colored by volume ratio
-      const numCap = parseMarketCapToNumber(stock.marketCap);
-      const volScore = numCap > 1e12 ? 2.5 : numCap > 500e9 ? 1.2 : 0.4;
-      return { percent: volScore, label: stock.volume || 'Norm' };
-    }
+  }, [selectedIndexKey]);
+
+  // Dynamic Index Summary Metrics
+  const indexSummary = useMemo(() => {
+    // Find index in market quotes if available
+    const matchedQuote = indices.find(idx => idx.key === selectedIndexKey);
+
+    let advancing = 0;
+    let declining = 0;
+    let unchanged = 0;
+    let topGainer: IndexConstituent | null = null;
+    let topLoser: IndexConstituent | null = null;
+
+    liveConstituents.forEach(stock => {
+      const ret = stock.displayReturn ?? stock.changePercent;
+      if (ret > 0.001) advancing++;
+      else if (ret < -0.001) declining++;
+      else unchanged++;
+
+      const gainerRet = topGainer ? (topGainer.displayReturn ?? topGainer.changePercent) : -Infinity;
+      if (!topGainer || ret > gainerRet) {
+        topGainer = stock;
+      }
+      const loserRet = topLoser ? (topLoser.displayReturn ?? topLoser.changePercent) : Infinity;
+      if (!topLoser || ret < loserRet) {
+        topLoser = stock;
+      }
+    });
+
+    const currentValue = matchedQuote ? matchedQuote.price : currentIndexConfig.baselinePrice;
+    const absChange = matchedQuote ? matchedQuote.change : currentIndexConfig.baselineChange;
+    const pctChange = matchedQuote ? matchedQuote.percentChange : currentIndexConfig.baselinePercent;
+    const prevClose = currentIndexConfig.prevClose || (currentValue - absChange);
+
     return {
-      percent: stock.changePercent,
-      label: `${stock.changePercent >= 0 ? '+' : ''}${stock.changePercent.toFixed(2)}%`
+      name: currentIndexConfig.name,
+      displaySymbol: currentIndexConfig.displaySymbol,
+      currentValue,
+      absChange,
+      pctChange,
+      prevClose,
+      advancing,
+      declining,
+      unchanged,
+      topGainer,
+      topLoser,
+      region: currentIndexConfig.region,
+      currency: currentIndexConfig.currency
     };
-  };
+  }, [liveConstituents, indices, selectedIndexKey, currentIndexConfig]);
 
-  // Filter constituents by Search, Sector, and Direction
+  // Filtered constituents based on search, sector, and direction
   const filteredConstituents = useMemo(() => {
-    return resolvedConstituents.filter(s => {
-      // Search
+    return liveConstituents.filter(item => {
+      // Search filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matches = s.symbol.toLowerCase().includes(q) || s.name.toLowerCase().includes(q);
+        const matches =
+          item.symbol.toLowerCase().includes(q) ||
+          item.name.toLowerCase().includes(q) ||
+          item.sector.toLowerCase().includes(q);
         if (!matches) return false;
       }
-      // Sector
-      if (selectedSector !== 'ALL' && s.sector !== selectedSector) {
+
+      // Sector filter
+      if (selectedSector !== 'ALL' && item.sector !== selectedSector) {
         return false;
       }
-      // Direction
-      const metric = getMetricValue(s);
-      if (directionFilter === 'gainers' && metric.percent <= 0) return false;
-      if (directionFilter === 'losers' && metric.percent >= 0) return false;
-      if (directionFilter === 'high_movers' && Math.abs(metric.percent) < 1.5) return false;
+
+      // Direction filter
+      const ret = item.displayReturn;
+      if (directionFilter === 'gainers' && ret <= 0) return false;
+      if (directionFilter === 'losers' && ret >= 0) return false;
+      if (directionFilter === 'high_movers' && Math.abs(ret) < 1.5) return false;
 
       return true;
     });
-  }, [resolvedConstituents, searchQuery, selectedSector, directionFilter, timeframeMetric]);
+  }, [liveConstituents, searchQuery, selectedSector, directionFilter]);
 
-  // Group filtered constituents by Sector
+  // Sector groups & Sector Heatmap calculations
   const sectorGroups = useMemo(() => {
-    const groups: Record<string, { stocks: Stock[]; totalCap: number; avgChange: number }> = {};
+    const map: Record<
+      string,
+      {
+        stocks: (IndexConstituent & { displayReturn: number })[];
+        totalWeight: number;
+        totalCap: number;
+        weightedReturnSum: number;
+        avgReturn: number;
+      }
+    > = {};
 
     filteredConstituents.forEach(stock => {
       const sec = stock.sector || 'Other';
-      if (!groups[sec]) {
-        groups[sec] = { stocks: [], totalCap: 0, avgChange: 0 };
+      if (!map[sec]) {
+        map[sec] = {
+          stocks: [],
+          totalWeight: 0,
+          totalCap: 0,
+          weightedReturnSum: 0,
+          avgReturn: 0
+        };
       }
-      groups[sec].stocks.push(stock);
-      groups[sec].totalCap += parseMarketCapToNumber(stock.marketCap);
+      map[sec].stocks.push(stock);
+      map[sec].totalWeight += stock.weight;
+      map[sec].totalCap += parseMarketCapToNumber(stock.marketCap);
+      map[sec].weightedReturnSum += stock.displayReturn * stock.weight;
     });
 
-    // Compute average change for each sector & sort stocks within sector by market cap
-    Object.keys(groups).forEach(sec => {
-      const g = groups[sec];
-      const sumChange = g.stocks.reduce((sum, s) => sum + getMetricValue(s).percent, 0);
-      g.avgChange = g.stocks.length > 0 ? Number((sumChange / g.stocks.length).toFixed(2)) : 0;
-      // Sort constituents inside sector by market cap descending
-      g.stocks.sort((a, b) => parseMarketCapToNumber(b.marketCap) - parseMarketCapToNumber(a.marketCap));
+    // Compute averages and sort
+    Object.keys(map).forEach(sec => {
+      const g = map[sec];
+      g.avgReturn =
+        g.totalWeight > 0
+          ? Number((g.weightedReturnSum / g.totalWeight).toFixed(2))
+          : Number((g.stocks.reduce((acc, s) => acc + s.displayReturn, 0) / g.stocks.length).toFixed(2));
+
+      // Sort constituents inside sector by selected sizing method
+      g.stocks.sort((a, b) => {
+        if (sizingMode === 'weight') return b.weight - a.weight;
+        if (sizingMode === 'volume') return parseVolumeToNumber(b.volume) - parseVolumeToNumber(a.volume);
+        return parseMarketCapToNumber(b.marketCap) - parseMarketCapToNumber(a.marketCap);
+      });
     });
 
-    // Sort sectors by total market cap descending
-    return Object.entries(groups).sort((a, b) => b[1].totalCap - a[1].totalCap);
-  }, [filteredConstituents, timeframeMetric]);
+    // Sort sectors by total weight descending
+    return Object.entries(map).sort((a, b) => b[1].totalWeight - a[1].totalWeight);
+  }, [filteredConstituents, sizingMode]);
 
-  // Index-level statistics
-  const indexBreadth = useMemo(() => {
-    let gainers = 0;
-    let losers = 0;
-    let unchanged = 0;
-    let topGainer: Stock | null = null;
-    let topLoser: Stock | null = null;
-
-    resolvedConstituents.forEach(s => {
-      const metric = getMetricValue(s).percent;
-      if (metric > 0.05) gainers++;
-      else if (metric < -0.05) losers++;
-      else unchanged++;
-
-      if (!topGainer || metric > getMetricValue(topGainer).percent) {
-        topGainer = s;
-      }
-      if (!topLoser || metric < getMetricValue(topLoser).percent) {
-        topLoser = s;
-      }
-    });
-
-    const total = resolvedConstituents.length || 1;
-    const gainPct = Math.round((gainers / total) * 100);
-    const losePct = Math.round((losers / total) * 100);
-
-    return { gainers, losers, unchanged, total, gainPct, losePct, topGainer, topLoser };
-  }, [resolvedConstituents, timeframeMetric]);
-
-  // Unique list of available sectors for current index
+  // Dynamic available sectors for the selected index
   const availableSectors = useMemo(() => {
-    const set = new Set(resolvedConstituents.map(s => s.sector).filter(Boolean));
+    const set = new Set(liveConstituents.map(s => s.sector).filter(Boolean));
     return ['ALL', ...Array.from(set).sort()];
-  }, [resolvedConstituents]);
+  }, [liveConstituents]);
 
-  const activeInspectStock = pinnedStock || hoveredStock || resolvedConstituents[0] || null;
-
-  // Toggle fullscreen container mode
-  const toggleFullscreen = () => {
-    if (!containerRef.current) return;
-    if (!isFullscreen) {
-      if (containerRef.current.requestFullscreen) {
-        containerRef.current.requestFullscreen();
-      }
-      setIsFullscreen(true);
-    } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      }
-      setIsFullscreen(false);
-    }
+  // Convert constituent to standard Stock object for Trading & Modal
+  const constituentToStock = (item: IndexConstituent): Stock => {
+    return {
+      symbol: item.symbol,
+      name: item.name,
+      price: item.price,
+      change: item.change,
+      changePercent: item.changePercent,
+      volume: item.volume,
+      marketCap: item.marketCap,
+      description: `${item.name} (${item.symbol}) constituent of ${currentIndexConfig.name}.`,
+      sector: item.sector,
+      country: currentIndexConfig.region === 'IN' ? 'India' : 'USA',
+      currency: currentIndexConfig.currency,
+      dayHigh: item.dayHigh,
+      dayLow: item.dayLow,
+      prevClose: item.prevClose
+    };
   };
 
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+  // Click & Double click handlers
+  const handleTileSingleClick = (item: IndexConstituent) => {
+    setInspectedConstituent(item);
+  };
+
+  const handleTileDoubleClick = (item: IndexConstituent) => {
+    setInspectedConstituent(item);
+    setDetailModalStock(constituentToStock(item));
+  };
+
+  // Quick comparison row indices
+  const quickIndicesList = useMemo(() => {
+    if (activeMarketRegion === 'IN') {
+      return INDIA_INDEX_KEYS.slice(0, 4).map(k => INDEX_HEATMAP_CONFIG[k]);
+    }
+    if (activeMarketRegion === 'US') {
+      return US_INDEX_KEYS.map(k => INDEX_HEATMAP_CONFIG[k]);
+    }
+    return [
+      INDEX_HEATMAP_CONFIG.nifty,
+      INDEX_HEATMAP_CONFIG.sensex,
+      INDEX_HEATMAP_CONFIG.sandp500,
+      INDEX_HEATMAP_CONFIG.nasdaq
+    ];
+  }, [activeMarketRegion]);
+
+  // Available primary tabs and "MORE" indices for India
+  const indiaPrimaryKeys = INDIA_INDEX_KEYS.slice(0, 8);
+  const indiaMoreKeys = INDIA_INDEX_KEYS.slice(8);
+
+  const activeInspect = inspectedConstituent || liveConstituents[0] || null;
+  const isInspectedWatchlisted = activeInspect ? isWatchlisted(activeInspect.symbol) : false;
+
+  // Market status label
+  const sessionStatus = useMemo(() => {
+    if (currentIndexConfig.region === 'IN') {
+      return marketStatus.nse.toUpperCase().includes('OPEN') ? 'LIVE' : 'MARKET CLOSED';
+    }
+    return marketStatus.nyse.toUpperCase().includes('OPEN') ? 'LIVE' : 'MARKET CLOSED';
+  }, [currentIndexConfig, marketStatus]);
 
   return (
     <div
       ref={containerRef}
-      className={`flex flex-col space-y-6 ${
-        isFullscreen ? 'bg-ui-bg p-6 overflow-y-auto h-screen z-50 fixed inset-0' : ''
+      className={`flex flex-col space-y-5 transition-colors duration-200 ${
+        isFullscreen ? 'bg-ui-bg p-4 sm:p-6 overflow-y-auto h-screen z-50 fixed inset-0' : ''
       }`}
     >
-      {/* 1. Header & Index Selection Controls */}
-      <div className="bg-ui-surface border border-ui-border rounded-3xl p-6 shadow-xl backdrop-blur-xl space-y-6">
-        <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6">
-          {/* Title & Index Badge */}
-          <div className="space-y-1.5">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-lg shadow-primary/5">
-                <LayoutGrid size={22} className="animate-pulse" />
+      {/* 1. Header with Dynamic Title & Region Switcher */}
+      <div className="bg-ui-surface border border-ui-border rounded-2xl p-5 sm:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-1">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-[#C9A227]/15 dark:bg-[#D4AF37]/20 border border-[#C9A227]/30 flex items-center justify-center text-[#C9A227] dark:text-[#D4AF37]">
+              <LayoutGrid size={20} />
+            </div>
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif italic font-black text-text-main tracking-tight uppercase">
+              {currentIndexConfig.displaySymbol} STOCK HEATMAP
+            </h1>
+
+            {/* Session Indicator */}
+            <span
+              className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold tracking-wide border ${
+                sessionStatus === 'LIVE'
+                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                  : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  sessionStatus === 'LIVE' ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'
+                }`}
+              />
+              <span>{sessionStatus}</span>
+            </span>
+          </div>
+
+          <p className="text-xs font-mono text-text-muted">
+            Real-time constituent performance, index weights and sector momentum.
+          </p>
+        </div>
+
+        {/* Global Market Region Filter */}
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <div className="flex items-center p-1 rounded-xl bg-ui-bg border border-ui-border text-xs font-mono font-bold">
+            <button
+              onClick={() => handleMarketRegionChange('IN')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                activeMarketRegion === 'IN'
+                  ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16] shadow-xs'
+                  : 'text-text-muted hover:text-text-main'
+              }`}
+            >
+              <span>🇮🇳</span>
+              <span>India</span>
+            </button>
+            <button
+              onClick={() => handleMarketRegionChange('US')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                activeMarketRegion === 'US'
+                  ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16] shadow-xs'
+                  : 'text-text-muted hover:text-text-main'
+              }`}
+            >
+              <span>🇺🇸</span>
+              <span>U.S.</span>
+            </button>
+            <button
+              onClick={() => handleMarketRegionChange('ALL')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 ${
+                activeMarketRegion === 'ALL'
+                  ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16] shadow-xs'
+                  : 'text-text-muted hover:text-text-main'
+              }`}
+            >
+              <Globe size={13} />
+              <span>All Global</span>
+            </button>
+          </div>
+
+          <button
+            onClick={() => refresh()}
+            disabled={isLoading}
+            title="Refresh Live Feeds"
+            className="p-2 rounded-xl bg-ui-surface border border-ui-border text-text-muted hover:text-text-main hover:border-[#C9A227]/50 transition-colors"
+          >
+            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      </div>
+
+      {/* 2. Top Navigation Index Selector (Item 2, 16, 17) */}
+      <div className="bg-ui-surface border border-ui-border rounded-2xl p-2.5 sm:p-3 shadow-xs">
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-none pb-1 sm:pb-0">
+          {/* U.S. Indices */}
+          {(activeMarketRegion === 'US' || activeMarketRegion === 'ALL') && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              {US_INDEX_KEYS.map(key => {
+                const cfg = INDEX_HEATMAP_CONFIG[key];
+                const isSelected = selectedIndexKey === key;
+                const isFav = favoriteIndices.includes(key);
+
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedIndexKey(key)}
+                    className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap border ${
+                      isSelected
+                        ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16] border-[#C9A227] shadow-xs'
+                        : 'bg-ui-bg/70 text-text-muted hover:text-text-main border-ui-border hover:border-[#C9A227]/40'
+                    }`}
+                  >
+                    <span>{cfg.displaySymbol}</span>
+                    <span
+                      onClick={e => toggleFavorite(key, e)}
+                      className={`text-xs hover:scale-125 transition-transform ${
+                        isFav
+                          ? isSelected
+                            ? 'text-[#14213D] dark:text-[#080D16]'
+                            : 'text-[#C9A227]'
+                          : 'opacity-25 hover:opacity-100'
+                      }`}
+                      title={isFav ? 'Remove favorite' : 'Mark as favorite'}
+                    >
+                      ★
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {activeMarketRegion === 'ALL' && <div className="h-5 w-px bg-ui-border shrink-0 mx-1" />}
+
+          {/* India Indices */}
+          {(activeMarketRegion === 'IN' || activeMarketRegion === 'ALL') && (
+            <div className="flex items-center gap-1.5 shrink-0">
+              {indiaPrimaryKeys.map(key => {
+                const cfg = INDEX_HEATMAP_CONFIG[key];
+                const isSelected = selectedIndexKey === key;
+                const isFav = favoriteIndices.includes(key);
+
+                return (
+                  <button
+                    key={key}
+                    onClick={() => setSelectedIndexKey(key)}
+                    className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-2 whitespace-nowrap border ${
+                      isSelected
+                        ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16] border-[#C9A227] shadow-xs'
+                        : 'bg-ui-bg/70 text-text-muted hover:text-text-main border-ui-border hover:border-[#C9A227]/40'
+                    }`}
+                  >
+                    <span>{cfg.displaySymbol}</span>
+                    <span
+                      onClick={e => toggleFavorite(key, e)}
+                      className={`text-xs hover:scale-125 transition-transform ${
+                        isFav
+                          ? isSelected
+                            ? 'text-[#14213D] dark:text-[#080D16]'
+                            : 'text-[#C9A227]'
+                          : 'opacity-25 hover:opacity-100'
+                      }`}
+                      title={isFav ? 'Remove favorite' : 'Mark as favorite'}
+                    >
+                      ★
+                    </span>
+                  </button>
+                );
+              })}
+
+              {/* MORE ▾ Dropdown */}
+              <div className="relative" ref={moreMenuRef}>
+                <button
+                  onClick={() => setIsMoreMenuOpen(prev => !prev)}
+                  className={`px-3.5 py-1.5 rounded-xl font-mono text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap border ${
+                    indiaMoreKeys.includes(selectedIndexKey)
+                      ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16] border-[#C9A227]'
+                      : 'bg-ui-bg/70 text-text-muted hover:text-text-main border-ui-border hover:border-[#C9A227]/40'
+                  }`}
+                >
+                  <span>
+                    {indiaMoreKeys.includes(selectedIndexKey)
+                      ? INDEX_HEATMAP_CONFIG[selectedIndexKey]?.displaySymbol
+                      : 'MORE'}
+                  </span>
+                  <ChevronDown size={14} className={isMoreMenuOpen ? 'rotate-180 transition-transform' : ''} />
+                </button>
+
+                <AnimatePresence>
+                  {isMoreMenuOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                      transition={{ duration: 0.15 }}
+                      className="absolute left-0 mt-2 w-56 bg-ui-surface border border-ui-border rounded-xl shadow-xl z-50 p-2 space-y-1 backdrop-blur-md"
+                    >
+                      <div className="px-2 py-1 text-[10px] font-mono font-bold text-text-muted uppercase tracking-wider">
+                        Additional Indian Indices
+                      </div>
+                      {indiaMoreKeys.map(key => {
+                        const cfg = INDEX_HEATMAP_CONFIG[key];
+                        const isSelected = selectedIndexKey === key;
+                        const isFav = favoriteIndices.includes(key);
+
+                        return (
+                          <button
+                            key={key}
+                            onClick={() => {
+                              setSelectedIndexKey(key);
+                              setIsMoreMenuOpen(false);
+                            }}
+                            className={`w-full px-3 py-2 rounded-lg text-left font-mono text-xs font-bold transition-colors flex items-center justify-between ${
+                              isSelected
+                                ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16]'
+                                : 'text-text-muted hover:text-text-main hover:bg-ui-bg'
+                            }`}
+                          >
+                            <span>{cfg.displaySymbol}</span>
+                            <span
+                              onClick={e => toggleFavorite(key, e)}
+                              className={`text-xs ${
+                                isFav
+                                  ? isSelected
+                                    ? 'text-[#14213D] dark:text-[#080D16]'
+                                    : 'text-[#C9A227]'
+                                  : 'opacity-25 hover:opacity-100'
+                              }`}
+                            >
+                              ★
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <h1 className="text-2xl sm:text-3xl font-serif italic font-black text-text-main tracking-tight">
-                Index Stock Heatmap
-              </h1>
-              <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[10px] font-mono font-black uppercase tracking-wider">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                Live Market Cap Treemap
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 3. Quick Index Comparison Row (Prompt Item 30) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        {quickIndicesList.map(idx => {
+          if (!idx) return null;
+          const liveQ = indices.find(i => i.key === idx.id);
+          const isSelected = selectedIndexKey === idx.id;
+          const price = liveQ ? liveQ.price : idx.baselinePrice;
+          const pct = liveQ ? liveQ.percentChange : idx.baselinePercent;
+          const isPos = pct >= 0;
+
+          return (
+            <button
+              key={idx.id}
+              onClick={() => setSelectedIndexKey(idx.id)}
+              className={`p-3 rounded-xl border text-left transition-all flex items-center justify-between ${
+                isSelected
+                  ? 'bg-ui-surface border-[#C9A227] shadow-sm ring-1 ring-[#C9A227]/30'
+                  : 'bg-ui-surface/60 border-ui-border hover:border-ui-border/80 hover:bg-ui-surface'
+              }`}
+            >
+              <div>
+                <p className="text-xs font-mono font-bold text-text-muted">{idx.displaySymbol}</p>
+                <p className="text-sm font-mono font-black text-text-main">
+                  {formatCurrency(price, idx.region)}
+                </p>
+              </div>
+              <div
+                className={`flex items-center gap-1 font-mono text-xs font-bold px-2 py-0.5 rounded-md ${
+                  isPos ? 'bg-emerald-500/10 text-emerald-500' : 'bg-rose-500/10 text-rose-500'
+                }`}
+              >
+                {isPos ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+                <span>
+                  {isPos ? '+' : ''}
+                  {pct.toFixed(2)}%
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 4. Index Summary Card (Prompt Item 5) */}
+      <div className="bg-ui-surface border border-ui-border rounded-2xl p-5 sm:p-6 shadow-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 items-center">
+          {/* Index & Price */}
+          <div className="col-span-2 sm:col-span-2">
+            <p className="text-[11px] font-mono font-bold text-text-muted uppercase tracking-wider">
+              {indexSummary.name}
+            </p>
+            <div className="flex items-baseline gap-3 mt-1">
+              <span className="text-2xl sm:text-3xl font-mono font-black text-text-main">
+                {formatCurrency(indexSummary.currentValue, indexSummary.region)}
+              </span>
+              <span
+                className={`font-mono text-xs sm:text-sm font-bold flex items-center gap-1 ${
+                  indexSummary.pctChange >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                }`}
+              >
+                {indexSummary.pctChange >= 0 ? '+' : ''}
+                {formatCurrency(indexSummary.absChange, indexSummary.region)} (
+                {indexSummary.pctChange >= 0 ? '+' : ''}
+                {indexSummary.pctChange.toFixed(2)}%)
               </span>
             </div>
-            <p className="text-xs font-mono text-text-muted">
-              Interactive market map visualizing constituent weights and real-time intraday trajectories.
+            <p className="text-[11px] font-mono text-text-muted mt-0.5">
+              Prev Close: {formatCurrency(indexSummary.prevClose, indexSummary.region)}
             </p>
           </div>
 
-          {/* Regional Market Filters & Refresh */}
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center bg-ui-bg border border-ui-border rounded-xl p-1">
-              {(['ALL', 'US', 'IN'] as const).map(reg => (
-                <button
-                  key={reg}
-                  onClick={() => {
-                    setRegionFilter(reg);
-                    if (reg === 'US' && currentIndexConfig.region !== 'US') {
-                      setSelectedIndexKey('sandp500');
-                    } else if (reg === 'IN' && currentIndexConfig.region !== 'IN') {
-                      setSelectedIndexKey('nifty');
-                    }
-                  }}
-                  className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                    regionFilter === reg
-                      ? 'bg-primary text-ui-bg font-black shadow-xs'
-                      : 'text-text-muted hover:text-text-main'
-                  }`}
-                >
-                  {reg === 'ALL' ? 'All Global' : reg === 'US' ? '🇺🇸 U.S. Wall St' : '🇮🇳 India Dalal St'}
-                </button>
-              ))}
-            </div>
-
-            <button
-              onClick={() => refresh()}
-              disabled={isLoading}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ui-bg hover:bg-ui-surface border border-ui-border text-text-muted hover:text-primary transition-all text-xs font-mono font-bold shadow-xs"
-              title="Refresh real-time feed"
-            >
-              <RefreshCw size={13} className={isLoading ? 'animate-spin text-primary' : ''} />
-              <span className="hidden sm:inline">Sync Live</span>
-            </button>
-
-            <button
-              onClick={toggleFullscreen}
-              className="p-2 rounded-xl bg-ui-bg hover:bg-ui-surface border border-ui-border text-text-muted hover:text-text-main transition-colors shadow-xs"
-              title={isFullscreen ? 'Exit Fullscreen' : 'Expand Fullscreen'}
-            >
-              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-            </button>
-          </div>
-        </div>
-
-        {/* Index Selector Bar */}
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-2 border-t border-ui-border/60">
-          <span className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-wider shrink-0 mr-1">
-            Choose Index:
-          </span>
-          {Object.values(INDEX_HEATMAP_CONFIG)
-            .filter(idx => regionFilter === 'ALL' || idx.region === regionFilter)
-            .map(idx => {
-              const quote = indices.find(i => i.key === idx.id);
-              const isSelected = selectedIndexKey === idx.id;
-              const chg = quote?.percentChange ?? 0;
-              const isPos = chg >= 0;
-
-              return (
-                <button
-                  key={idx.id}
-                  onClick={() => {
-                    setSelectedIndexKey(idx.id);
-                    setSelectedSector('ALL');
-                    setSearchQuery('');
-                  }}
-                  className={`flex items-center gap-2.5 px-4 py-2 rounded-xl text-xs font-serif italic transition-all shrink-0 border ${
-                    isSelected
-                      ? 'bg-primary text-ui-bg border-primary font-black shadow-md scale-105'
-                      : 'bg-ui-bg border-ui-border text-text-muted hover:text-text-main hover:border-primary/40'
-                  }`}
-                >
-                  <span className="font-bold">{idx.displaySymbol}</span>
-                  <span
-                    className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded ${
-                      isSelected
-                        ? 'bg-black/20 text-ui-bg'
-                        : isPos
-                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                        : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                    }`}
-                  >
-                    {isPos ? '+' : ''}
-                    {chg.toFixed(2)}%
-                  </span>
-                </button>
-              );
-            })}
-        </div>
-
-        {/* Selected Index Performance Hero Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4 bg-ui-bg/70 rounded-2xl border border-ui-border p-4">
-          <div className="md:col-span-4 flex flex-col justify-center border-b md:border-b-0 md:border-r border-ui-border/60 pb-3 md:pb-0 md:pr-4">
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold text-text-muted">{currentIndexConfig.name}</span>
-              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-ui-surface border border-ui-border text-text-muted">
-                {currentIndexConfig.symbol}
-              </span>
-            </div>
-            <div className="flex items-baseline gap-3 mt-1">
-              <span className="text-2xl sm:text-3xl font-mono font-black text-text-main">
-                {currentIndexConfig.currency}
-                {currentIndexQuote.price.toLocaleString(undefined, {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2
-                })}
-              </span>
-              <span
-                className={`flex items-center gap-1 text-xs font-mono font-black px-2 py-0.5 rounded-lg ${
-                  currentIndexQuote.percentChange >= 0
-                    ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                }`}
-              >
-                {currentIndexQuote.percentChange >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                {currentIndexQuote.percentChange >= 0 ? '+' : ''}
-                {currentIndexQuote.change.toFixed(2)} ({currentIndexQuote.percentChange >= 0 ? '+' : ''}
-                {currentIndexQuote.percentChange.toFixed(2)}%)
-              </span>
-            </div>
+          {/* Breadth: Advancing */}
+          <div className="border-l border-ui-border/60 pl-3">
+            <p className="text-[10px] font-mono font-bold text-text-muted uppercase">Advancing</p>
+            <p className="text-lg font-mono font-black text-emerald-500 mt-0.5">
+              {indexSummary.advancing}
+            </p>
           </div>
 
-          {/* Market Breadth Progress Meter */}
-          <div className="md:col-span-5 flex flex-col justify-center space-y-2 border-b md:border-b-0 md:border-r border-ui-border/60 pb-3 md:pb-0 md:pr-4">
-            <div className="flex justify-between items-center text-[10px] font-mono font-bold text-text-muted uppercase">
-              <span className="text-emerald-400 flex items-center gap-1">
-                <ArrowUpRight size={12} /> {indexBreadth.gainers} Advancing ({indexBreadth.gainPct}%)
-              </span>
-              <span className="text-rose-400 flex items-center gap-1">
-                {indexBreadth.losers} Declining ({indexBreadth.losePct}%) <ArrowDownRight size={12} />
-              </span>
-            </div>
-            <div className="w-full h-2.5 bg-ui-surface rounded-full overflow-hidden flex border border-ui-border">
-              <div
-                className="h-full bg-emerald-500 transition-all duration-500"
-                style={{ width: `${indexBreadth.gainPct}%` }}
-                title={`Advancing: ${indexBreadth.gainers}`}
-              />
-              <div
-                className="h-full bg-slate-600 transition-all duration-500"
-                style={{ width: `${Math.max(100 - indexBreadth.gainPct - indexBreadth.losePct, 0)}%` }}
-                title={`Unchanged: ${indexBreadth.unchanged}`}
-              />
-              <div
-                className="h-full bg-rose-500 transition-all duration-500"
-                style={{ width: `${indexBreadth.losePct}%` }}
-                title={`Declining: ${indexBreadth.losers}`}
-              />
-            </div>
-            <div className="flex justify-between items-center text-[9px] font-mono text-text-muted">
-              <span>Index Constituents: {resolvedConstituents.length} stocks</span>
-              <span>Unchanged: {indexBreadth.unchanged}</span>
-            </div>
+          {/* Breadth: Declining */}
+          <div className="border-l border-ui-border/60 pl-3">
+            <p className="text-[10px] font-mono font-bold text-text-muted uppercase">Declining</p>
+            <p className="text-lg font-mono font-black text-rose-500 mt-0.5">
+              {indexSummary.declining}
+            </p>
           </div>
 
-          {/* Top Movers in Index */}
-          <div className="md:col-span-3 flex flex-col justify-center text-xs font-mono space-y-1.5">
-            {indexBreadth.topGainer && (
-              <div className="flex items-center justify-between">
-                <span className="text-text-muted text-[10px] uppercase font-bold">Top Leader:</span>
-                <button
-                  onClick={() => onTrade?.(indexBreadth.topGainer!)}
-                  className="font-bold text-emerald-400 hover:underline flex items-center gap-1"
-                >
-                  {indexBreadth.topGainer.symbol} (+{indexBreadth.topGainer.changePercent.toFixed(2)}%)
-                </button>
+          {/* Breadth: Unchanged */}
+          <div className="border-l border-ui-border/60 pl-3">
+            <p className="text-[10px] font-mono font-bold text-text-muted uppercase">Unchanged</p>
+            <p className="text-lg font-mono font-black text-text-muted mt-0.5">
+              {indexSummary.unchanged}
+            </p>
+          </div>
+
+          {/* Movers Summary */}
+          <div className="col-span-2 sm:col-span-1 border-l border-ui-border/60 pl-3 space-y-1">
+            {indexSummary.topGainer && (
+              <div className="text-xs font-mono">
+                <span className="text-[10px] text-text-muted uppercase font-bold block">Top Gainer</span>
+                <span className="font-bold text-emerald-500">
+                  {indexSummary.topGainer.symbol} +{(indexSummary.topGainer.displayReturn ?? indexSummary.topGainer.changePercent).toFixed(2)}%
+                </span>
               </div>
             )}
-            {indexBreadth.topLoser && (
-              <div className="flex items-center justify-between">
-                <span className="text-text-muted text-[10px] uppercase font-bold">Top Laggard:</span>
-                <button
-                  onClick={() => onTrade?.(indexBreadth.topLoser!)}
-                  className="font-bold text-rose-400 hover:underline flex items-center gap-1"
-                >
-                  {indexBreadth.topLoser.symbol} ({indexBreadth.topLoser.changePercent.toFixed(2)}%)
-                </button>
+            {indexSummary.topLoser && (
+              <div className="text-xs font-mono">
+                <span className="text-[10px] text-text-muted uppercase font-bold block">Top Loser</span>
+                <span className="font-bold text-rose-500">
+                  {indexSummary.topLoser.symbol} {(indexSummary.topLoser.displayReturn ?? indexSummary.topLoser.changePercent).toFixed(2)}%
+                </span>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* 2. Heatmap Controls & Search Toolbar */}
-      <div className="bg-ui-surface border border-ui-border rounded-2xl p-4 shadow-sm flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        {/* Search within Index */}
-        <div className="relative flex-1 max-w-md">
-          <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-muted" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder={`Search ticker in ${currentIndexConfig.displaySymbol} (e.g. AAPL, RELIANCE)...`}
-            className="w-full bg-ui-bg border border-ui-border rounded-xl pl-9 pr-4 py-2 text-xs font-mono text-text-main focus:outline-none focus:border-primary/50 placeholder:text-text-muted/60"
-          />
-          {searchQuery && (
-            <button
-              onClick={() => setSearchQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-mono text-text-muted hover:text-text-main"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-
-        {/* Filter Badges: Sector, Sizing, Direction, Timeframe */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          {/* Sector Selector */}
-          <div className="flex items-center gap-1.5 bg-ui-bg border border-ui-border rounded-xl px-2.5 py-1.5">
-            <Filter size={13} className="text-text-muted" />
-            <select
-              value={selectedSector}
-              onChange={e => setSelectedSector(e.target.value)}
-              className="bg-transparent text-xs font-mono font-bold text-text-main focus:outline-none cursor-pointer"
-            >
-              {availableSectors.map(sec => (
-                <option key={sec} value={sec} className="bg-ui-surface text-text-main">
-                  {sec === 'ALL' ? 'All Sectors' : sec}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Sizing Mode Toggle */}
-          <div className="flex items-center bg-ui-bg border border-ui-border rounded-xl p-1">
-            <button
-              onClick={() => setSizingMode('market_cap')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                sizingMode === 'market_cap'
-                  ? 'bg-primary text-ui-bg font-black shadow-xs'
-                  : 'text-text-muted hover:text-text-main'
-              }`}
-              title="Tile size proportional to market capitalization weight"
-            >
-              Weight Treemap
-            </button>
-            <button
-              onClick={() => setSizingMode('equal')}
-              className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                sizingMode === 'equal'
-                  ? 'bg-primary text-ui-bg font-black shadow-xs'
-                  : 'text-text-muted hover:text-text-main'
-              }`}
-              title="Uniform grid matrix sizing"
-            >
-              Equal Grid
-            </button>
-          </div>
-
-          {/* Performance Direction Filter */}
-          <div className="flex items-center bg-ui-bg border border-ui-border rounded-xl p-1">
-            {(['all', 'gainers', 'losers', 'high_movers'] as const).map(dir => (
+      {/* 5. Toolbar: Search, Timeframe, Sizing, Filters, and Heatmap Mode Toggle */}
+      <div className="bg-ui-surface border border-ui-border rounded-2xl p-4 shadow-sm space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* Search inside Index */}
+          <div className="relative flex-1 min-w-[200px] max-w-sm">
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-text-muted" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder={`Search ${currentIndexConfig.displaySymbol} stocks...`}
+              className="w-full bg-ui-bg border border-ui-border rounded-xl pl-9 pr-8 py-2 text-xs font-mono text-text-main placeholder:text-text-muted focus:outline-hidden focus:border-[#C9A227]"
+            />
+            {searchQuery && (
               <button
-                key={dir}
-                onClick={() => setDirectionFilter(dir)}
-                className={`px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                  directionFilter === dir
-                    ? 'bg-ui-surface text-text-main border border-ui-border shadow-xs'
-                    : 'text-text-muted hover:text-text-main'
-                }`}
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-main"
               >
-                {dir === 'all'
-                  ? 'All'
-                  : dir === 'gainers'
-                  ? '▲ Gainers'
-                  : dir === 'losers'
-                  ? '▼ Losers'
-                  : '⚡ High Movers'}
+                <X size={14} />
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Timeframe Metric */}
-          <div className="flex items-center bg-ui-bg border border-ui-border rounded-xl p-1">
-            {(['1D', '1W', '1M', 'VOL'] as const).map(tf => (
+          {/* Timeframe Selector (1D, 1W, 1M, 3M, 6M, 1Y) */}
+          <div className="flex items-center p-1 rounded-xl bg-ui-bg border border-ui-border text-xs font-mono font-bold">
+            {(['1D', '1W', '1M', '3M', '6M', '1Y'] as TimeframeMetric[]).map(tf => (
               <button
                 key={tf}
                 onClick={() => setTimeframeMetric(tf)}
-                className={`px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                className={`px-2.5 py-1 rounded-lg transition-all ${
                   timeframeMetric === tf
-                    ? 'bg-primary text-ui-bg font-black shadow-xs'
+                    ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16] shadow-xs'
                     : 'text-text-muted hover:text-text-main'
                 }`}
               >
@@ -605,38 +812,176 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
               </button>
             ))}
           </div>
-        </div>
-      </div>
 
-      {/* 3. Heatmap Legend Spectrum */}
-      <div className="flex flex-wrap items-center justify-between gap-4 px-3 text-[10px] font-mono text-text-muted">
-        <div className="flex items-center gap-1.5">
-          <span className="font-bold uppercase tracking-wider">Performance Scale:</span>
-          <div className="flex items-center gap-1">
-            <span className="px-1.5 py-0.5 rounded bg-[#7f1d1d] text-white font-bold">&le; -3%</span>
-            <span className="px-1.5 py-0.5 rounded bg-[#b91c1c] text-white font-bold">-2%</span>
-            <span className="px-1.5 py-0.5 rounded bg-[#dc2626] text-white font-bold">-1%</span>
-            <span className="px-1.5 py-0.5 rounded bg-[#334155] text-slate-200 font-bold">0%</span>
-            <span className="px-1.5 py-0.5 rounded bg-[#22c55e] text-white font-bold">+1%</span>
-            <span className="px-1.5 py-0.5 rounded bg-[#15803d] text-white font-bold">+2%</span>
-            <span className="px-1.5 py-0.5 rounded bg-[#14532d] text-white font-bold">&ge; +3%</span>
+          {/* Sizing Method (Weight, Market Cap, Volume) */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-[11px] font-mono text-text-muted font-bold hidden sm:inline">SIZE BY:</span>
+            <div className="flex items-center p-1 rounded-xl bg-ui-bg border border-ui-border text-xs font-mono font-bold">
+              <button
+                onClick={() => setSizingMode('weight')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  sizingMode === 'weight'
+                    ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16]'
+                    : 'text-text-muted hover:text-text-main'
+                }`}
+              >
+                Weight
+              </button>
+              <button
+                onClick={() => setSizingMode('market_cap')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  sizingMode === 'market_cap'
+                    ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16]'
+                    : 'text-text-muted hover:text-text-main'
+                }`}
+              >
+                Market Cap
+              </button>
+              <button
+                onClick={() => setSizingMode('volume')}
+                className={`px-2.5 py-1 rounded-lg transition-all ${
+                  sizingMode === 'volume'
+                    ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16]'
+                    : 'text-text-muted hover:text-text-main'
+                }`}
+              >
+                Volume
+              </button>
+            </div>
+          </div>
+
+          {/* Mode Toggle: Stocks vs Sectors */}
+          <div className="flex items-center p-1 rounded-xl bg-ui-bg border border-ui-border text-xs font-mono font-bold">
+            <button
+              onClick={() => setHeatmapMode('stocks')}
+              className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                heatmapMode === 'stocks'
+                  ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16]'
+                  : 'text-text-muted hover:text-text-main'
+              }`}
+            >
+              <LayoutGrid size={13} />
+              <span>Stocks</span>
+            </button>
+            <button
+              onClick={() => setHeatmapMode('sectors')}
+              className={`px-3 py-1 rounded-lg transition-all flex items-center gap-1 ${
+                heatmapMode === 'sectors'
+                  ? 'bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16]'
+                  : 'text-text-muted hover:text-text-main'
+              }`}
+            >
+              <PieChart size={13} />
+              <span>Sectors</span>
+            </button>
           </div>
         </div>
-        <div>
-          <span>Click tile to trade • Double click to pin inspector</span>
+
+        {/* Secondary Filter Row: Sector dropdown, Gainers/Losers, Fullscreen */}
+        <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-ui-border/60">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Sector Dropdown */}
+            <select
+              value={selectedSector}
+              onChange={e => setSelectedSector(e.target.value)}
+              className="bg-ui-bg border border-ui-border rounded-xl px-3 py-1.5 text-xs font-mono font-bold text-text-main focus:outline-hidden focus:border-[#C9A227]"
+            >
+              {availableSectors.map(sec => (
+                <option key={sec} value={sec}>
+                  {sec === 'ALL' ? 'All Sectors' : sec}
+                </option>
+              ))}
+            </select>
+
+            {/* Direction Filter */}
+            <div className="flex items-center gap-1">
+              {(['all', 'gainers', 'losers', 'high_movers'] as DirectionFilter[]).map(df => (
+                <button
+                  key={df}
+                  onClick={() => setDirectionFilter(df)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-mono font-bold transition-all border ${
+                    directionFilter === df
+                      ? 'bg-ui-surface border-[#C9A227] text-text-main'
+                      : 'border-transparent text-text-muted hover:text-text-main'
+                  }`}
+                >
+                  {df === 'all'
+                    ? 'All'
+                    : df === 'gainers'
+                    ? 'Gainers'
+                    : df === 'losers'
+                    ? 'Losers'
+                    : 'High Movers (±1.5%)'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsFullscreen(prev => !prev)}
+            className="p-1.5 rounded-lg border border-ui-border text-text-muted hover:text-text-main text-xs font-mono flex items-center gap-1"
+          >
+            {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+            <span className="hidden sm:inline">{isFullscreen ? 'Exit Full' : 'Fullscreen'}</span>
+          </button>
         </div>
       </div>
 
-      {/* 4. The Main Treemap Canvas & Inspector Split */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Heatmap Matrix Canvas */}
-        <div className="lg:col-span-8 xl:col-span-9 space-y-6">
-          {sectorGroups.length === 0 ? (
-            <div className="bg-ui-surface border border-ui-border rounded-3xl p-12 text-center space-y-3">
-              <Layers size={36} className="mx-auto text-text-muted/50" />
-              <h3 className="text-lg font-serif font-black text-text-main">No constituents match filters</h3>
+      {/* 6. Color Legend Spectrum (Prompt Item 7) */}
+      <div className="bg-ui-surface border border-ui-border rounded-xl px-4 py-2.5 shadow-xs flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
+        <span className="text-text-muted font-bold">PERFORMANCE SPECTRUM:</span>
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-xs bg-[#7f1d1d]" />
+            <span className="text-text-muted">≤ -3%</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-xs bg-[#b91c1c]" />
+            <span className="text-text-muted">-2% to -3%</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-xs bg-[#dc2626]" />
+            <span className="text-text-muted">-1% to -2%</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-xs bg-[#e11d48]" />
+            <span className="text-text-muted">-0% to -1%</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-xs bg-[#334155]" />
+            <span className="text-text-muted">0%</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-xs bg-[#10b981]" />
+            <span className="text-text-muted">0% to +1%</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-xs bg-[#059669]" />
+            <span className="text-text-muted">+1% to +2%</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-xs bg-[#047857]" />
+            <span className="text-text-muted">+2% to +3%</span>
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-xs bg-[#064e3b]" />
+            <span className="text-text-muted">≥ +3%</span>
+          </span>
+        </div>
+      </div>
+
+      {/* 7. Main Heatmap Canvas + Stock Inspector Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Left / Main: Heatmap Canvas */}
+        <div className="lg:col-span-8 xl:col-span-9 space-y-4">
+          {filteredConstituents.length === 0 ? (
+            <div className="bg-ui-surface border border-ui-border rounded-2xl p-12 text-center space-y-3">
+              <Layers size={36} className="mx-auto text-text-muted/40" />
+              <h3 className="text-base font-serif font-black text-text-main">
+                No constituents match current filters
+              </h3>
               <p className="text-xs font-mono text-text-muted">
-                Try clearing the search or resetting sector/direction filters.
+                Try resetting search queries or sector filters.
               </p>
               <button
                 onClick={() => {
@@ -644,474 +989,346 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
                   setSelectedSector('ALL');
                   setDirectionFilter('all');
                 }}
-                className="px-4 py-2 rounded-xl bg-primary text-ui-bg font-bold text-xs font-mono shadow-md"
+                className="px-4 py-2 rounded-xl bg-[#C9A227] text-[#14213D] dark:bg-[#D4AF37] dark:text-[#080D16] font-bold text-xs font-mono shadow-xs"
               >
                 Reset Filters
               </button>
             </div>
-          ) : (
-            sectorGroups.map(([sectorName, { stocks: secStocks, totalCap, avgChange }]) => {
-              const isAvgPos = avgChange >= 0;
+          ) : heatmapMode === 'sectors' ? (
+            /* SECTOR HEATMAP MODE (Prompt Item 10) */
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {sectorGroups.map(([secName, secData]) => {
+                const colorConfig = getPerformanceHeatColor(secData.avgReturn);
+                const isSelected = selectedSector === secName;
 
-              return (
-                <div
-                  key={sectorName}
-                  className="bg-ui-surface border border-ui-border rounded-2xl p-4 shadow-md space-y-3 transition-all duration-200 hover:border-primary/30"
-                >
-                  {/* Sector Header Strip */}
-                  <div className="flex items-center justify-between border-b border-ui-border/60 pb-2.5">
-                    <div className="flex items-center gap-2.5">
-                      <button
-                        onClick={() =>
-                          setSelectedSector(selectedSector === sectorName ? 'ALL' : sectorName)
-                        }
-                        className="text-sm font-serif italic font-black text-text-main hover:text-primary transition-colors flex items-center gap-1.5 group"
-                      >
-                        <span>{sectorName}</span>
-                        <span className="text-[10px] font-mono text-text-muted group-hover:text-primary">
-                          ({secStocks.length})
-                        </span>
-                      </button>
-                    </div>
-
-                    <div className="flex items-center gap-3">
-                      <span className="text-[10px] font-mono text-text-muted hidden sm:inline">
-                        Cap: {formatCompactCurrency(totalCap, currentIndexConfig.region)}
-                      </span>
-                      <span
-                        className={`text-[10px] font-mono font-black px-2 py-0.5 rounded-md border ${
-                          isAvgPos
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
-                        }`}
-                      >
-                        Avg: {isAvgPos ? '+' : ''}
-                        {avgChange.toFixed(2)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Sector Constituent Tiles */}
-                  <div
-                    className={
-                      sizingMode === 'equal'
-                        ? 'grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-2'
-                        : 'flex flex-wrap gap-2'
-                    }
-                  >
-                    {secStocks.map(stock => {
-                      const metric = getMetricValue(stock);
-                      const colorConfig = getPerformanceHeatColor(metric.percent);
-                      const isTickUp = priceTicks[stock.symbol] === 'up';
-                      const isTickDown = priceTicks[stock.symbol] === 'down';
-                      const isHovered = hoveredStock?.symbol === stock.symbol;
-                      const isPinned = pinnedStock?.symbol === stock.symbol;
-                      const isSearchMatch =
-                        searchQuery &&
-                        (stock.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          stock.name.toLowerCase().includes(searchQuery.toLowerCase()));
-
-                      // Proportional weight size calculation
-                      const numCap = parseMarketCapToNumber(stock.marketCap);
-                      // Sizing tier
-                      let flexBasisClass = 'flex-1 min-w-[120px] h-[85px]';
-                      if (sizingMode === 'market_cap') {
-                        if (numCap >= 1.5e12) {
-                          flexBasisClass = 'flex-[3_3_240px] min-w-[200px] h-[130px]';
-                        } else if (numCap >= 500e9) {
-                          flexBasisClass = 'flex-[2_2_180px] min-w-[160px] h-[110px]';
-                        } else if (numCap >= 200e9) {
-                          flexBasisClass = 'flex-[1.5_1.5_140px] min-w-[130px] h-[95px]';
-                        } else {
-                          flexBasisClass = 'flex-[1_1_110px] min-w-[100px] h-[85px]';
-                        }
-                      }
-
-                      return (
-                        <motion.div
-                          key={stock.symbol}
-                          whileHover={{ scale: 1.02 }}
-                          whileTap={{ scale: 0.98 }}
-                          onClick={() => {
-                            setPinnedStock(stock);
-                            if (onTrade) onTrade(stock);
-                          }}
-                          onDoubleClick={() => setPinnedStock(isPinned ? null : stock)}
-                          onMouseEnter={(e) => {
-                            setHoveredStock(stock);
-                            setMousePos({ x: e.clientX, y: e.clientY });
-                          }}
-                          onMouseMove={(e) => {
-                            setMousePos({ x: e.clientX, y: e.clientY });
-                          }}
-                          onMouseLeave={() => setHoveredStock(null)}
-                          className={`relative rounded-xl p-2.5 cursor-pointer select-none transition-all duration-150 flex flex-col justify-between overflow-hidden shadow-xs border ${
-                            colorConfig.bg
-                          } ${colorConfig.border} ${flexBasisClass} ${
-                            isPinned
-                              ? 'ring-2 ring-primary ring-offset-2 ring-offset-ui-bg z-20 scale-[1.02]'
-                              : isHovered
-                              ? 'ring-2 ring-white/60 z-10 shadow-lg'
-                              : ''
-                          } ${
-                            isSearchMatch
-                              ? 'ring-2 ring-amber-400 ring-offset-1 ring-offset-ui-bg'
-                              : searchQuery
-                              ? 'opacity-30'
-                              : 'opacity-100'
-                          } ${
-                            isTickUp
-                              ? 'ring-2 ring-emerald-300 animate-pulse'
-                              : isTickDown
-                              ? 'ring-2 ring-rose-400 animate-pulse'
-                              : ''
-                          }`}
-                        >
-                          {/* Top Row: Symbol & Heart/Watchlist toggle */}
-                          <div className="flex items-start justify-between w-full gap-1">
-                            <div className="truncate">
-                              <span
-                                className={`tracking-tight drop-shadow-xs ${
-                                  numCap >= 1e12
-                                    ? 'text-base sm:text-lg font-black'
-                                    : 'text-xs sm:text-sm font-black'
-                                } ${colorConfig.text}`}
-                              >
-                                {stock.symbol}
-                              </span>
-                              {numCap >= 500e9 && (
-                                <p className={`text-[9px] font-sans truncate opacity-85 leading-tight ${colorConfig.subtext}`}>
-                                  {stock.name}
-                                </p>
-                              )}
-                            </div>
-
-                            {/* Change Pill */}
-                            <span
-                              className={`text-[9px] sm:text-[10px] font-mono font-black px-1.5 py-0.5 rounded border shrink-0 drop-shadow-xs ${colorConfig.badge}`}
-                            >
-                              {metric.label}
-                            </span>
-                          </div>
-
-                          {/* Bottom Row: Price & Market Cap */}
-                          <div className="flex items-baseline justify-between w-full pt-1 border-t border-white/10">
-                            <span
-                              className={`text-xs font-mono font-black drop-shadow-xs ${colorConfig.text}`}
-                            >
-                              {stock.currency}
-                              {stock.price.toLocaleString(undefined, {
-                                minimumFractionDigits: stock.price >= 100 ? 1 : 2,
-                                maximumFractionDigits: 2
-                              })}
-                            </span>
-                            <span
-                              className={`text-[8.5px] font-mono font-bold opacity-80 ${colorConfig.subtext}`}
-                            >
-                              {stock.marketCap}
-                            </span>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-
-        {/* 5. Sticky Floating Detail Inspector Panel */}
-        <div className="lg:col-span-4 xl:col-span-3 lg:sticky lg:top-6 space-y-4">
-          <div className="bg-ui-surface border border-ui-border rounded-3xl p-6 shadow-2xl backdrop-blur-xl relative overflow-hidden">
-            {activeInspectStock ? (
-              <div className="space-y-6">
-                {/* Header with Symbol & Watchlist */}
-                <div className="flex items-start justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-2xl font-serif italic font-black text-text-main">
-                        {activeInspectStock.symbol}
-                      </h3>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-md bg-ui-bg border border-ui-border text-text-muted">
-                        {activeInspectStock.exchange || currentIndexConfig.displaySymbol}
-                      </span>
-                    </div>
-                    <p className="text-xs text-text-muted font-medium mt-0.5">
-                      {activeInspectStock.name}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => toggleWatchlist(activeInspectStock.symbol)}
-                    className={`p-2 rounded-xl border transition-all ${
-                      isWatchlisted(activeInspectStock.symbol)
-                        ? 'bg-amber-500/10 border-amber-500/40 text-amber-400'
-                        : 'bg-ui-bg border-ui-border text-text-muted hover:text-text-main'
+                return (
+                  <motion.div
+                    key={secName}
+                    whileHover={{ scale: 1.01 }}
+                    onClick={() => {
+                      setSelectedSector(isSelected ? 'ALL' : secName);
+                    }}
+                    className={`p-4 rounded-xl cursor-pointer select-none transition-all border ${colorConfig.bg} ${
+                      colorConfig.border
+                    } ${
+                      isSelected
+                        ? 'ring-2 ring-[#C9A227] ring-offset-2 ring-offset-ui-bg'
+                        : 'shadow-xs'
                     }`}
-                    title="Toggle Watchlist"
                   >
-                    <Star
-                      size={16}
-                      fill={isWatchlisted(activeInspectStock.symbol) ? 'currentColor' : 'none'}
-                    />
-                  </button>
-                </div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h4 className="font-serif italic font-black text-base text-white">
+                        {secName}
+                      </h4>
+                      <span className="text-[11px] font-mono text-white/80">
+                        {secData.stocks.length} stocks
+                      </span>
+                    </div>
 
-                {/* Price Display */}
-                <div className="bg-ui-bg/70 rounded-2xl border border-ui-border p-4 space-y-2">
-                  <div className="flex items-baseline justify-between">
-                    <span className="text-3xl font-mono font-black text-text-main">
-                      {activeInspectStock.currency}
-                      {activeInspectStock.price.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2
-                      })}
+                    <div className="flex items-baseline justify-between mt-3">
+                      <span className="text-2xl font-mono font-black text-white">
+                        {secData.avgReturn >= 0 ? '+' : ''}
+                        {secData.avgReturn.toFixed(2)}%
+                      </span>
+                      <span className="text-xs font-mono text-white/85">
+                        Weight: {secData.totalWeight.toFixed(1)}%
+                      </span>
+                    </div>
+
+                    <p className="text-[10px] font-mono text-white/70 mt-2">
+                      Cap: {formatCompactCurrency(secData.totalCap, currentIndexConfig.region)}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            /* STOCKS HEATMAP MODE (Grouped by Sector) */
+            sectorGroups.map(([secName, secData]) => (
+              <div
+                key={secName}
+                className="bg-ui-surface border border-ui-border rounded-xl p-3.5 shadow-xs space-y-2.5 transition-colors"
+              >
+                {/* Sector Header Strip */}
+                <div className="flex items-center justify-between border-b border-ui-border/60 pb-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setSelectedSector(selectedSector === secName ? 'ALL' : secName)}
+                      className="text-xs sm:text-sm font-serif italic font-black text-text-main hover:text-[#C9A227] transition-colors flex items-center gap-1.5 group"
+                    >
+                      <span>{secName}</span>
+                      <span className="text-[10px] font-mono text-text-muted group-hover:text-[#C9A227]">
+                        ({secData.stocks.length})
+                      </span>
+                    </button>
+                    <span className="text-[10px] font-mono text-text-muted">
+                      • {secData.totalWeight.toFixed(1)}% Index Weight
                     </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
                     <span
-                      className={`text-xs font-mono font-black px-2.5 py-1 rounded-lg border ${
-                        activeInspectStock.changePercent >= 0
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md border ${
+                        secData.avgReturn >= 0
                           ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
                           : 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                       }`}
                     >
-                      {activeInspectStock.changePercent >= 0 ? '+' : ''}
-                      {activeInspectStock.change.toFixed(2)} ({activeInspectStock.changePercent >= 0 ? '+' : ''}
-                      {activeInspectStock.changePercent.toFixed(2)}%)
+                      Sector Avg: {secData.avgReturn >= 0 ? '+' : ''}
+                      {secData.avgReturn.toFixed(2)}%
+                    </span>
+                  </div>
+                </div>
+
+                {/* Constituent Tiles */}
+                <div className="flex flex-wrap gap-2">
+                  {secData.stocks.map(stock => {
+                    const ret = stock.displayReturn;
+                    const colorConfig = getPerformanceHeatColor(ret);
+                    const isSelected = inspectedConstituent?.symbol === stock.symbol;
+
+                    // Flexible sizing calculations
+                    let flexBasis = 'flex-[1_1_110px] min-w-[100px] h-[80px]';
+
+                    if (sizingMode === 'weight') {
+                      if (stock.weight >= 6.0) {
+                        flexBasis = 'flex-[3_3_220px] min-w-[180px] h-[115px]';
+                      } else if (stock.weight >= 3.0) {
+                        flexBasis = 'flex-[2_2_160px] min-w-[140px] h-[100px]';
+                      } else if (stock.weight >= 1.5) {
+                        flexBasis = 'flex-[1.5_1.5_130px] min-w-[120px] h-[88px]';
+                      }
+                    } else if (sizingMode === 'market_cap') {
+                      const numCap = parseMarketCapToNumber(stock.marketCap);
+                      if (numCap >= 1.5e12) {
+                        flexBasis = 'flex-[3_3_220px] min-w-[180px] h-[115px]';
+                      } else if (numCap >= 500e9) {
+                        flexBasis = 'flex-[2_2_160px] min-w-[140px] h-[100px]';
+                      }
+                    } else if (sizingMode === 'volume') {
+                      const numVol = parseVolumeToNumber(stock.volume);
+                      if (numVol >= 15e6) {
+                        flexBasis = 'flex-[2.5_2.5_180px] min-w-[150px] h-[105px]';
+                      }
+                    }
+
+                    return (
+                      <motion.div
+                        key={stock.symbol}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => handleTileSingleClick(stock)}
+                        onDoubleClick={() => handleTileDoubleClick(stock)}
+                        onMouseEnter={() => setHoveredStock(stock)}
+                        onMouseLeave={() => setHoveredStock(null)}
+                        className={`relative rounded-xl p-2.5 cursor-pointer select-none transition-all flex flex-col justify-between overflow-hidden shadow-xs border ${
+                          colorConfig.bg
+                        } ${colorConfig.border} ${flexBasis} ${
+                          isSelected
+                            ? 'ring-2 ring-[#C9A227] ring-offset-2 ring-offset-ui-bg z-10 scale-[1.02]'
+                            : ''
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <span className="font-mono font-black text-xs sm:text-sm text-white tracking-tight leading-none">
+                            {stock.symbol}
+                          </span>
+                          <span className="text-[10px] font-mono text-white/70">
+                            {stock.weight.toFixed(1)}%
+                          </span>
+                        </div>
+
+                        <div className="mt-auto space-y-0.5">
+                          <p className="font-mono font-black text-sm sm:text-base text-white leading-tight">
+                            {ret >= 0 ? '+' : ''}
+                            {ret.toFixed(2)}%
+                          </p>
+                          <p className="text-[10px] font-mono text-white/75 truncate">
+                            {formatCurrency(stock.price, currentIndexConfig.region)}
+                          </p>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Right: Stock Inspector (Prompt Item 12, 13, 14, 18) */}
+        <div className="lg:col-span-4 xl:col-span-3 sticky top-4">
+          <div className="bg-ui-surface border border-ui-border rounded-2xl p-4 sm:p-5 shadow-sm space-y-4">
+            <div className="flex items-center justify-between border-b border-ui-border/60 pb-3">
+              <div className="flex items-center gap-2">
+                <BarChart2 size={16} className="text-[#C9A227]" />
+                <h3 className="font-serif italic font-black text-sm text-text-main uppercase tracking-wider">
+                  Stock Inspector
+                </h3>
+              </div>
+
+              {activeInspect && (
+                <button
+                  onClick={() => toggleWatchlist(constituentToStock(activeInspect))}
+                  className={`p-1.5 rounded-lg border transition-colors ${
+                    isInspectedWatchlisted
+                      ? 'bg-[#C9A227]/15 border-[#C9A227] text-[#C9A227]'
+                      : 'border-ui-border text-text-muted hover:text-text-main'
+                  }`}
+                  title={isInspectedWatchlisted ? 'In Watchlist' : 'Add to Watchlist'}
+                >
+                  <Star size={15} fill={isInspectedWatchlisted ? 'currentColor' : 'none'} />
+                </button>
+              )}
+            </div>
+
+            {activeInspect ? (
+              <div className="space-y-4">
+                {/* Header Information */}
+                <div>
+                  <div className="flex items-baseline justify-between">
+                    <h2 className="text-xl font-mono font-black text-text-main">
+                      {activeInspect.symbol}
+                    </h2>
+                    <span className="text-[11px] font-mono font-bold text-text-muted px-2 py-0.5 rounded-md bg-ui-bg border border-ui-border">
+                      {currentIndexConfig.region === 'IN' ? 'NSE' : 'NASDAQ/NYSE'}
+                    </span>
+                  </div>
+                  <p className="text-xs font-mono text-text-muted truncate mt-0.5">
+                    {activeInspect.name}
+                  </p>
+                </div>
+
+                {/* Price & Change Banner */}
+                <div className="p-3 rounded-xl bg-ui-bg border border-ui-border space-y-1">
+                  <div className="flex items-baseline justify-between">
+                    <span className="text-2xl font-mono font-black text-text-main">
+                      {formatCurrency(activeInspect.price, currentIndexConfig.region)}
+                    </span>
+                    <span
+                      className={`text-xs font-mono font-bold px-2 py-0.5 rounded-md flex items-center gap-1 ${
+                        activeInspect.changePercent >= 0
+                          ? 'bg-emerald-500/10 text-emerald-500'
+                          : 'bg-rose-500/10 text-rose-500'
+                      }`}
+                    >
+                      {activeInspect.changePercent >= 0 ? '+' : ''}
+                      {formatCurrency(activeInspect.change, currentIndexConfig.region)} (
+                      {activeInspect.changePercent >= 0 ? '+' : ''}
+                      {activeInspect.changePercent.toFixed(2)}%)
                     </span>
                   </div>
 
-                  {/* Day Range Slider */}
-                  <div className="pt-2 space-y-1">
-                    <div className="flex justify-between text-[9px] font-mono text-text-muted">
-                      <span>Low: {activeInspectStock.currency}{(activeInspectStock.dayLow || activeInspectStock.price * 0.99).toFixed(1)}</span>
-                      <span>High: {activeInspectStock.currency}{(activeInspectStock.dayHigh || activeInspectStock.price * 1.01).toFixed(1)}</span>
+                  {timeframeMetric !== '1D' && (
+                    <div className="text-[11px] font-mono text-text-muted flex items-center justify-between pt-1 border-t border-ui-border/40">
+                      <span>{timeframeMetric} Trajectory:</span>
+                      <span
+                        className={`font-bold ${
+                          activeInspect.displayReturn >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                        }`}
+                      >
+                        {activeInspect.displayReturn >= 0 ? '+' : ''}
+                        {activeInspect.displayReturn.toFixed(2)}%
+                      </span>
                     </div>
-                    <div className="w-full h-1.5 bg-ui-surface rounded-full overflow-hidden relative border border-ui-border">
-                      <div
-                        className="h-full bg-linear-to-r from-rose-500 via-primary to-emerald-500 rounded-full"
-                        style={{ width: '65%' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* Fundamentals Quick Grid */}
-                <div className="grid grid-cols-2 gap-2.5 text-xs font-mono">
-                  <div className="bg-ui-bg p-3 rounded-xl border border-ui-border">
-                    <span className="text-[9px] text-text-muted uppercase font-bold">Sector</span>
-                    <p className="font-bold text-text-main truncate mt-0.5">{activeInspectStock.sector}</p>
-                  </div>
-                  <div className="bg-ui-bg p-3 rounded-xl border border-ui-border">
-                    <span className="text-[9px] text-text-muted uppercase font-bold">Market Cap</span>
-                    <p className="font-bold text-text-main truncate mt-0.5">{activeInspectStock.marketCap}</p>
-                  </div>
-                  <div className="bg-ui-bg p-3 rounded-xl border border-ui-border">
-                    <span className="text-[9px] text-text-muted uppercase font-bold">24H Volume</span>
-                    <p className="font-bold text-text-main truncate mt-0.5">{activeInspectStock.volume}</p>
-                  </div>
-                  <div className="bg-ui-bg p-3 rounded-xl border border-ui-border">
-                    <span className="text-[9px] text-text-muted uppercase font-bold">Index Weight</span>
-                    <p className="font-bold text-primary truncate mt-0.5">
-                      {(
-                        (parseMarketCapToNumber(activeInspectStock.marketCap) /
-                          Math.max(
-                            resolvedConstituents.reduce((acc, s) => acc + parseMarketCapToNumber(s.marketCap), 0),
-                            1
-                          )) *
-                        100
-                      ).toFixed(1)}
-                      %
-                    </p>
-                  </div>
-                </div>
-
-                {/* One-Click Action Buttons */}
-                <div className="pt-2 space-y-2">
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => onTrade?.(activeInspectStock, 'BUY')}
-                      className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs uppercase tracking-wider shadow-lg shadow-emerald-900/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <ArrowUpRight size={14} /> Buy {activeInspectStock.symbol}
-                    </button>
-                    <button
-                      onClick={() => onTrade?.(activeInspectStock, 'SELL')}
-                      className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-mono font-bold text-xs uppercase tracking-wider shadow-lg shadow-rose-900/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                    >
-                      <ArrowDownRight size={14} /> Sell
-                    </button>
-                  </div>
-
-                  {pinnedStock && (
-                    <button
-                      onClick={() => setPinnedStock(null)}
-                      className="w-full py-1.5 text-center text-[10px] font-mono text-text-muted hover:text-text-main"
-                    >
-                      Unpin inspector (follow hover)
-                    </button>
                   )}
+                </div>
+
+                {/* Detailed Key Metrics Grid */}
+                <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                  <div className="p-2.5 rounded-lg bg-ui-bg/70 border border-ui-border/60">
+                    <span className="text-[10px] text-text-muted uppercase font-bold block">Index Weight</span>
+                    <span className="font-bold text-text-main text-sm">
+                      {activeInspect.weight.toFixed(1)}%
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-ui-bg/70 border border-ui-border/60">
+                    <span className="text-[10px] text-text-muted uppercase font-bold block">Market Cap</span>
+                    <span className="font-bold text-text-main text-sm">
+                      {formatCurrency(0, currentIndexConfig.region).slice(0, 1)}
+                      {activeInspect.marketCap}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-ui-bg/70 border border-ui-border/60">
+                    <span className="text-[10px] text-text-muted uppercase font-bold block">Sector</span>
+                    <span className="font-bold text-text-main truncate block">
+                      {activeInspect.sector}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-ui-bg/70 border border-ui-border/60">
+                    <span className="text-[10px] text-text-muted uppercase font-bold block">Volume</span>
+                    <span className="font-bold text-text-main">
+                      {activeInspect.volume}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-ui-bg/70 border border-ui-border/60">
+                    <span className="text-[10px] text-text-muted uppercase font-bold block">Day High</span>
+                    <span className="font-bold text-text-main">
+                      {formatCurrency(activeInspect.dayHigh, currentIndexConfig.region)}
+                    </span>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-ui-bg/70 border border-ui-border/60">
+                    <span className="text-[10px] text-text-muted uppercase font-bold block">Day Low</span>
+                    <span className="font-bold text-text-main">
+                      {formatCurrency(activeInspect.dayLow, currentIndexConfig.region)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="pt-2 space-y-2">
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => onTrade && onTrade(constituentToStock(activeInspect), 'BUY')}
+                      className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-mono font-bold text-xs shadow-xs transition-colors"
+                    >
+                      Buy {activeInspect.symbol}
+                    </button>
+                    <button
+                      onClick={() => onTrade && onTrade(constituentToStock(activeInspect), 'SELL')}
+                      className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-mono font-bold text-xs shadow-xs transition-colors"
+                    >
+                      Sell {activeInspect.symbol}
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setDetailModalStock(constituentToStock(activeInspect))}
+                    className="w-full py-2 rounded-xl bg-ui-bg border border-ui-border hover:border-[#C9A227] text-text-main font-mono font-bold text-xs transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Eye size={14} />
+                    <span>Double-Click for Full Details</span>
+                  </button>
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-text-muted space-y-2">
-                <Info size={24} className="mx-auto text-text-muted/40" />
-                <p className="text-xs font-mono">Hover over any stock tile to inspect real-time metrics.</p>
+              <div className="p-8 text-center space-y-2">
+                <Activity size={24} className="mx-auto text-text-muted/40" />
+                <p className="text-xs font-mono text-text-muted">
+                  Click any stock tile to inspect metrics.
+                </p>
               </div>
             )}
-          </div>
-
-          {/* Quick Tip Pill */}
-          <div className="p-4 bg-ui-surface/60 border border-ui-border rounded-2xl text-[11px] font-mono text-text-muted space-y-1.5">
-            <div className="flex items-center gap-1.5 text-primary font-bold">
-              <Zap size={13} />
-              <span>Finviz / TradingView Treemap Mode</span>
-            </div>
-            <p className="leading-relaxed text-[10px]">
-              Tile dimensions reflect market cap weighting within {currentIndexConfig.displaySymbol}. Saturated green denotes leaders beating +1.5% while red highlights intraday pullbacks.
-            </p>
           </div>
         </div>
       </div>
 
-      {/* Detailed Floating Hover Tooltip for Each Stock Box */}
-      <AnimatePresence>
-        {hoveredStock && (
-          <motion.div
-            id="stock-box-hover-tooltip"
-            initial={{ opacity: 0, scale: 0.94, y: 3 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 3 }}
-            transition={{ duration: 0.1, ease: 'easeOut' }}
-            style={{
-              position: 'fixed',
-              left: `${
-                typeof window !== 'undefined' && mousePos.x + 295 > window.innerWidth
-                  ? Math.max(12, mousePos.x - 295)
-                  : mousePos.x + 14
-              }px`,
-              top: `${
-                typeof window !== 'undefined' && mousePos.y + 240 > window.innerHeight
-                  ? Math.max(12, mousePos.y - 240)
-                  : Math.max(12, mousePos.y + 14)
-              }px`,
-              zIndex: 99999,
-              pointerEvents: 'none',
-            }}
-            className="w-[280px] bg-slate-950/95 dark:bg-slate-950/95 border border-slate-700/80 text-white rounded-2xl p-4 shadow-2xl backdrop-blur-2xl pointer-events-none select-none"
-          >
-            {/* Header: Symbol & Sector */}
-            <div className="flex items-start justify-between gap-2 mb-1">
-              <div className="flex items-center gap-2">
-                <span className="font-serif italic font-black text-xl tracking-tight text-white drop-shadow-xs">
-                  {hoveredStock.symbol}
-                </span>
-                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-white/10 text-slate-300 border border-white/10">
-                  {hoveredStock.country === 'India' ? 'NSE' : (hoveredStock.exchange || (currentIndexConfig.region === 'IN' ? 'NSE' : 'NASDAQ'))}
-                </span>
-              </div>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 truncate max-w-[120px]">
-                {hoveredStock.sector}
-              </span>
-            </div>
-
-            {/* Company Name */}
-            <p className="text-xs font-medium text-slate-300 truncate mb-3">
-              {hoveredStock.name}
-            </p>
-
-            {/* Main Metric Hero Box: Current Price & Percentage Change for the Day */}
-            <div className="bg-white/5 border border-white/10 rounded-xl p-3 mb-3 flex items-baseline justify-between">
-              <div>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                  Current Price
-                </div>
-                <div className="text-xl font-mono font-black text-white mt-0.5">
-                  {hoveredStock.currency}
-                  {hoveredStock.price.toLocaleString(undefined, {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2
-                  })}
-                </div>
-              </div>
-
-              <div className="text-right">
-                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
-                  Day Change
-                </div>
-                <div
-                  className={`inline-flex items-center gap-1 text-xs font-mono font-black px-2 py-0.5 rounded-md border mt-0.5 ${
-                    hoveredStock.changePercent >= 0
-                      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-                      : 'bg-rose-500/20 text-rose-300 border-rose-500/40'
-                  }`}
-                >
-                  {hoveredStock.changePercent >= 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
-                  <span>
-                    {hoveredStock.changePercent >= 0 ? '+' : ''}
-                    {hoveredStock.changePercent.toFixed(2)}%
-                  </span>
-                </div>
-                <div
-                  className={`text-[10px] font-mono font-bold mt-0.5 ${
-                    hoveredStock.changePercent >= 0 ? 'text-emerald-400' : 'text-rose-400'
-                  }`}
-                >
-                  {hoveredStock.change >= 0 ? '+' : ''}
-                  {hoveredStock.currency}
-                  {Math.abs(hoveredStock.change).toFixed(2)}
-                </div>
-              </div>
-            </div>
-
-            {/* Secondary Metrics: Market Cap & 24h Volume */}
-            <div className="grid grid-cols-2 gap-2 text-[10px] font-mono mb-3">
-              <div className="bg-white/5 rounded-lg p-2 border border-white/5">
-                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">Market Cap</span>
-                <span className="font-bold text-slate-200">{hoveredStock.marketCap}</span>
-              </div>
-              <div className="bg-white/5 rounded-lg p-2 border border-white/5">
-                <span className="text-slate-400 block text-[9px] uppercase tracking-wider">24h Volume</span>
-                <span className="font-bold text-slate-200">{hoveredStock.volume}</span>
-              </div>
-            </div>
-
-            {/* Intraday Day Low / High Range Slider */}
-            {(() => {
-              const dayLow = hoveredStock.dayLow ?? (hoveredStock.price * 0.985);
-              const dayHigh = hoveredStock.dayHigh ?? (hoveredStock.price * 1.015);
-              const rangeSpread = Math.max(0.001, dayHigh - dayLow);
-              const rangePosition = Math.min(100, Math.max(0, ((hoveredStock.price - dayLow) / rangeSpread) * 100));
-
-              return (
-                <div className="space-y-1 pt-1.5 border-t border-white/10 mb-2.5">
-                  <div className="flex items-center justify-between text-[9px] font-mono text-slate-400">
-                    <span>L: {hoveredStock.currency}{dayLow.toFixed(2)}</span>
-                    <span className="uppercase text-[8px] tracking-wider text-slate-500 font-bold">Day Range</span>
-                    <span>H: {hoveredStock.currency}{dayHigh.toFixed(2)}</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden relative">
-                    <div
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        hoveredStock.changePercent >= 0 ? 'bg-emerald-400' : 'bg-rose-400'
-                      }`}
-                      style={{ width: `${rangePosition}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })()}
-
-            {/* Quick Action Hint */}
-            <div className="flex items-center justify-between text-[9px] font-mono text-slate-400 pt-1 border-t border-white/5">
-              <span className="flex items-center gap-1 text-primary">
-                <span>●</span> Click to trade
-              </span>
-              <span>Double-click to pin</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* 8. Position Details Modal for Double-Click Action (Prompt Item 14) */}
+      {detailModalStock && (
+        <PositionDetailsModal
+          isOpen={!!detailModalStock}
+          onClose={() => setDetailModalStock(null)}
+          stock={detailModalStock}
+          onQuickTrade={stock => {
+            if (onTrade) onTrade(stock);
+          }}
+        />
+      )}
     </div>
   );
 };

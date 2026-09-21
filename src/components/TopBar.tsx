@@ -219,28 +219,102 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
         {/* Theme Toggle Switch (Desktop & Tablet Pill) */}
         <div 
           onClick={toggleTheme}
-          className="hidden sm:flex items-center bg-ui-surface border border-ui-border rounded-full p-1 cursor-pointer shadow-xs transition-all relative w-16 h-8 hover:border-primary/50 select-none"
+          className="hidden sm:flex items-center rounded-full p-1 cursor-pointer shadow-xs relative w-16 h-8 select-none overflow-hidden group"
           title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
           role="button"
           aria-label="Toggle theme"
         >
-          <div className="w-full flex justify-between px-1.5 z-10 text-text-muted">
-            <Sun size={14} strokeWidth={theme === 'light' ? 2 : 1.5} className={theme === 'light' ? 'text-primary' : 'opacity-40'} />
-            <Moon size={14} strokeWidth={theme === 'dark' ? 2 : 1.5} className={theme === 'dark' ? 'text-primary' : 'opacity-40'} />
-          </div>
-          <div 
-            className={`absolute w-6 h-6 rounded-full bg-ui-surface-hover border border-primary/30 shadow-[0_0_8px_rgba(212,175,55,0.25)] transition-transform duration-300 ease-in-out ${theme === 'dark' ? 'translate-x-8' : 'translate-x-0'}`} 
+          {/* Cross-fading container background layer */}
+          <motion.div 
+            className="absolute inset-0 pointer-events-none rounded-full border"
+            initial={false}
+            animate={{
+              backgroundColor: theme === 'dark' ? '#0B1325' : '#EFECE3',
+              borderColor: theme === 'dark' ? 'rgba(212, 175, 55, 0.28)' : 'rgba(212, 167, 44, 0.25)',
+              boxShadow: theme === 'dark' 
+                ? 'inset 0 1px 3px rgba(0, 0, 0, 0.4), 0 0 12px rgba(212, 175, 55, 0.08)' 
+                : 'inset 0 1px 3px rgba(0, 0, 0, 0.06), 0 0 10px rgba(212, 167, 44, 0.1)'
+            }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
           />
+
+          <div className="w-full flex justify-between px-1.5 z-10 text-text-muted pointer-events-none">
+            <Sun 
+              size={13} 
+              strokeWidth={theme === 'light' ? 2.2 : 1.5} 
+              className={`transition-all duration-400 ease-in-out ${theme === 'light' ? 'text-primary scale-110 opacity-100' : 'opacity-25 scale-90'}`} 
+            />
+            <Moon 
+              size={13} 
+              strokeWidth={theme === 'dark' ? 2.2 : 1.5} 
+              className={`transition-all duration-400 ease-in-out ${theme === 'dark' ? 'text-primary scale-110 opacity-100' : 'opacity-25 scale-90'}`} 
+            />
+          </div>
+
+          {/* Sliding indicator pill with cross-fading icon & background */}
+          <motion.div 
+            className="absolute top-1 left-1 w-6 h-6 rounded-full border flex items-center justify-center pointer-events-none" 
+            animate={{ 
+              x: theme === 'dark' ? 32 : 0,
+              backgroundColor: theme === 'dark' ? '#14223A' : '#FFFFFF',
+              borderColor: theme === 'dark' ? 'rgba(212, 175, 55, 0.45)' : 'rgba(212, 167, 44, 0.35)',
+              boxShadow: theme === 'dark'
+                ? '0 2px 8px rgba(0, 0, 0, 0.5), 0 0 8px rgba(212, 175, 55, 0.25)'
+                : '0 2px 6px rgba(23, 36, 58, 0.12), 0 0 6px rgba(212, 167, 44, 0.15)'
+            }}
+            transition={{ 
+              x: { type: 'spring', stiffness: 450, damping: 28 },
+              backgroundColor: { duration: 0.35, ease: [0.4, 0, 0.2, 1] },
+              borderColor: { duration: 0.35, ease: [0.4, 0, 0.2, 1] }
+            }}
+          >
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={theme}
+                initial={{ opacity: 0, scale: 0.82 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.82 }}
+                transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                className="text-primary flex items-center justify-center"
+              >
+                {theme === 'dark' ? (
+                  <Moon size={13} strokeWidth={2.2} />
+                ) : (
+                  <Sun size={13} strokeWidth={2.2} />
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </motion.div>
         </div>
 
-        {/* Mobile Theme Toggle Button */}
+        {/* Mobile Theme Toggle Button with Cross-Fade Background & Icon */}
         <button
           onClick={toggleTheme}
-          className="sm:hidden w-10 h-10 rounded-full bg-ui-surface text-text-muted hover:text-primary hover:bg-ui-surface-hover border border-ui-border flex items-center justify-center transition-all shadow-xs"
+          className="sm:hidden w-10 h-10 rounded-full flex items-center justify-center relative overflow-hidden shadow-xs border active:scale-95"
           title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
           aria-label="Toggle theme"
         >
-          {theme === 'dark' ? <Sun size={17} className="text-primary" /> : <Moon size={17} className="text-primary" />}
+          <motion.div 
+            className="absolute inset-0 pointer-events-none rounded-full"
+            initial={false}
+            animate={{
+              backgroundColor: theme === 'dark' ? '#0B1325' : '#FFFFFF',
+              borderColor: theme === 'dark' ? 'rgba(212, 175, 55, 0.3)' : 'rgba(229, 224, 214, 0.9)'
+            }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          />
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={theme}
+              initial={{ opacity: 0, scale: 0.82 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.82 }}
+              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+              className="flex items-center justify-center text-primary relative z-10"
+            >
+              {theme === 'dark' ? <Sun size={17} strokeWidth={2.2} /> : <Moon size={17} strokeWidth={2.2} />}
+            </motion.div>
+          </AnimatePresence>
         </button>
         
         {/* Notifications Bell & Dropdown */}
@@ -417,7 +491,8 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
           aria-label="Toggle navigation"
           aria-expanded={isMenuOpen}
         >
-          <img src="/tradepro-logo.svg" alt="TradePro" className="w-[110px] h-[30px] object-contain object-left" />
+          <img src="/tradepro-logo.svg" alt="TradePro" className="w-[110px] h-[30px] object-contain object-left dark:hidden block" style={{ opacity: 1, filter: 'none' }} />
+          <img src="/tradepro-logo-dark.svg" alt="TradePro" className="w-[110px] h-[30px] object-contain object-left hidden dark:block" style={{ opacity: 1, filter: 'none' }} />
         </button>
 
         <div className="hidden lg:flex items-center gap-2 shrink-0">

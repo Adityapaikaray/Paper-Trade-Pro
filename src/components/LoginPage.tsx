@@ -242,21 +242,48 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
           <img 
             src="/tradepro-logo.svg" 
             alt="TRADEPRO" 
-            className="h-8 w-auto object-contain" 
+            className="h-8 w-auto object-contain dark:hidden block" 
+            style={{ opacity: 1, filter: 'none' }}
+          />
+          <img 
+            src="/tradepro-logo-dark.svg" 
+            alt="TRADEPRO" 
+            className="h-8 w-auto object-contain hidden dark:block" 
+            style={{ opacity: 1, filter: 'none' }}
           />
         </div>
         <div className="hidden lg:block">
           {/* Empty spacer for desktop symmetry */}
         </div>
 
-        {/* Theme Toggle Button */}
+        {/* Theme Toggle Button with Cross-Fade */}
         <button
           onClick={toggleTheme}
-          className="w-10 h-10 rounded-full bg-[var(--ui-surface)] border border-[var(--ui-border)] text-[var(--text-muted)] hover:text-primary flex items-center justify-center transition-all shadow-sm active:scale-95"
+          className="w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-sm active:scale-95 relative overflow-hidden border border-[var(--ui-border)]"
           title={theme === 'dark' ? "Switch to Light Mode" : "Switch to Dark Mode"}
           aria-label="Toggle theme"
         >
-          {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+          <motion.div 
+            className="absolute inset-0 pointer-events-none rounded-full"
+            initial={false}
+            animate={{
+              backgroundColor: theme === 'dark' ? '#0B1325' : '#FFFFFF',
+              borderColor: theme === 'dark' ? 'rgba(212, 175, 55, 0.3)' : 'rgba(229, 224, 214, 0.9)'
+            }}
+            transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+          />
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={theme}
+              initial={{ opacity: 0, scale: 0.82 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.82 }}
+              transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+              className="flex items-center justify-center text-primary relative z-10"
+            >
+              {theme === 'dark' ? <Sun size={18} strokeWidth={2.2} /> : <Moon size={18} strokeWidth={2.2} />}
+            </motion.div>
+          </AnimatePresence>
         </button>
       </div>
 
@@ -274,7 +301,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
               <img 
                 src="/tradepro-logo.svg" 
                 alt="TRADEPRO" 
-                className="h-12 w-auto object-contain" 
+                className="h-12 w-auto object-contain dark:hidden block" 
+                style={{ opacity: 1, filter: 'none' }}
+              />
+              <img 
+                src="/tradepro-logo-dark.svg" 
+                alt="TRADEPRO" 
+                className="h-12 w-auto object-contain hidden dark:block" 
+                style={{ opacity: 1, filter: 'none' }}
               />
             </div>
 

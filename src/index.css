@@ -19,11 +19,16 @@
     --text-dark: #0D1624;
     --text-muted: #6E7C90; /* Secondary muted text */
     
+    /* Brand Typography Tokens (Light Mode) */
+    --brand-wordmark: #14213D; /* Strong premium deep navy */
+    --brand-tagline: #718096; /* Visible secondary navy/gray */
+    --brand-dot: #B88E1F; /* TradePro gold accent */
+
     /* Splash Screen Tokens */
     --splash-background: linear-gradient(180deg, #FCFAF7 0%, #F6F2EA 55%, #EDE7DC 100%);
     --splash-surface: transparent;
-    --splash-brand-text: #111C2E;
-    --splash-tagline-text: #17243A;
+    --splash-brand-text: #14213D;
+    --splash-tagline-text: #718096;
     
     --color-positive: #00B887; /* Emerald green */
     --color-positive-dark: #00966D;
@@ -36,10 +41,13 @@
   :root.light,
   html.light,
   .light {
+    --brand-wordmark: #14213D;
+    --brand-tagline: #718096;
+    --brand-dot: #B88E1F;
     --splash-background: linear-gradient(180deg, #FCFAF7 0%, #F6F2EA 55%, #EDE7DC 100%);
     --splash-surface: transparent;
-    --splash-brand-text: #111C2E;
-    --splash-tagline-text: #17243A;
+    --splash-brand-text: #14213D;
+    --splash-tagline-text: #718096;
   }
 
   :root.dark,
@@ -61,11 +69,16 @@
     --text-dark: #FFFFFF; 
     --text-muted: #8C8C8C; 
     
+    /* Brand Typography Tokens (Dark Mode) */
+    --brand-wordmark: #F5F7FA; /* Clear high contrast soft white */
+    --brand-tagline: #AAB4C3; /* Readable soft gray */
+    --brand-dot: #E5B83B; /* TradePro gold accent */
+
     /* Splash Screen Tokens */
     --splash-background: linear-gradient(180deg, #0D0E12 0%, #050608 100%);
     --splash-surface: transparent;
-    --splash-brand-text: #F5F5F0;
-    --splash-tagline-text: #E8ECF2;
+    --splash-brand-text: #F5F7FA;
+    --splash-tagline-text: #AAB4C3;
     
     --color-positive: #00D084; /* Emerald */
     --color-positive-dark: #007A50; /* Deep emerald */
@@ -74,8 +87,25 @@
     --shadow-color: rgba(0, 0, 0, 0.9);
   }
   
+  html,
   body {
-    @apply bg-[var(--ui-bg)] text-[var(--text-main)] font-sans antialiased selection:bg-primary/30 selection:text-primary transition-colors duration-500;
+    @apply bg-[var(--ui-bg)] text-[var(--text-main)] font-sans antialiased selection:bg-primary/30 selection:text-primary;
+    transition: background-color 500ms cubic-bezier(0.4, 0, 0.2, 1),
+                color 400ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 400ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  #root,
+  #tradepro-dashboard-container,
+  header,
+  aside,
+  main,
+  nav,
+  section,
+  .vibrant-card,
+  [role="dialog"] {
+    transition: background-color 500ms cubic-bezier(0.4, 0, 0.2, 1),
+                border-color 400ms cubic-bezier(0.4, 0, 0.2, 1);
   }
 }
 

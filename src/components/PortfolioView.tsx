@@ -4,7 +4,8 @@ import {
   TrendingUp, TrendingDown, Clock, Activity as ActivityIcon, PieChart as PieChartIcon,
   CheckCircle2, XCircle, AlertCircle, Briefcase, Plus, SearchX
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'motion/react';
+import NumberCounter from './NumberCounter.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
@@ -192,30 +193,109 @@ const PortfolioView: React.FC = () => {
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
             
-            <p className="text-sm font-bold text-text-muted uppercase tracking-widest mb-2 relative z-10">Total Portfolio Value</p>
-            <div className="flex flex-col md:flex-row md:items-end gap-3 md:gap-6 mb-6 md:mb-8 relative z-10">
-              <h1 className="text-4xl md:text-5xl font-mono font-black text-text-main tracking-tight">
-                {formatCurrency(summary.currentValue)}
-              </h1>
-              <div className={`flex items-center gap-1.5 text-lg font-bold font-mono px-3 py-1 rounded-full ${summary.totalGain >= 0 ? 'bg-positive/10 text-positive' : 'bg-negative/10 text-negative'} self-start md:mb-1.5`}>
-                {summary.totalGain >= 0 ? <ArrowUpRight size={20} strokeWidth={2.5} /> : <ArrowDownRight size={20} strokeWidth={2.5} />}
-                {formatCurrency(Math.abs(summary.totalGain))} ({formatPercent(summary.returnPct)})
+            <div className="flex items-center justify-between mb-2 relative z-10">
+              <p className="text-sm font-bold text-text-muted uppercase tracking-widest">Total Portfolio Value</p>
+              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-mono font-bold text-primary">
+                <span className="w-1.5 h-1.5 rounded-full bg-positive animate-pulse" />
+                <span>LIVE</span>
               </div>
+            </div>
+
+            <div className="flex flex-col md:flex-row md:items-end gap-3 md:gap-6 mb-6 md:mb-8 relative z-10">
+              <h1 className="text-4xl md:text-5xl font-mono font-black text-text-main tracking-tight flex items-baseline">
+                <NumberCounter
+                  value={summary.currentValue}
+                  prefix={currencySymbol}
+                  region={marketContext}
+                  decimals={2}
+                  flashOnChange={true}
+                  hide={hideBalances}
+                />
+              </h1>
+
+              <motion.div
+                layout
+                animate={{ scale: [1, 1.03, 1] }}
+                transition={{ duration: 0.35, ease: 'easeOut' }}
+                key={`${summary.totalGain >= 0}-${summary.returnPct.toFixed(1)}`}
+                className={`flex items-center gap-1.5 text-lg font-bold font-mono px-3.5 py-1.5 rounded-full ${
+                  summary.totalGain >= 0
+                    ? 'bg-positive/10 text-positive border border-positive/20'
+                    : 'bg-negative/10 text-negative border border-negative/20'
+                } self-start md:mb-1.5 transition-colors duration-300 shadow-xs`}
+              >
+                <motion.span
+                  key={summary.totalGain >= 0 ? 'up' : 'down'}
+                  initial={{ rotate: summary.totalGain >= 0 ? -45 : 45, opacity: 0 }}
+                  animate={{ rotate: 0, opacity: 1 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {summary.totalGain >= 0 ? (
+                    <ArrowUpRight size={20} strokeWidth={2.5} />
+                  ) : (
+                    <ArrowDownRight size={20} strokeWidth={2.5} />
+                  )}
+                </motion.span>
+
+                {hideBalances ? (
+                  <span>••••••</span>
+                ) : (
+                  <div className="flex items-center gap-1.5">
+                    <NumberCounter
+                      value={Math.abs(summary.totalGain)}
+                      prefix={currencySymbol}
+                      region={marketContext}
+                      decimals={2}
+                    />
+                    <span className="opacity-60">(</span>
+                    <NumberCounter
+                      value={summary.returnPct}
+                      suffix="%"
+                      showSign={true}
+                      decimals={2}
+                    />
+                    <span className="opacity-60">)</span>
+                  </div>
+                )}
+              </motion.div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 pt-6 border-t border-ui-border/60 relative z-10">
               <div>
                 <p className="text-xs text-text-muted font-bold mb-1">Invested</p>
-                <p className="text-sm md:text-base font-mono font-bold text-text-main">{formatCurrency(summary.investedValue)}</p>
+                <p className="text-sm md:text-base font-mono font-bold text-text-main">
+                  <NumberCounter
+                    value={summary.investedValue}
+                    prefix={currencySymbol}
+                    region={marketContext}
+                    decimals={2}
+                    hide={hideBalances}
+                  />
+                </p>
               </div>
               <div>
                 <p className="text-xs text-text-muted font-bold mb-1">Available Cash</p>
-                <p className="text-sm md:text-base font-mono font-bold text-text-main">{formatCurrency(summary.availableCash)}</p>
+                <p className="text-sm md:text-base font-mono font-bold text-text-main">
+                  <NumberCounter
+                    value={summary.availableCash}
+                    prefix={currencySymbol}
+                    region={marketContext}
+                    decimals={2}
+                    hide={hideBalances}
+                  />
+                </p>
               </div>
               <div className="col-span-2 md:col-span-1">
                 <p className="text-xs text-text-muted font-bold mb-1">Today's P&L</p>
                 <p className={`text-sm md:text-base font-mono font-bold ${todayPnL >= 0 ? 'text-positive' : 'text-negative'}`}>
-                  {todayPnL >= 0 ? '+' : ''}{formatCurrency(todayPnL)}
+                  <NumberCounter
+                    value={todayPnL}
+                    prefix={currencySymbol}
+                    region={marketContext}
+                    showSign={true}
+                    decimals={2}
+                    hide={hideBalances}
+                  />
                 </p>
               </div>
             </div>

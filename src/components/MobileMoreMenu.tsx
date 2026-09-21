@@ -88,12 +88,35 @@ const MobileMoreMenu: React.FC = () => {
                     isActive={currentRoute.id === 'settings'}
                     onClick={() => handleNavigate('settings')} 
                   />
-                  <MenuRow 
-                    icon={theme === 'dark' ? Sun : Moon} 
-                    label={`Appearance: ${theme === 'dark' ? 'Dark' : 'Light'} Mode`} 
-                    isActive={false}
-                    onClick={toggleTheme} 
-                  />
+                  <button
+                    onClick={toggleTheme}
+                    className="w-full flex items-center gap-4 p-4 text-left hover:bg-ui-surface-hover transition-colors duration-300 active:bg-ui-bg"
+                  >
+                    <motion.div 
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-primary relative overflow-hidden border border-ui-border"
+                      animate={{
+                        backgroundColor: theme === 'dark' ? '#0B1325' : '#F4EFE6',
+                        borderColor: theme === 'dark' ? 'rgba(212, 175, 55, 0.3)' : 'rgba(212, 167, 44, 0.25)'
+                      }}
+                      transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
+                    >
+                      <AnimatePresence mode="wait" initial={false}>
+                        <motion.div
+                          key={theme}
+                          initial={{ opacity: 0, scale: 0.82 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.82 }}
+                          transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                          className="flex items-center justify-center"
+                        >
+                          {theme === 'dark' ? <Sun size={20} strokeWidth={2} /> : <Moon size={20} strokeWidth={2} />}
+                        </motion.div>
+                      </AnimatePresence>
+                    </motion.div>
+                    <span className="text-base font-medium flex-1 text-text-main">
+                      Appearance: {theme === 'dark' ? 'Dark' : 'Light'} Mode
+                    </span>
+                  </button>
                   <MenuRow 
                     icon={HelpCircle} label="Help & Support" 
                     isActive={currentRoute.id === 'help'}

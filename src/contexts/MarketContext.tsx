@@ -273,8 +273,12 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     fetchData();
     fetchMarketStatus();
 
-    // Poll live market data every 3.5 seconds to balance live responsiveness and CPU efficiency
-    const interval = setInterval(fetchData, 3500);
+    // Poll live market data every 15 seconds to respect provider rate limits while keeping data fresh
+    const interval = setInterval(() => {
+      if (document.visibilityState !== 'hidden') {
+        fetchData();
+      }
+    }, 15000);
     const statusInterval = setInterval(fetchMarketStatus, 60000);
 
     // Dynamic real-time micro-tick simulator for paper-trading order book fluidity

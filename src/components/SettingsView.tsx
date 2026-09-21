@@ -295,9 +295,30 @@ const SettingsView: React.FC = () => {
                   </div>
                   <button 
                     onClick={toggleTheme}
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ui-surface-hover hover:bg-ui-border text-text-main text-xs font-bold border border-ui-border transition-all shadow-sm"
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl bg-ui-surface-hover hover:bg-ui-border text-text-main text-xs font-bold border border-ui-border transition-all duration-300 shadow-sm overflow-hidden relative"
                   >
-                    {theme === 'dark' ? <><Sun size={14} className="text-primary" /> Light Mode</> : <><Moon size={14} className="text-primary" /> Dark Mode</>}
+                    <AnimatePresence mode="wait" initial={false}>
+                      <motion.div
+                        key={theme}
+                        initial={{ opacity: 0, scale: 0.85 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.85 }}
+                        transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                        className="flex items-center gap-2"
+                      >
+                        {theme === 'dark' ? (
+                          <>
+                            <Sun size={14} className="text-primary" />
+                            <span>Light Mode</span>
+                          </>
+                        ) : (
+                          <>
+                            <Moon size={14} className="text-primary" />
+                            <span>Dark Mode</span>
+                          </>
+                        )}
+                      </motion.div>
+                    </AnimatePresence>
                   </button>
                 </div>
 

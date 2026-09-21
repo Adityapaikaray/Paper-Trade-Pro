@@ -118,7 +118,7 @@ const PremiumPerformanceCard: React.FC<PremiumPerformanceCardProps> = ({ activeT
         </div>
 
         {/* 3. Main Chart */}
-        <div className="h-[380px] w-full -mx-2 relative z-0">
+        <div className="min-h-[440px] md:h-[470px] w-full -mx-2 relative z-0">
           <PortfolioGraph 
              investedValue={investedValue}
              currentValue={currentValue}
