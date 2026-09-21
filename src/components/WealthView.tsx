@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Eye, EyeOff, Plus, Target, ArrowRight, Wallet, 
   TrendingUp, ArrowUpRight, TrendingDown, PieChart as PieChartIcon, Info, ChevronRight, Activity, 
-  ArrowLeft, Edit2, Search
+  ArrowLeft, Edit2, Search, Sparkles, Bot
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
@@ -14,6 +14,7 @@ import {
 } from 'recharts';
 import { FutureWealthProjection } from './FutureWealthProjection.tsx';
 import { WealthAnalytics } from './WealthAnalytics.tsx';
+import { AIWealthManagerView } from './AIWealthManager/AIWealthManagerView.tsx';
 import { formatCurrency as globalFormatCurrency, formatCompactCurrency as globalFormatCompactCurrency } from '../utils/formatters.ts';
 
 interface FinancialGoal {
@@ -42,7 +43,7 @@ const DEFAULT_IN_GOALS: FinancialGoal[] = [
 
 const PIE_COLORS = ['#D4AF37', '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#64748B', '#A78BFA'];
 
-type WealthStep = 'DASHBOARD' | 'CREATE_GOAL' | 'GOAL_DETAILS';
+type WealthStep = 'DASHBOARD' | 'CREATE_GOAL' | 'GOAL_DETAILS' | 'AI_WEALTH';
 
 export const WealthView: React.FC = () => {
   const { summary, profile, marketContext } = usePortfolio();
@@ -53,6 +54,7 @@ export const WealthView: React.FC = () => {
   const currencySymbol = isIndia ? '₹' : '$';
 
   const [step, setStep] = useState<WealthStep>('DASHBOARD');
+  const [aiAction, setAiAction] = useState<string | undefined>(undefined);
   const [hideBalances, setHideBalances] = useState(false);
   const [timeframe, setTimeframe] = useState<'1M' | '6M' | '1Y' | '3Y' | '5Y' | 'All'>('1Y');
 
@@ -187,7 +189,7 @@ export const WealthView: React.FC = () => {
   return (
     <div className="w-full max-w-7xl mx-auto pb-24">
       {/* Wealth Header */}
-      <div className="flex items-center justify-between mb-6 px-4 md:px-0 mt-2">
+      <div className="flex items-center justify-between mb-4 px-4 md:px-0 mt-2">
         {step !== 'DASHBOARD' ? (
           <button 
             onClick={() => setStep('DASHBOARD')}
@@ -212,7 +214,98 @@ export const WealthView: React.FC = () => {
         )}
       </div>
 
+      {/* Wealth Sub-Navigation Tabs */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-6 border-b border-ui-border custom-scrollbar no-scrollbar px-4 md:px-0">
+        <button
+          onClick={() => setStep('DASHBOARD')}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+            step === 'DASHBOARD'
+              ? 'bg-[#D4AF37] text-[#0A0F1A] shadow-sm'
+              : 'text-text-muted hover:text-text-main bg-ui-surface hover:bg-ui-surface-hover border border-ui-border'
+          }`}
+        >
+          Wealth Dashboard
+        </button>
+
+        <button
+          onClick={() => {
+            setStep('AI_WEALTH');
+            setAiAction(undefined);
+          }}
+          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1.5 ${
+            step === 'AI_WEALTH'
+              ? 'bg-gradient-to-r from-[#D4AF37] to-[#E5C158] text-[#0A0F1A] shadow-[0_0_12px_rgba(212,175,55,0.4)]'
+              : 'text-[#CBD5E1] hover:text-[#F5E6BE] bg-[#070C16] hover:bg-[#101A2E] border border-[#D4AF37]/30'
+          }`}
+        >
+          <Sparkles size={13} className={step === 'AI_WEALTH' ? 'text-[#0A0F1A]' : 'text-[#D4AF37]'} />
+          <span>AI Wealth Manager</span>
+          <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#D4AF37]/20 text-[#D4AF37] font-mono">
+            AI
+          </span>
+        </button>
+
+        <button
+          onClick={() => navigate('portfolio')}
+          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-muted hover:text-text-main bg-ui-surface hover:bg-ui-surface-hover border border-ui-border whitespace-nowrap transition-colors"
+        >
+          Investments
+        </button>
+
+        <button
+          onClick={() => {
+            setStep('DASHBOARD');
+            setTimeout(() => {
+              const el = document.getElementById('wealth-goals-section');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }}
+          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-muted hover:text-text-main bg-ui-surface hover:bg-ui-surface-hover border border-ui-border whitespace-nowrap transition-colors"
+        >
+          Goals
+        </button>
+
+        <button
+          onClick={() => {
+            setStep('DASHBOARD');
+            setTimeout(() => {
+              const el = document.getElementById('wealth-analytics-section');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }}
+          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-muted hover:text-text-main bg-ui-surface hover:bg-ui-surface-hover border border-ui-border whitespace-nowrap transition-colors"
+        >
+          Wealth Analytics
+        </button>
+
+        <button
+          onClick={() => {
+            setStep('DASHBOARD');
+            setTimeout(() => {
+              const el = document.getElementById('wealth-projection-section');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }, 100);
+          }}
+          className="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-text-muted hover:text-text-main bg-ui-surface hover:bg-ui-surface-hover border border-ui-border whitespace-nowrap transition-colors"
+        >
+          Projection
+        </button>
+      </div>
+
       <AnimatePresence mode="wait">
+        
+        {/* AI WEALTH MANAGER FULL VIEW */}
+        {step === 'AI_WEALTH' && (
+          <motion.div
+            key="ai_wealth"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="w-full"
+          >
+            <AIWealthManagerView initialAction={aiAction} />
+          </motion.div>
+        )}
         
         {/* CREATE GOAL FLOW */}
         {step === 'CREATE_GOAL' && (
@@ -504,6 +597,68 @@ export const WealthView: React.FC = () => {
                 </div>
               </div>
 
+              {/* PROMINENT ASK AI WEALTH MANAGER CARD */}
+              <div className="bg-gradient-to-r from-[#13223D] via-[#0E1B33] to-[#0A1224] border border-[#D4AF37]/40 rounded-3xl p-6 md:p-7 shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-80 h-80 bg-[#D4AF37]/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+                  <div className="space-y-1.5 max-w-xl">
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#D4AF37]/15 border border-[#D4AF37]/30 text-[#F5E6BE] text-xs font-bold uppercase tracking-wider">
+                      <Sparkles size={13} className="text-[#D4AF37]" />
+                      TradePro AI Wealth Manager
+                    </div>
+                    <h3 className="text-xl md:text-2xl font-serif font-black text-[#F8FAFC]">
+                      Understand your wealth, track progress, and explore what-if scenarios.
+                    </h3>
+                    <p className="text-xs md:text-sm text-[#94A3B8]">
+                      Institutional AI intelligence connected directly to your TradePro portfolio, holdings, cash flow, and goals.
+                    </p>
+
+                    {/* Clickable quick prompts */}
+                    <div className="flex flex-wrap gap-2 pt-2">
+                      <button
+                        onClick={() => {
+                          setAiAction('analyze-portfolio');
+                          setStep('AI_WEALTH');
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-xl bg-[#070C16] hover:bg-[#101A2E] border border-ui-border hover:border-[#D4AF37]/50 text-[#CBD5E1] hover:text-[#F5E6BE] transition-all"
+                      >
+                        • How is my portfolio performing?
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAiAction('explain-allocation');
+                          setStep('AI_WEALTH');
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-xl bg-[#070C16] hover:bg-[#101A2E] border border-ui-border hover:border-[#D4AF37]/50 text-[#CBD5E1] hover:text-[#F5E6BE] transition-all"
+                      >
+                        • Where is most of my money invested?
+                      </button>
+                      <button
+                        onClick={() => {
+                          setAiAction('review-goals');
+                          setStep('AI_WEALTH');
+                        }}
+                        className="text-xs px-3 py-1.5 rounded-xl bg-[#070C16] hover:bg-[#101A2E] border border-ui-border hover:border-[#D4AF37]/50 text-[#CBD5E1] hover:text-[#F5E6BE] transition-all"
+                      >
+                        • Am I on track for my goals?
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setAiAction(undefined);
+                      setStep('AI_WEALTH');
+                    }}
+                    className="shrink-0 px-5 py-3.5 rounded-2xl bg-gradient-to-r from-[#D4AF37] to-[#E5C158] text-[#0A0F1A] font-bold text-sm shadow-[0_0_20px_rgba(212,175,55,0.4)] hover:brightness-105 active:scale-95 transition-all flex items-center gap-2 self-start md:self-auto"
+                  >
+                    <Bot size={18} />
+                    <span>Launch AI Wealth Manager</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </div>
+              </div>
+
               {/* 3. ASSET ALLOCATION & INVESTMENTS (2-COLUMN) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Asset Allocation */}
@@ -619,7 +774,7 @@ export const WealthView: React.FC = () => {
               {/* 4. FINANCIAL GOALS & INSIGHTS (2-COLUMN) */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Financial Goals */}
-                <div className="bg-ui-surface border border-ui-border rounded-3xl p-6 shadow-sm flex flex-col">
+                <div id="wealth-goals-section" className="bg-ui-surface border border-ui-border rounded-3xl p-6 shadow-sm flex flex-col">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-sm font-bold text-text-main uppercase tracking-widest">Financial Goals</h3>
                     <button onClick={() => setStep('CREATE_GOAL')} className="text-[10px] font-bold text-primary hover:text-primary-hover transition-colors flex items-center gap-1 uppercase tracking-wider bg-primary/10 px-3 py-1.5 rounded-full">
@@ -684,11 +839,13 @@ export const WealthView: React.FC = () => {
                   )}
                 </div>
                 {/* Wealth Analytics */}
-                <WealthAnalytics />
+                <div id="wealth-analytics-section">
+                  <WealthAnalytics />
+                </div>
               </div>
 
               {/* 5. FUTURE WEALTH PROJECTION */}
-              <div className="w-full">
+              <div id="wealth-projection-section" className="w-full">
                 <FutureWealthProjection />
               </div>
 

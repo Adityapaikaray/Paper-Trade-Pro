@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Crown, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Crown, Sun, Moon, ChevronLeft, ChevronRight, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useUI } from '../contexts/UIContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
@@ -68,8 +68,8 @@ const Sidebar: React.FC = () => {
         {primaryNavigation.map((item) => {
           const isActive = currentRoute.id === item.id;
           return (
+            <React.Fragment key={item.id}>
             <button
-              key={item.id}
               onClick={() => navigate(item.id as RouteId)}
               title={isExpanded ? undefined : item.label}
               className={`w-full flex items-center ${isExpanded ? 'px-4 justify-start' : 'justify-center'} py-3 rounded-xl transition-all duration-250 ease-out group relative active:scale-[0.985] ${
@@ -104,6 +104,51 @@ const Sidebar: React.FC = () => {
                 </span>
               )}
             </button>
+
+            {item.id === 'wealth' && (
+              <button
+                key="ai-wealth-manager"
+                onClick={() => navigate('ai-wealth-manager')}
+                title={isExpanded ? undefined : 'AI Wealth Manager'}
+                className={`w-full flex items-center ${isExpanded ? 'pl-7 pr-3 justify-start' : 'justify-center'} py-2 rounded-xl transition-all duration-250 ease-out group relative active:scale-[0.985] mt-1 ${
+                  currentRoute.id === 'ai-wealth-manager'
+                    ? 'bg-gradient-to-r from-[#D4AF37]/22 via-[#D4AF37]/10 to-transparent border border-[#D4AF37]/40 text-[#F5E6BE] shadow-[0_0_14px_rgba(212,175,55,0.18)]'
+                    : 'text-[#94A3B8] hover:text-[#F8FAFC] hover:bg-[#13223D]/80 border border-transparent hover:border-[#D4AF37]/30'
+                }`}
+              >
+                {currentRoute.id === 'ai-wealth-manager' && (
+                  <motion.div 
+                    layoutId="activeNavIndicatorAIWealth"
+                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-[#D4AF37] rounded-r-full shadow-[0_0_12px_rgba(212,175,55,0.8)]"
+                    transition={{ type: "spring", stiffness: 450, damping: 32 }}
+                  />
+                )}
+                
+                <div 
+                  className={`shrink-0 transition-all duration-200 ${
+                    currentRoute.id === 'ai-wealth-manager'
+                      ? 'text-[#E6CA65] drop-shadow-[0_0_10px_rgba(212,175,55,0.6)]' 
+                      : 'text-[#D4AF37]/80 group-hover:text-[#E6CA65] group-hover:scale-105'
+                  } ${isExpanded ? 'mr-3' : ''}`}
+                >
+                  <Sparkles size={18} strokeWidth={currentRoute.id === 'ai-wealth-manager' ? 2.5 : 2} />
+                </div>
+
+                {isExpanded && (
+                  <div className="flex items-center justify-between flex-1 truncate">
+                    <span className={`text-[15.5px] leading-tight z-10 transition-colors tracking-tight truncate ${
+                      currentRoute.id === 'ai-wealth-manager' ? 'font-bold text-[#F5E6BE]' : 'font-semibold'
+                    }`}>
+                      AI Wealth Manager
+                    </span>
+                    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/40 ml-1.5">
+                      AI
+                    </span>
+                  </div>
+                )}
+              </button>
+            )}
+            </React.Fragment>
           );
         })}
 

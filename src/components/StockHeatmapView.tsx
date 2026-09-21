@@ -28,7 +28,10 @@ import {
   SlidersHorizontal,
   X,
   PieChart,
-  Eye
+  Eye,
+  Calendar,
+  Zap,
+  ShieldCheck
 } from 'lucide-react';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
@@ -44,6 +47,11 @@ import {
   parseMarketCapToNumber,
   parseVolumeToNumber
 } from '../data/indexHeatmapData.ts';
+import {
+  getMarketSessionDetail,
+  MarketSessionDetail,
+  MarketSessionMode
+} from '../utils/marketHours.ts';
 import { formatCurrency, formatCompactCurrency } from '../utils/formatters.ts';
 import { PositionDetailsModal } from './PositionDetailsModal.tsx';
 
@@ -126,6 +134,31 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  // Market session state & live exchange clock
+  const [clockNow, setClockNow] = useState<Date>(new Date());
+  const [sessionOverride, setSessionOverride] = useState<MarketSessionMode | null>(null);
+  const [isSessionPopoverOpen, setIsSessionPopoverOpen] = useState<boolean>(false);
+  const sessionPopoverRef = useRef<HTMLDivElement>(null);
+
+  // Live exchange clock ticker (updates every second for accurate schedule changes)
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setClockNow(new Date());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Close session popover on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (sessionPopoverRef.current && !sessionPopoverRef.current.contains(event.target as Node)) {
+        setIsSessionPopoverOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Close "MORE" popover on click outside
   useEffect(() => {
@@ -408,13 +441,14 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
   const activeInspect = inspectedConstituent || liveConstituents[0] || null;
   const isInspectedWatchlisted = activeInspect ? isWatchlisted(activeInspect.symbol) : false;
 
-  // Market status label
-  const sessionStatus = useMemo(() => {
-    if (currentIndexConfig.region === 'IN') {
-      return marketStatus.nse.toUpperCase().includes('OPEN') ? 'LIVE' : 'MARKET CLOSED';
-    }
-    return marketStatus.nyse.toUpperCase().includes('OPEN') ? 'LIVE' : 'MARKET CLOSED';
-  }, [currentIndexConfig, marketStatus]);
+  // Dynamic Market Session calculation based on the selected index's region (India or U.S.)
+  const sessionDetail: MarketSessionDetail = useMemo(() => {
+    return getMarketSessionDetail(
+      currentIndexConfig.region,
+      clockNow,
+      sessionOverride
+    );
+  }, [currentIndexConfig.region, clockNow, sessionOverride]);
 
   return (
     <div
@@ -434,21 +468,305 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
               {currentIndexConfig.displaySymbol} STOCK HEATMAP
             </h1>
 
-            {/* Session Indicator */}
-            <span
-              className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold tracking-wide border ${
-                sessionStatus === 'LIVE'
-                  ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
-                  : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
-              }`}
-            >
-              <span
-                className={`w-1.5 h-1.5 rounded-full ${
-                  sessionStatus === 'LIVE' ? 'bg-emerald-500 animate-ping' : 'bg-slate-400'
+            {/* Dynamic Market Session Indicator (LIVE, DELAYED, CLOSED) */}
+            <div className="relative" ref={sessionPopoverRef}>
+              <button
+                type="button"
+                onClick={() => setIsSessionPopoverOpen(prev => !prev)}
+                className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold tracking-wide border transition-all cursor-pointer select-none group shadow-xs ${
+                  sessionDetail.mode === 'LIVE'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20'
+                    : sessionDetail.mode === 'DELAYED'
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/20'
+                    : 'bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30 hover:bg-slate-500/20'
                 }`}
-              />
-              <span>{sessionStatus}</span>
-            </span>
+                title="Click for official market trading schedule & session details"
+              >
+                {/* Visual Status Dot */}
+                <span className="relative flex h-2 w-2">
+                  {sessionDetail.mode === 'LIVE' && (
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  )}
+                  {sessionDetail.mode === 'DELAYED' && (
+                    <span className="animate-pulse absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
+                  )}
+                  <span
+                    className={`relative inline-flex rounded-full h-2 w-2 ${
+                      sessionDetail.mode === 'LIVE'
+                        ? 'bg-emerald-500'
+                        : sessionDetail.mode === 'DELAYED'
+                        ? 'bg-amber-500'
+                        : 'bg-slate-400 dark:bg-slate-500'
+                    }`}
+                  />
+                </span>
+
+                <span className="font-black tracking-wider">{sessionDetail.mode}</span>
+
+                {/* Sub-label showing Exchange & Local Time */}
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] opacity-80 border-l border-current/25 pl-1.5 font-medium">
+                  <span>{sessionDetail.region === 'US' ? 'NYSE' : 'NSE'}</span>
+                  <span>•</span>
+                  <span>{sessionDetail.localTimeStr}</span>
+                </span>
+
+                <ChevronDown
+                  size={11}
+                  className={`opacity-60 transition-transform duration-200 group-hover:opacity-100 ${
+                    isSessionPopoverOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {/* Interactive Trading Schedule Popover */}
+              <AnimatePresence>
+                {isSessionPopoverOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    className="absolute left-0 top-full mt-2 w-80 sm:w-96 rounded-2xl bg-ui-surface border border-ui-border shadow-2xl p-4 sm:p-5 z-50 text-text-main"
+                  >
+                    {/* Popover Header */}
+                    <div className="flex items-start justify-between pb-3 border-b border-ui-border">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-base">
+                            {sessionDetail.region === 'IN' ? '🇮🇳' : '🇺🇸'}
+                          </span>
+                          <span className="text-xs font-mono font-bold uppercase tracking-wider text-text-muted">
+                            {sessionDetail.exchangeName}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-bold text-text-main mt-0.5">
+                          {sessionDetail.region === 'IN' ? 'India Trading Schedule' : 'U.S. Trading Schedule'}
+                        </h4>
+                      </div>
+
+                      {/* State Badge */}
+                      <span
+                        className={`px-2.5 py-0.5 rounded-full text-[11px] font-mono font-black uppercase tracking-wider border ${
+                          sessionDetail.mode === 'LIVE'
+                            ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/30'
+                            : sessionDetail.mode === 'DELAYED'
+                            ? 'bg-amber-500/10 text-amber-500 border-amber-500/30'
+                            : 'bg-slate-500/10 text-slate-400 border-slate-500/30'
+                        }`}
+                      >
+                        {sessionDetail.mode}
+                      </span>
+                    </div>
+
+                    {/* Active Exchange Clock & Phase */}
+                    <div className="my-3 p-3 rounded-xl bg-ui-bg border border-ui-border/80 space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-text-muted font-mono flex items-center gap-1.5">
+                          <Clock size={13} className="text-[#C9A227]" />
+                          <span>Local Exchange Time:</span>
+                        </span>
+                        <span className="font-mono font-bold text-text-main">
+                          {sessionDetail.localTimeStr}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-text-muted font-mono">Current Session:</span>
+                        <span className="font-bold text-text-main text-right">
+                          {sessionDetail.sessionName}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs pt-1 border-t border-ui-border/50">
+                        <span className="text-text-muted font-mono">Next Event:</span>
+                        <span className="font-mono text-xs font-semibold text-[#C9A227] dark:text-[#D4AF37]">
+                          {sessionDetail.nextEvent}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Official Schedule Timeline */}
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-mono font-bold text-text-muted uppercase tracking-wider">
+                        Official {sessionDetail.region === 'IN' ? 'NSE/BSE (IST)' : 'NYSE/NASDAQ (ET)'} Hours
+                      </p>
+
+                      <div className="space-y-1 text-xs font-mono">
+                        {sessionDetail.region === 'IN' ? (
+                          <>
+                            <div className={`p-2 rounded-lg flex items-center justify-between border ${
+                              sessionDetail.phase === 'pre_market'
+                                ? 'bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold'
+                                : 'bg-ui-bg/50 border-ui-border/50 text-text-muted'
+                            }`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                <span>09:00 – 09:15 IST</span>
+                              </span>
+                              <span className="text-[11px]">Pre-Market Auction [DELAYED]</span>
+                            </div>
+
+                            <div className={`p-2 rounded-lg flex items-center justify-between border ${
+                              sessionDetail.phase === 'regular'
+                                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold'
+                                : 'bg-ui-bg/50 border-ui-border/50 text-text-muted'
+                            }`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                <span>09:15 – 15:30 IST</span>
+                              </span>
+                              <span className="text-[11px]">Regular Market [LIVE]</span>
+                            </div>
+
+                            <div className={`p-2 rounded-lg flex items-center justify-between border ${
+                              sessionDetail.phase === 'post_market'
+                                ? 'bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold'
+                                : 'bg-ui-bg/50 border-ui-border/50 text-text-muted'
+                            }`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                <span>15:30 – 16:00 IST</span>
+                              </span>
+                              <span className="text-[11px]">Closing Session [DELAYED]</span>
+                            </div>
+
+                            <div className={`p-2 rounded-lg flex items-center justify-between border ${
+                              sessionDetail.phase === 'closed'
+                                ? 'bg-slate-500/10 border-slate-500/40 text-slate-600 dark:text-slate-400 font-bold'
+                                : 'bg-ui-bg/50 border-ui-border/50 text-text-muted'
+                            }`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                <span>16:00 – 09:00 IST</span>
+                              </span>
+                              <span className="text-[11px]">Overnight & Weekends [CLOSED]</span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className={`p-2 rounded-lg flex items-center justify-between border ${
+                              sessionDetail.phase === 'pre_market'
+                                ? 'bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold'
+                                : 'bg-ui-bg/50 border-ui-border/50 text-text-muted'
+                            }`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                <span>04:00 – 09:30 ET</span>
+                              </span>
+                              <span className="text-[11px]">Pre-Market Extended [DELAYED]</span>
+                            </div>
+
+                            <div className={`p-2 rounded-lg flex items-center justify-between border ${
+                              sessionDetail.phase === 'regular'
+                                ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-600 dark:text-emerald-400 font-bold'
+                                : 'bg-ui-bg/50 border-ui-border/50 text-text-muted'
+                            }`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                <span>09:30 – 16:00 ET</span>
+                              </span>
+                              <span className="text-[11px]">Regular Market [LIVE]</span>
+                            </div>
+
+                            <div className={`p-2 rounded-lg flex items-center justify-between border ${
+                              sessionDetail.phase === 'after_hours'
+                                ? 'bg-amber-500/10 border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold'
+                                : 'bg-ui-bg/50 border-ui-border/50 text-text-muted'
+                            }`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                                <span>16:00 – 20:00 ET</span>
+                              </span>
+                              <span className="text-[11px]">After-Hours Extended [DELAYED]</span>
+                            </div>
+
+                            <div className={`p-2 rounded-lg flex items-center justify-between border ${
+                              sessionDetail.phase === 'closed'
+                                ? 'bg-slate-500/10 border-slate-500/40 text-slate-600 dark:text-slate-400 font-bold'
+                                : 'bg-ui-bg/50 border-ui-border/50 text-text-muted'
+                            }`}>
+                              <span className="flex items-center gap-2">
+                                <span className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                                <span>20:00 – 04:00 ET</span>
+                              </span>
+                              <span className="text-[11px]">Overnight & Weekends [CLOSED]</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Feed Quality & Mode Simulation Tester */}
+                    <div className="mt-3 pt-3 border-t border-ui-border space-y-2">
+                      <div className="flex items-center justify-between text-[11px] text-text-muted">
+                        <span>Data Feed Quality:</span>
+                        <span className="font-mono font-medium text-text-main">{sessionDetail.feedType}</span>
+                      </div>
+
+                      {/* Preview Override Selector */}
+                      <div className="pt-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-mono text-text-muted uppercase font-bold">Session Mode Preview:</span>
+                          {sessionOverride && (
+                            <button
+                              type="button"
+                              onClick={() => setSessionOverride(null)}
+                              className="text-[10px] font-mono text-[#C9A227] hover:underline"
+                            >
+                              Reset to Auto Schedule
+                            </button>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-4 gap-1 text-[10px] font-mono">
+                          <button
+                            type="button"
+                            onClick={() => setSessionOverride(null)}
+                            className={`px-1.5 py-1 rounded-md border text-center font-bold transition-all cursor-pointer ${
+                              sessionOverride === null
+                                ? 'bg-[#C9A227] text-[#14213D] border-[#C9A227]'
+                                : 'bg-ui-bg text-text-muted border-ui-border hover:text-text-main'
+                            }`}
+                          >
+                            Auto
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSessionOverride('LIVE')}
+                            className={`px-1.5 py-1 rounded-md border text-center font-bold transition-all cursor-pointer ${
+                              sessionOverride === 'LIVE'
+                                ? 'bg-emerald-500 text-white border-emerald-500'
+                                : 'bg-ui-bg text-text-muted border-ui-border hover:text-text-main'
+                            }`}
+                          >
+                            LIVE
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSessionOverride('DELAYED')}
+                            className={`px-1.5 py-1 rounded-md border text-center font-bold transition-all cursor-pointer ${
+                              sessionOverride === 'DELAYED'
+                                ? 'bg-amber-500 text-white border-amber-500'
+                                : 'bg-ui-bg text-text-muted border-ui-border hover:text-text-main'
+                            }`}
+                          >
+                            DELAYED
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSessionOverride('CLOSED')}
+                            className={`px-1.5 py-1 rounded-md border text-center font-bold transition-all cursor-pointer ${
+                              sessionOverride === 'CLOSED'
+                                ? 'bg-slate-600 text-white border-slate-600'
+                                : 'bg-ui-bg text-text-muted border-ui-border hover:text-text-main'
+                            }`}
+                          >
+                            CLOSED
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
 
           <p className="text-xs font-mono text-text-muted">
@@ -704,9 +1022,22 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 items-center">
           {/* Index & Price */}
           <div className="col-span-2 sm:col-span-2">
-            <p className="text-[11px] font-mono font-bold text-text-muted uppercase tracking-wider">
-              {indexSummary.name}
-            </p>
+            <div className="flex items-center gap-2">
+              <p className="text-[11px] font-mono font-bold text-text-muted uppercase tracking-wider">
+                {indexSummary.name}
+              </p>
+              <span
+                className={`px-1.5 py-0.5 rounded text-[9px] font-mono font-extrabold uppercase tracking-wider border ${
+                  sessionDetail.mode === 'LIVE'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                    : sessionDetail.mode === 'DELAYED'
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                    : 'bg-slate-500/10 text-slate-500 dark:text-slate-400 border-slate-500/30'
+                }`}
+              >
+                {sessionDetail.mode}
+              </span>
+            </div>
             <div className="flex items-baseline gap-3 mt-1">
               <span className="text-2xl sm:text-3xl font-mono font-black text-text-main">
                 {formatCurrency(indexSummary.currentValue, indexSummary.region)}

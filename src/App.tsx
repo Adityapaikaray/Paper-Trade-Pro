@@ -25,6 +25,7 @@ const HistoryView = lazy(() => import('./components/HistoryView.tsx'));
 const NewsView = lazy(() => import('./components/NewsView.tsx'));
 const HelpSupportView = lazy(() => import('./components/HelpSupportView.tsx'));
 const StockHeatmapView = lazy(() => import('./components/StockHeatmapView.tsx'));
+const AIWealthManagerView = lazy(() => import('./components/AIWealthManager/AIWealthManagerView.tsx').then(m => ({ default: m.AIWealthManagerView })));
 
 import TradeView from './components/TradeView.tsx';
 import NotificationManager from './components/NotificationManager.tsx';
@@ -106,6 +107,10 @@ function AppContent() {
   }, []);
 
   const renderView = () => {
+    if (currentRoute.id === 'ai-wealth-manager') {
+      return <AIWealthManagerView initialAction={currentRoute.params?.initialAction} />;
+    }
+
     if (activeTab === 'trade' && currentRoute.params?.stock) {
       return (
         <TradeView 

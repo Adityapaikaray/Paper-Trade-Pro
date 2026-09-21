@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 import { useNavigation, RouteId } from '../contexts/NavigationContext.tsx';
 import { primaryNavigation, secondaryNavigation } from '../config/navigation.ts';
 import TradeProLogo from './TradeProLogo.tsx';
@@ -76,8 +76,8 @@ const MobileNavigationDrawer: React.FC = () => {
                 {primaryNavigation.map((item) => {
                   const isActive = currentRoute.id === item.id;
                   return (
+                    <React.Fragment key={item.id}>
                     <button
-                      key={item.id}
                       onClick={() => handleNavigate(item.id)}
                       className={`w-full flex items-center px-4 py-3 rounded-xl transition-all duration-200 relative active:scale-[0.98] ${
                         isActive 
@@ -93,6 +93,30 @@ const MobileNavigationDrawer: React.FC = () => {
                       </div>
                       <span className="text-sm tracking-wide">{item.label}</span>
                     </button>
+
+                    {item.id === 'wealth' && (
+                      <button
+                        key="mobile-ai-wealth-manager"
+                        onClick={() => handleNavigate('ai-wealth-manager')}
+                        className={`w-full flex items-center pl-8 pr-4 py-2.5 rounded-xl transition-all duration-200 relative active:scale-[0.98] ${
+                          currentRoute.id === 'ai-wealth-manager'
+                            ? 'bg-gradient-to-r from-[#D4AF37]/20 to-transparent text-[#F5E6BE] font-bold border border-[#D4AF37]/30' 
+                            : 'text-text-muted hover:text-[#F5E6BE] hover:bg-ui-surface-hover/40 font-medium'
+                        }`}
+                      >
+                        {currentRoute.id === 'ai-wealth-manager' && (
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-1/2 bg-[#D4AF37] rounded-r-full shadow-[0_0_8px_#D4AF37]" />
+                        )}
+                        <div className={`shrink-0 mr-2.5 ${currentRoute.id === 'ai-wealth-manager' ? 'text-[#D4AF37]' : 'text-[#D4AF37]/80'}`}>
+                          <Sparkles size={16} />
+                        </div>
+                        <span className="text-xs font-semibold tracking-wide">AI Wealth Manager</span>
+                        <span className="ml-auto text-[9px] font-bold px-1.5 py-0.5 rounded bg-[#D4AF37]/20 text-[#D4AF37] border border-[#D4AF37]/30">
+                          AI
+                        </span>
+                      </button>
+                    )}
+                    </React.Fragment>
                   );
                 })}
               </div>
