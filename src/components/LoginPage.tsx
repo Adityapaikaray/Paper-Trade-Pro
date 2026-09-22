@@ -12,6 +12,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
+import { analyticsService } from '../services/analytics.ts';
 
 interface CountryCode {
   country: string;
@@ -74,6 +75,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
   // Close dropdown on outside click
   useEffect(() => {
+    analyticsService.trackAuthEvent('login_view');
     const handleOutsideClick = (e: MouseEvent) => {
       if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target as Node)) {
         setIsCountryDropdownOpen(false);
@@ -128,10 +130,12 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
     setErrorMessage(null);
     setStatusMessage(null);
     setLoginState('SENDING_OTP');
+    analyticsService.trackAuthEvent('otp_request');
 
     const res = await sendOtp(mobileNumber, selectedCountry.code);
 
     if (res.success) {
+      analyticsService.trackAuthEvent('otp_sent');
       setLoginState('OTP_SENT');
       setResendCountdown(30);
       setCanResend(false);
@@ -141,6 +145,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
         otpInputRefs.current[0]?.focus();
       }, 150);
     } else {
+      analyticsService.trackAuthEvent('otp_failure', { error_type: 'request_failed' });
+      analyticsService.trackError('otp_error', { error_type: 'otp_request_failed', screen: 'login' });
       setLoginState('ENTER_INPUT');
       setErrorMessage(res.error || 'Unable to send OTP. Please try again.');
     }
@@ -219,15 +225,20 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onSuccess }) => {
 
     setErrorMessage(null);
     setLoginState('VERIFYING_OTP');
+    analyticsService.trackAuthEvent('otp_verify_attempt');
 
     const res = await verifyOtp(mobileNumber, fullOtp, selectedCountry.code);
 
     if (res.success) {
+      analyticsService.trackAuthEvent('otp_success');
+      analyticsService.trackLogin('otp');
       setLoginState('AUTHENTICATED');
       if (onSuccess) {
         onSuccess();
       }
     } else {
+      analyticsService.trackAuthEvent('otp_failure', { error_type: 'invalid_code' });
+      analyticsService.trackError('otp_error', { error_type: 'verification_failed', screen: 'login' });
       setLoginState('OTP_SENT');
       setErrorMessage(res.error || 'Incorrect or expired OTP. Please try again.');
     }

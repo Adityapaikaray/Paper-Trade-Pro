@@ -4,13 +4,14 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Moon, Sun, Settings, LogOut, User, Menu, PlusCircle, RotateCcw, Check, CheckCheck, Trash2, X, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Search, Bell, Moon, Sun, Settings, LogOut, User, Menu, PlusCircle, RotateCcw, Check, CheckCheck, Trash2, X, AlertCircle, ArrowLeft, Mic } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { useUI } from '../contexts/UIContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
+import { useVoiceAssistant } from '../contexts/VoiceAssistantContext.tsx';
 import { formatCurrency } from '../utils/formatters.ts';
 import HeaderSearch from './HeaderSearch.tsx';
 
@@ -24,6 +25,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
   const { addToast, toggleMobileMenu, openModal } = useUI();
   const { theme, toggleTheme } = useTheme();
   const { currentRoute, goBack, history, activeTab, navigate, setMenuOpen, isMenuOpen } = useNavigation();
+  const { openVoice, isOpen: isVoiceOpen, voiceState } = useVoiceAssistant();
   const {
     profile,
     marketContext,
@@ -317,6 +319,25 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
           </AnimatePresence>
         </button>
         
+        {/* TradePro AI Voice Assistant Global Header Button [🎙 AI] */}
+        <button
+          onClick={() => openVoice()}
+          id="header-tradepro-voice-btn"
+          className={`h-10 px-3 sm:px-3.5 rounded-full border flex items-center gap-1.5 transition-all shadow-md active:scale-95 select-none ${
+            isVoiceOpen || voiceState === 'LISTENING' || voiceState === 'SPEAKING'
+              ? 'bg-[#D4AF37] text-[#0A0F1A] border-[#D4AF37] shadow-[0_0_15px_rgba(212,175,55,0.4)]'
+              : 'bg-ui-surface text-[#D4AF37] hover:bg-[#D4AF37]/15 border-[#D4AF37]/40 hover:border-[#D4AF37]'
+          }`}
+          title="Start TradePro AI voice assistant"
+          aria-label="Start TradePro AI voice assistant"
+        >
+          <Mic size={17} strokeWidth={2.2} className={voiceState === 'LISTENING' ? 'animate-pulse text-[#0A0F1A]' : ''} />
+          <span className="text-xs font-black tracking-wide hidden sm:inline">AI</span>
+          {(voiceState === 'LISTENING' || voiceState === 'SPEAKING') && (
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping ml-0.5" />
+          )}
+        </button>
+
         {/* Notifications Bell & Dropdown */}
         <div className="relative" ref={notifRef}>
           <button 

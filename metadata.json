@@ -1,7 +1,9 @@
 {
   "name": "TRADEPRO",
-  "description": "Institutional trading and investment portfolio dashboard.",
-  "requestFramePermissions": [],
+  "description": "Institutional trading and investment portfolio dashboard with AI Wealth Command Center and native Voice Assistant.",
+  "requestFramePermissions": [
+    "microphone"
+  ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]

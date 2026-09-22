@@ -1,6 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { analyticsService } from '../services/analytics.ts';
 
 export interface User {
   id?: string;
@@ -197,6 +198,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    analyticsService.trackAuthEvent('logout');
     const token = localStorage.getItem('tradepro_auth_token');
     if (token) {
       try {

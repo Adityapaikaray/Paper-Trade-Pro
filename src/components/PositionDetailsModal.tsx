@@ -3,6 +3,7 @@ import { X, TrendingUp, TrendingDown, Clock, ShieldCheck, ArrowRight, RefreshCw,
 import { motion } from 'framer-motion';
 import { Stock, Holding } from '../types.ts';
 import StockChart from './StockChart.tsx';
+import { AskTradeProAIChip } from './VoiceAssistant/AskTradeProAIChip.tsx';
 
 export interface PositionDetailsModalProps {
   isOpen: boolean;
@@ -60,7 +61,10 @@ export const PositionDetailsModal: React.FC<PositionDetailsModalProps> = ({
                   {stock.sector || 'EQUITY'}
                 </span>
               </div>
-              <p className="text-xs text-text-muted mt-0.5">{stock.name}</p>
+              <div className="flex items-center gap-2.5 mt-1">
+                <p className="text-xs text-text-muted">{stock.name}</p>
+                <AskTradeProAIChip prompt={`Tell me about ${stock.symbol} and its key support levels`} size="sm" />
+              </div>
             </div>
           </div>
 

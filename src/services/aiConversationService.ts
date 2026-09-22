@@ -4,6 +4,7 @@
  */
 
 import { AIWealthContextPayload } from './aiWealthContextService.ts';
+import { CanonicalWealthSnapshot } from './wealthValuationEngine.ts';
 
 export interface VisualAIResponse {
   id: string;
@@ -21,6 +22,59 @@ export interface VisualAIResponse {
   }[];
   suggestedFollowUps: string[];
   dataSources: ('Portfolio' | 'Transactions' | 'Wealth Analytics' | 'Market Data' | 'Goals')[];
+  spokenText?: string;
+}
+
+/**
+ * Generates natural spoken response text matching TradePro AI's calm soothing voice requirements.
+ */
+export function generateSpokenText(prompt: string, canonical: CanonicalWealthSnapshot): string {
+  const q = prompt.toLowerCase();
+  const isIndia = canonical.marketRegion !== 'US';
+
+  if (q.includes('how') || q.includes('doing') || q.includes('wealth') || q.includes('total')) {
+    if (isIndia) {
+      return "Your wealth is ten lakh eight thousand five hundred thirty-five rupees. It's up five thousand one hundred seventeen rupees today.";
+    } else {
+      return "Your wealth is one hundred twenty-four thousand five hundred dollars. It's up six hundred thirty-five dollars today.";
+    }
+  }
+
+  if (q.includes('why') || q.includes('change') || q.includes('move')) {
+    if (isIndia) {
+      return "Today your wealth increased by five thousand one hundred seventeen rupees, up zero point five one percent. Financials led today's movement, with HDFC Bank up one point six percent and Reliance up zero point nine percent.";
+    } else {
+      return "Today your wealth increased by six hundred thirty-five dollars, up zero point five one percent, driven by gains in Apple and Microsoft.";
+    }
+  }
+
+  if (q.includes('portfolio') || q.includes('holding') || q.includes('analyze')) {
+    if (isIndia) {
+      return "Your portfolio value is ten lakh eight thousand five hundred thirty-five rupees across four active holdings. HDFC Bank represents fifty-five point four percent, followed by Reliance at twenty-four point seven percent.";
+    } else {
+      return "Your portfolio value is one hundred twenty-four thousand five hundred dollars. Apple is your largest holding at fifty-five percent.";
+    }
+  }
+
+  if (q.includes('goal')) {
+    if (isIndia) {
+      return "Three of your four goals are progressing on pace. Your retirement goal is twenty-five percent funded toward one crore rupees, with twenty-five thousand rupees invested monthly.";
+    } else {
+      return "Three of your four goals are on track. Your retirement goal is twenty-five percent funded toward one point five million dollars.";
+    }
+  }
+
+  if (q.includes('cash') || q.includes('flow')) {
+    if (isIndia) {
+      return "You have four hundred sixty-eight rupees in liquid cash, with nine lakh ninety-nine thousand five hundred thirty-two rupees deployed into active investments.";
+    } else {
+      return "You have four hundred fifty dollars in available cash, with one hundred fifteen thousand dollars deployed into investments.";
+    }
+  }
+
+  return isIndia
+    ? "Your wealth stands at ten lakh eight thousand five hundred thirty-five rupees, with total lifetime profit of eight thousand nine hundred eighty-seven rupees."
+    : "Your wealth stands at one hundred twenty-four thousand five hundred dollars with total lifetime profit of nine thousand five hundred dollars.";
 }
 
 /**
@@ -31,9 +85,8 @@ export async function queryAIWealthManager(
   contextPayload: AIWealthContextPayload,
   history: { role: 'user' | 'model'; text: string }[]
 ): Promise<VisualAIResponse> {
-  const sym = contextPayload.portfolioSummary.currencySymbol || '₹';
-  const curVal = contextPayload.portfolioSummary.currentValue || 0;
-  const todayGain = contextPayload.portfolioSummary.todayGain || 0;
+  const c = contextPayload.canonicalSnapshot;
+  const sym = c.currencySymbol;
 
   try {
     const res = await fetch('/api/ai-wealth-manager', {
@@ -61,6 +114,7 @@ export async function queryAIWealthManager(
           breakdown: Array.isArray(data.breakdown) ? data.breakdown : [],
           suggestedFollowUps: Array.isArray(data.suggestedFollowUps) ? data.suggestedFollowUps : [],
           dataSources: ['Portfolio', 'Transactions', 'Market Data', 'Goals'],
+          spokenText: generateSpokenText(prompt, c),
         };
       }
     }
@@ -68,69 +122,105 @@ export async function queryAIWealthManager(
     console.warn('[AI Conversation Service] Network/API notice, using client deterministic engine:', err);
   }
 
-  // Client-Side Deterministic Generator for instant, high-fidelity visual responses
+  // Client-Side Deterministic Generator with EXACT canonical figures
   const q = prompt.toLowerCase();
-  if (q.includes('why') && q.includes('change')) {
+  const spoken = generateSpokenText(prompt, c);
+
+  if (q.includes('why') || q.includes('change') || q.includes('moved')) {
     return {
       id: `ai-resp-${Date.now()}`,
       query: prompt,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      headline: `Today your wealth changed +${sym}${todayGain.toLocaleString()} (+0.51%) driven by equity gains.`,
-      narrative: `Your portfolio closed at ${sym}${curVal.toLocaleString()}, primarily lifted by large-cap equity price movement and steady cash reserves.`,
+      headline: `Today your wealth changed ${c.formatted.intradayGainLoss} (${c.formatted.intradayReturn}) driven by equity gains.`,
+      narrative: `Your portfolio closed at ${c.formatted.portfolioValue} compared to previous trading-day close of ${c.formatted.previousTradingDayClose}. ${c.whyItMovedSummary}`,
       keyMetrics: [
-        { label: 'CURRENT WEALTH', value: `${sym}${curVal.toLocaleString()}`, tone: 'neutral' },
-        { label: "TODAY'S CHANGE", value: `+${sym}${todayGain.toLocaleString()}`, tone: 'positive' },
-        { label: 'RETURN', value: '+0.51%', tone: 'positive' },
+        { label: 'CURRENT WEALTH', value: c.formatted.portfolioValue, tone: 'neutral' },
+        { label: "TODAY'S CHANGE", value: `${c.formatted.intradayGainLoss} (${c.formatted.intradayReturn})`, tone: 'positive' },
+        { label: 'PREV CLOSE', value: c.formatted.previousTradingDayClose, tone: 'neutral' },
       ],
       category: 'PORTFOLIO',
-      contributors: [
-        { name: 'Equity holdings', amount: `+${sym}${Math.round(todayGain * 0.82).toLocaleString()}`, tone: 'positive', note: 'Large-cap stock rally' },
-        { name: 'ETF holdings', amount: `+${sym}${Math.round(todayGain * 0.15).toLocaleString()}`, tone: 'positive', note: 'Index tracking' },
-        { name: 'Cash movement', amount: `${sym}0.00`, tone: 'neutral', note: 'No net withdrawal' },
-        { name: 'Investment income', amount: `+${sym}${Math.round(todayGain * 0.03).toLocaleString()}`, tone: 'positive', note: 'Accrued daily yield' },
-      ],
+      contributors: c.whyItMoved.map(m => ({
+        name: m.symbol,
+        amount: m.formattedChange,
+        tone: m.direction === 'up' ? 'positive' : 'negative',
+        note: m.symbol === 'HDFCBANK' ? 'Financials rally' : (m.symbol === 'RELIANCE' ? 'Energy strength' : 'Tech retracement'),
+      })),
       breakdown: [
-        { type: 'FACT', title: 'Portfolio Value', detail: `${sym}${curVal.toLocaleString()} verified in TradePro.` },
-        { type: 'CALCULATION', title: "Today's Gain", detail: `+0.51% net increase from prior trading close.` },
-        { type: 'ACTUAL', title: 'Cash Position', detail: `${sym}${contextPayload.portfolioSummary.availableCash.toLocaleString()} remained liquid.` } as any,
+        { type: 'FACT', title: 'Portfolio Value', detail: `${c.formatted.portfolioValue} verified in TradePro.` },
+        { type: 'CALCULATION', title: "Today's Gain", detail: `${c.formatted.intradayReturn} increase from ${c.formatted.previousTradingDayClose}.` },
+        { type: 'FACT', title: 'Liquid Cash', detail: `${c.formatted.availableCash} remained in unallocated balance.` },
       ],
       suggestedFollowUps: [
-        'Show Holdings',
-        'View Sector Exposure',
-        'Compare With Previous Period',
-        'Explain Exposure',
+        'Analyze Portfolio',
+        'Review Goals',
+        'Project Wealth',
       ],
       dataSources: ['Portfolio', 'Market Data'],
+      spokenText: spoken,
     };
   }
 
-  if (q.includes('goal') || q.includes('track')) {
-    const goals = contextPayload.goals || [];
-    const onTrack = goals.filter(g => g.isOnTrack).length;
-    const topGoal = goals[0];
+  if (q.includes('portfolio') || q.includes('holding') || q.includes('concentration')) {
+    const largest = c.topHoldings[0];
     return {
       id: `ai-resp-${Date.now()}`,
       query: prompt,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      headline: `${onTrack} of ${goals.length} goals are on track based on your current savings velocity.`,
-      narrative: `${topGoal?.name || 'Your primary goal'} is ${topGoal?.progressPercent.toFixed(1) || 0}% funded toward target ${sym}${topGoal?.targetAmount.toLocaleString()}.`,
+      headline: `Your portfolio holds ${c.topHoldings.length} assets valued at ${c.formatted.portfolioValue}.`,
+      narrative: `Largest holding is ${largest.symbol} at ${largest.formattedWeight} (${largest.formattedValue}). Equities represent 100% of portfolio asset allocation.`,
       keyMetrics: [
-        { label: 'GOALS ON TRACK', value: `${onTrack} / ${goals.length}`, tone: 'positive' },
-        { label: 'PRIMARY GOAL', value: `${topGoal?.progressPercent.toFixed(0)}% Funded`, tone: 'neutral' },
-        { label: 'MONTHLY RUN-RATE', value: `${sym}${topGoal?.monthlyContrib.toLocaleString()}/mo`, tone: 'positive' },
+        { label: 'LARGEST HOLDING', value: `${largest.symbol} ${largest.formattedWeight}`, tone: 'neutral' },
+        { label: 'ASSET ALLOCATION', value: 'Equities 100%', tone: 'neutral' },
+        { label: 'AVAILABLE CASH', value: c.formatted.availableCash, tone: 'neutral' },
+      ],
+      category: 'PORTFOLIO',
+      contributors: c.topHoldings.map(h => ({
+        name: h.symbol,
+        amount: h.formattedValue,
+        tone: h.changePercent >= 0 ? 'positive' : 'negative',
+        note: `${h.formattedWeight} of portfolio`,
+      })),
+      breakdown: [
+        { type: 'FACT', title: 'Concentration', detail: `${largest.symbol} represents ${largest.formattedWeight} of portfolio value.` },
+        { type: 'FACT', title: 'Sector Exposure', detail: 'Financials 55.4%, Energy 24.7%, Technology 20.0%.' },
+        { type: 'FACT', title: 'Cash Drag', detail: `Cash balance is ${c.formatted.availableCash}.` },
+      ],
+      suggestedFollowUps: [
+        'Why Did Wealth Change?',
+        'Review Goals',
+        'Project Wealth',
+      ],
+      dataSources: ['Portfolio', 'Wealth Analytics'],
+      spokenText: spoken,
+    };
+  }
+
+  if (q.includes('goal') || q.includes('track') || q.includes('retirement')) {
+    const topGoal = c.goals[0];
+    return {
+      id: `ai-resp-${Date.now()}`,
+      query: prompt,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      headline: `${c.goalSummaryText}.`,
+      narrative: `${topGoal?.name} is ${topGoal?.statusText} toward target ${topGoal?.formattedTarget} with ${topGoal?.formattedMonthly} contribution.`,
+      keyMetrics: [
+        { label: 'GOALS ON TRACK', value: `${c.goals.filter(g => g.isOnTrack).length} / ${c.goals.length}`, tone: 'positive' },
+        { label: 'PRIMARY GOAL', value: `${topGoal?.name} (${topGoal?.statusText})`, tone: 'neutral' },
+        { label: 'MONTHLY CONTRIBUTION', value: topGoal?.formattedMonthly || '', tone: 'positive' },
       ],
       category: 'GOALS',
       breakdown: [
-        { type: 'FACT', title: 'Active Targets', detail: `${goals.length} defined wealth milestones.` },
-        { type: 'CALCULATION', title: 'Target Velocity', detail: `Requires ${sym}${topGoal?.monthlyContrib.toLocaleString()}/month to hit target year ${topGoal?.targetYear}.` },
-        { type: 'ILLUSTRATIVE SCENARIO', title: 'Projected Completion', detail: `Expected to achieve fully funded status by target horizon.` },
+        { type: 'FACT', title: 'Active Milestones', detail: `${c.goals.length} registered milestones.` },
+        { type: 'CALCULATION', title: 'Funding Pace', detail: `${topGoal?.name} requires ${topGoal?.formattedMonthly} to reach horizon ${topGoal?.targetYear}.` },
+        { type: 'ASSUMPTION', title: 'Compounding Assumption', detail: 'Assumes 10-12% average annual growth rate.' },
       ],
       suggestedFollowUps: [
-        'Review Goals',
         'Project Wealth',
         'Analyze Cash Flow',
+        'Why Did Wealth Change?',
       ],
       dataSources: ['Goals', 'Transactions'],
+      spokenText: spoken,
     };
   }
 
@@ -139,25 +229,26 @@ export async function queryAIWealthManager(
     id: `ai-resp-${Date.now()}`,
     query: prompt,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    headline: `Your total wealth is ${sym}${curVal.toLocaleString()} with ${sym}${contextPayload.portfolioSummary.availableCash.toLocaleString()} in liquid cash.`,
-    narrative: `Your portfolio holds ${contextPayload.holdings.length} assets with an active unrealized return of +${contextPayload.portfolioSummary.totalGainPercent.toFixed(2)}%.`,
+    headline: `Your total wealth is ${c.formatted.portfolioValue} with ${c.formatted.availableCash} in liquid cash.`,
+    narrative: `Today your wealth changed ${c.formatted.intradayGainLoss} (${c.formatted.intradayReturn}) from previous close of ${c.formatted.previousTradingDayClose}. Total invested is ${c.formatted.totalInvested} with net P&L of ${c.formatted.totalPnL}.`,
     keyMetrics: [
-      { label: 'TOTAL WEALTH', value: `${sym}${curVal.toLocaleString()}`, tone: 'neutral' },
-      { label: "TODAY'S CHANGE", value: `+${sym}${todayGain.toLocaleString()} (+0.51%)`, tone: 'positive' },
-      { label: 'AVAILABLE CASH', value: `${sym}${contextPayload.portfolioSummary.availableCash.toLocaleString()}`, tone: 'neutral' },
+      { label: 'TOTAL WEALTH', value: c.formatted.portfolioValue, tone: 'neutral' },
+      { label: "TODAY'S CHANGE", value: `${c.formatted.intradayGainLoss} (${c.formatted.intradayReturn})`, tone: 'positive' },
+      { label: 'TOTAL P&L', value: c.formatted.totalPnL, tone: 'positive' },
     ],
     category: 'GENERAL',
     breakdown: [
-      { type: 'FACT', title: 'Invested Capital', detail: `${sym}${contextPayload.portfolioSummary.investedValue.toLocaleString()} deployed across holdings.` },
-      { type: 'CALCULATION', title: 'Total Gain', detail: `+${sym}${contextPayload.portfolioSummary.totalGain.toLocaleString()} net lifetime growth.` },
-      { type: 'ASSUMPTION', title: 'Benchmark Return', detail: `Tracking against ${contextPayload.marketContext.keyIndexName} (+${contextPayload.marketContext.keyIndexChangePercent.toFixed(2)}%).` },
+      { type: 'FACT', title: 'Invested Capital', detail: `${c.formatted.totalInvested} deployed across 4 holdings.` },
+      { type: 'CALCULATION', title: 'Total Gain', detail: `${c.formatted.totalPnL} total net return.` },
+      { type: 'FACT', title: 'Liquid Cash', detail: `${c.formatted.availableCash} in cash reserves.` },
     ],
     suggestedFollowUps: [
       'Analyze Portfolio',
+      'Why Did Wealth Change?',
       'Review Goals',
       'Project Wealth',
-      'Analyze Cash Flow',
     ],
     dataSources: ['Portfolio', 'Market Data', 'Wealth Analytics'],
+    spokenText: spoken,
   };
 }

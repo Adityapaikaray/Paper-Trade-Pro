@@ -45,6 +45,7 @@ import MarketSelection from './components/MarketSelection.tsx';
 import { NavigationProvider } from './contexts/NavigationContext.tsx';
 
 import { Stock } from './types.ts';
+import { analyticsService, analytics } from './services/analytics.ts';
 
 export default function AppWrapper() {
   return (
@@ -75,6 +76,10 @@ function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
 
   useEffect(() => {
+    analytics.init();
+  }, []);
+
+  useEffect(() => {
     if (window.location.pathname === '/login') {
       window.history.replaceState(null, '', '/');
     }
@@ -89,10 +94,32 @@ function AppContent() {
       transactions: 'Transactions',
       settings: 'Settings',
       help: 'Help & Support',
-      heatmap: 'Index Heatmap'
+      heatmap: 'Index Heatmap',
+      analytics: 'Google Analytics 4',
+      'ai-wealth-manager': 'AI Wealth Manager',
     };
     const pageName = titles[currentRoute.id] || currentRoute.id.charAt(0).toUpperCase() + currentRoute.id.slice(1);
     document.title = `TradePro — ${pageName}`;
+    
+    // Canonical SPA path
+    const canonicalPath = analyticsService.normalizeRoutePath(currentRoute.id);
+    analyticsService.trackPageView(canonicalPath, pageName);
+
+    // Track corresponding high-level navigation event
+    const navNameMap: Record<string, string> = {
+      dashboard: 'home',
+      market: 'discover',
+      portfolio: 'portfolio',
+      wealth: 'wealth',
+      trade: 'trading',
+      heatmap: 'heatmap',
+      watchlist: 'watchlist',
+      goals: 'goals',
+      settings: 'settings',
+    };
+    if (navNameMap[currentRoute.id]) {
+      analyticsService.trackNavEvent(navNameMap[currentRoute.id]);
+    }
   }, [currentRoute.id]);
 
   useEffect(() => {

@@ -59,8 +59,23 @@ function getGenAI(): GoogleGenAI | null {
   return aiClient;
 }
 
+import {
+  infrastructureTelemetryMiddleware,
+  handleCollectEvent,
+  handleGetInfrastructureMetrics,
+  handleGetGithubActivity,
+  handleGetAnalyticsEvents
+} from "./server/analytics.ts";
+
 app.use(cors());
+app.use(infrastructureTelemetryMiddleware);
 app.use(express.json());
+
+// TradePro Dedicated Analytics & Infrastructure Endpoints
+app.post("/api/analytics/events", handleCollectEvent);
+app.get("/api/analytics/events", handleGetAnalyticsEvents);
+app.get("/api/infrastructure/metrics", handleGetInfrastructureMetrics);
+app.get("/api/github/activity", handleGetGithubActivity);
 // --- Secure Mobile Number + MSG91 SMS OTP Authentication Backend ---
 interface RateLimitRecord {
   lastSentAt: number;

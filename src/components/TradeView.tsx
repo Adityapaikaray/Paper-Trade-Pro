@@ -5,6 +5,7 @@ import { Stock } from '../types.ts';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import StockChart from './StockChart.tsx';
+import { analyticsService, analytics } from '../services/analytics.ts';
 
 interface TradeViewProps {
   stock: Stock | null;
@@ -95,14 +96,27 @@ const TradeView: React.FC<TradeViewProps> = ({ stock, onClose, onBack, initialSi
     }
   };
 
+  useEffect(() => {
+    if (liveStock?.symbol) {
+      analyticsService.trackTradingEvent('trading_view', { symbol: liveStock.symbol });
+      analyticsService.trackTradingEvent('order_form_open', { symbol: liveStock.symbol, side: type });
+      analytics.trackEvent('stock_detail_view', { symbol: liveStock.symbol, name: liveStock.name });
+      analytics.trackEvent('buy_sell_screen_open', { symbol: liveStock.symbol, side: type });
+    }
+  }, [liveStock?.symbol]);
+
   const handleReview = () => {
     if (validationErrors.length === 0) {
+      analyticsService.trackTradingEvent('order_review', { symbol: liveStock.symbol, order_type: orderType, side: type });
+      analytics.trackEvent('order_review', { symbol: liveStock.symbol, orderType, side: type });
       setStep('REVIEW');
     }
   };
 
   const handleConfirm = () => {
     try {
+      analyticsService.trackTradingEvent('order_submit', { symbol: liveStock.symbol, order_type: orderType, side: type });
+      analytics.trackEvent('order_submit', { symbol: liveStock.symbol, orderType, side: type, simulated: true });
       const success = executeTrade(
         liveStock, 
         shares, 
@@ -111,12 +125,17 @@ const TradeView: React.FC<TradeViewProps> = ({ stock, onClose, onBack, initialSi
         orderType !== 'Market' ? parsedLimitPrice : undefined
       );
       if (success) {
+        analyticsService.trackTradingEvent('order_success', { symbol: liveStock.symbol, order_type: orderType, side: type });
+        analytics.trackEvent('order_filled', { symbol: liveStock.symbol, simulated: true });
         setStep('SUCCESS');
       } else {
-        // Fallback error, should be caught by validation
+        analyticsService.trackTradingEvent('order_failed', { symbol: liveStock.symbol, reason: 'execution_failed' });
+        analyticsService.trackError('order_failed', { service: 'paper_trade', symbol: liveStock.symbol });
         alert("Trade failed to execute.");
       }
     } catch (e: any) {
+      analyticsService.trackTradingEvent('order_failed', { symbol: liveStock.symbol, reason: 'exception' });
+      analyticsService.trackError('order_failed', { service: 'paper_trade', symbol: liveStock.symbol });
       alert(e.message || "Trade failed");
     }
   };
@@ -129,7 +148,13 @@ const TradeView: React.FC<TradeViewProps> = ({ stock, onClose, onBack, initialSi
       {/* Header / Back */}
       <div className="flex items-center justify-between mb-6 px-2 md:px-0 mt-2">
         <button 
-          onClick={onBack || onClose}
+          onClick={() => {
+            if (step !== 'SUCCESS') {
+              analyticsService.trackTradingEvent('order_cancel', { symbol: liveStock?.symbol });
+            }
+            if (onBack) onBack();
+            else onClose();
+          }}
           className="flex items-center gap-1.5 text-text-muted hover:text-primary transition-colors py-2 -ml-2"
         >
           <ArrowLeft size={20} strokeWidth={2.5} />

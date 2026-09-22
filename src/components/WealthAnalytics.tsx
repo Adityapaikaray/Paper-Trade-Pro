@@ -4,6 +4,7 @@ import { useNavigation } from '../contexts/NavigationContext.tsx';
 import { ArrowUpRight, ArrowDownRight, DollarSign, Activity, Minus } from 'lucide-react';
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { formatCompactCurrency as globalFormatCompactCurrency } from '../utils/formatters.ts';
+import { AskTradeProAIChip } from './VoiceAssistant/AskTradeProAIChip.tsx';
 
 type TimeRange = '6M' | '1Y' | '3Y' | 'ALL';
 
@@ -125,8 +126,11 @@ export const WealthAnalytics: React.FC = () => {
 
   return (
     <div className="bg-ui-surface border border-ui-border rounded-3xl p-6 shadow-sm flex flex-col h-full w-full">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-sm font-bold text-text-main uppercase tracking-widest">Wealth Analytics</h3>
+      <div className="flex flex-wrap justify-between items-center gap-2 mb-6">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-bold text-text-main uppercase tracking-widest">Wealth Analytics</h3>
+          <AskTradeProAIChip prompt="Analyze my wealth metrics and cash flow" size="sm" />
+        </div>
         <div className="flex items-center bg-ui-bg rounded-lg p-1 border border-ui-border">
           {['6M', '1Y', '3Y', 'ALL'].map(range => (
             <button 

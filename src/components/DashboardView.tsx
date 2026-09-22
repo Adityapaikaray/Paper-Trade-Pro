@@ -11,6 +11,7 @@ import { PositionCard } from './PositionCard.tsx';
 import { PositionDetailsModal } from './PositionDetailsModal.tsx';
 import { ModifyAllocationModal } from './ModifyAllocationModal.tsx';
 import { QuickTradePanel } from './QuickTradePanel.tsx';
+import { AskTradeProAIChip } from './VoiceAssistant/AskTradeProAIChip.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
@@ -146,7 +147,8 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
             </p>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap md:justify-end">
+            <AskTradeProAIChip prompt="How is my portfolio doing today?" />
             <div className="bg-ui-surface/90 backdrop-blur-xs border border-ui-border rounded-xl px-3 py-1.5 flex items-center gap-2 shadow-2xs">
               <div className="flex flex-col text-left md:text-right">
                 <span className="text-[9px] text-text-muted font-bold uppercase tracking-wider">Sun, 13 Sept 2026</span>

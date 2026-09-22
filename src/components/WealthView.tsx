@@ -16,6 +16,7 @@ import { FutureWealthProjection } from './FutureWealthProjection.tsx';
 import { WealthAnalytics } from './WealthAnalytics.tsx';
 import { AIWealthManagerView } from './AIWealthManager/AIWealthManagerView.tsx';
 import { formatCurrency as globalFormatCurrency, formatCompactCurrency as globalFormatCompactCurrency } from '../utils/formatters.ts';
+import { analyticsService } from '../services/analytics.ts';
 
 interface FinancialGoal {
   id: string;
@@ -57,6 +58,20 @@ export const WealthView: React.FC = () => {
   const [aiAction, setAiAction] = useState<string | undefined>(undefined);
   const [hideBalances, setHideBalances] = useState(false);
   const [timeframe, setTimeframe] = useState<'1M' | '6M' | '1Y' | '3Y' | '5Y' | 'All'>('1Y');
+
+  useEffect(() => {
+    analyticsService.trackWealthEvent('wealth_view');
+  }, []);
+
+  useEffect(() => {
+    if (step === 'AI_WEALTH') {
+      analyticsService.trackWealthEvent('ai_wealth_manager_open');
+    } else if (step === 'CREATE_GOAL') {
+      analyticsService.trackWealthEvent('goal_create');
+    } else if (step === 'GOAL_DETAILS') {
+      analyticsService.trackWealthEvent('goal_view', { goal_type: selectedGoal?.name || 'goal' });
+    }
+  }, [step]);
 
   // Goals State (Persistent per market region)
   const [goals, setGoals] = useState<FinancialGoal[]>([]);

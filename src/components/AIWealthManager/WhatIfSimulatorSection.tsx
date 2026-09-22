@@ -392,7 +392,7 @@ export const WhatIfSimulatorSection: React.FC<WhatIfSimulatorSectionProps> = ({
       <div className="pt-2 border-t border-ui-border text-[10px] text-text-muted flex items-center gap-1.5">
         <ShieldCheck size={12} className="text-[#D4AF37]" />
         <span>
-          ILLUSTRATIVE SCENARIO • Model assumes constant compounding return. Not a performance guarantee.
+          ILLUSTRATIVE SCENARIO • Actual investment returns may vary. This projection is not guaranteed.
         </span>
       </div>
     </div>

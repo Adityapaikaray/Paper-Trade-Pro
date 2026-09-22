@@ -9,6 +9,7 @@ import { Search, Command, X, TrendingUp, TrendingDown, LayoutDashboard, Briefcas
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { Stock } from '../types.ts';
 import { useTheme } from '../contexts/ThemeContext.tsx';
+import { analyticsService } from '../services/analytics.ts';
 
 interface CommandPaletteProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
 
   useEffect(() => {
     if (isOpen) {
+      analyticsService.trackSearchEvent('global_search_open');
       setQuery('');
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
@@ -106,6 +108,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ isOpen, onClose, onNavi
 
   const executeAction = (item: any) => {
     if (!item) return;
+    const searchType = item.type === 'stock' || item.type === 'stock-trade' ? 'stock' : item.type === 'index' ? 'index' : 'navigation';
+    analyticsService.trackSearchEvent('search_result_select', { search_type: searchType });
+
     if (item.type === 'nav') {
       onNavigate(item.id);
     } else if (item.type === 'action') {

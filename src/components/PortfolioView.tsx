@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Eye, EyeOff, Settings, Search, Filter, ArrowUpRight, ArrowDownRight, 
   TrendingUp, TrendingDown, Clock, Activity as ActivityIcon, PieChart as PieChartIcon,
@@ -11,6 +11,7 @@ import { useMarketData } from '../hooks/useMarketData.ts';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
 import { formatCurrency as formatRegionalCurrency, formatCompactCurrency as formatRegionalCompact } from '../utils/formatters.ts';
 import PortfolioGrowthChart from './PortfolioGrowthChart.tsx';
+import { analyticsService } from '../services/analytics.ts';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell 
@@ -36,6 +37,26 @@ const PortfolioView: React.FC = () => {
   const [sortBy, setSortBy] = useState<'value' | 'return' | 'change' | 'alpha'>('value');
 
   const currencySymbol = marketContext === 'US' ? '$' : '₹';
+
+  useEffect(() => {
+    analyticsService.trackPortfolioEvent('portfolio_view');
+  }, []);
+
+  const handleTabChange = (tab: Tab) => {
+    setActiveTab(tab);
+    if (tab === 'Holdings') {
+      analyticsService.trackPortfolioEvent('holding_view');
+    } else if (tab === 'Performance') {
+      analyticsService.trackPortfolioEvent('portfolio_performance_view', { timeframe });
+    } else if (tab === 'Overview') {
+      analyticsService.trackPortfolioEvent('asset_allocation_view');
+    }
+  };
+
+  const handleTimeframeChange = (tf: Timeframe) => {
+    setTimeframe(tf);
+    analyticsService.trackPortfolioEvent('portfolio_timeframe_change', { timeframe: tf });
+  };
 
   // --- Derived Data ---
   
@@ -316,7 +337,7 @@ const PortfolioView: React.FC = () => {
             hideBalances={hideBalances}
             marketContext={marketContext}
             defaultTimeframe={timeframe}
-            onTimeframeChange={(tf) => setTimeframe(tf as Timeframe)}
+            onTimeframeChange={(tf) => handleTimeframeChange(tf as Timeframe)}
           />
 
           {/* Mobile Tabs */}
@@ -325,7 +346,7 @@ const PortfolioView: React.FC = () => {
               {(['Overview', 'Holdings', 'Performance', 'Activity'] as Tab[]).map((tab) => (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => handleTabChange(tab)}
                   className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
                     activeTab === tab
                       ? 'bg-primary/10 text-primary border border-primary/30'
@@ -343,7 +364,7 @@ const PortfolioView: React.FC = () => {
             {(['Overview', 'Holdings', 'Performance', 'Activity'] as Tab[]).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setActiveTab(tab)}
+                onClick={() => handleTabChange(tab)}
                 className={`py-4 text-sm font-bold relative transition-colors ${
                   activeTab === tab ? 'text-primary' : 'text-text-muted hover:text-text-main'
                 }`}

@@ -2,13 +2,14 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { 
   MessageSquare, X, Send, User, Bot, Loader2, TrendingUp, 
   TrendingDown, CheckCircle2, AlertTriangle, ArrowRight, 
-  Trash2, Sparkles, ExternalLink, RefreshCw
+  Trash2, Sparkles, ExternalLink, RefreshCw, Mic, MicOff
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { useUI } from '../contexts/UIContext.tsx';
 import { Stock } from '../types.ts';
+import { analyticsService } from '../services/analytics.ts';
 
 export interface CopilotTradeExecution {
   symbol: string;
@@ -109,6 +110,74 @@ export const AICopilot: React.FC<AICopilotProps> = ({ onNavigate, onOpenTrade })
   const isIndia = marketContext === 'IN';
   const defaultCurrency = isIndia ? '₹' : '$';
 
+  const classifyQuestionCategory = (text: string): 'portfolio' | 'goals' | 'cash_flow' | 'projection' | 'investment' | 'market' => {
+    const lower = text.toLowerCase();
+    if (lower.includes('goal') || lower.includes('retire') || lower.includes('target')) return 'goals';
+    if (lower.includes('cash') || lower.includes('flow') || lower.includes('dividend') || lower.includes('income')) return 'cash_flow';
+    if (lower.includes('project') || lower.includes('future') || lower.includes('growth') || lower.includes('year')) return 'projection';
+    if (lower.includes('portfolio') || lower.includes('holding') || lower.includes('asset') || lower.includes('allocation')) return 'portfolio';
+    if (lower.includes('invest') || lower.includes('buy') || lower.includes('sell') || lower.includes('trade')) return 'investment';
+    return 'market';
+  };
+
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef<any>(null);
+
+  const toggleVoice = () => {
+    if (isListening) {
+      if (recognitionRef.current) {
+        try { recognitionRef.current.stop(); } catch (e) {}
+      }
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRec) {
+      analyticsService.trackVoiceUsage('ai_voice_error', { error_type: 'unsupported' });
+      return;
+    }
+
+    try {
+      analyticsService.trackVoiceUsage('ai_voice_open');
+      analyticsService.trackVoiceUsage('ai_voice_listening');
+      const rec = new SpeechRec();
+      rec.continuous = false;
+      rec.interimResults = false;
+      rec.lang = 'en-US';
+
+      rec.onstart = () => {
+        setIsListening(true);
+      };
+
+      rec.onresult = (event: any) => {
+        const transcript = event.results[0]?.[0]?.transcript || '';
+        setIsListening(false);
+        if (transcript) {
+          setInput(transcript);
+          const intent = classifyQuestionCategory(transcript);
+          analyticsService.trackVoiceUsage('ai_voice_command', { voice_intent: intent });
+          analyticsService.trackVoiceUsage('ai_voice_response');
+        }
+      };
+
+      rec.onerror = (err: any) => {
+        setIsListening(false);
+        analyticsService.trackVoiceUsage('ai_voice_error', { error_type: err?.error || 'speech_error' });
+      };
+
+      rec.onend = () => {
+        setIsListening(false);
+      };
+
+      recognitionRef.current = rec;
+      rec.start();
+    } catch (e: any) {
+      setIsListening(false);
+      analyticsService.trackVoiceUsage('ai_voice_error', { error_type: 'start_failed' });
+    }
+  };
+
   // Auto-scroll to bottom of messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -117,6 +186,7 @@ export const AICopilot: React.FC<AICopilotProps> = ({ onNavigate, onOpenTrade })
   // Focus input when opened
   useEffect(() => {
     if (isCopilotOpen) {
+      analyticsService.trackAIUsage('ai_copilot_open');
       setTimeout(() => {
         inputRef.current?.focus();
       }, 200);
@@ -285,6 +355,10 @@ export const AICopilot: React.FC<AICopilotProps> = ({ onNavigate, onOpenTrade })
     if (!trimmed || isLoading) return;
 
     setInput('');
+    const category = classifyQuestionCategory(trimmed);
+    analyticsService.trackAIUsage('ai_copilot_question', { question_category: category });
+    analyticsService.trackAIUsage('ai_question', { question_category: category });
+
     const userMsg: Message = {
       id: Math.random().toString(36).substring(2, 9),
       role: 'user',
@@ -308,7 +382,9 @@ export const AICopilot: React.FC<AICopilotProps> = ({ onNavigate, onOpenTrade })
 
       if (response.ok) {
         responseData = await response.json();
+        analyticsService.trackAIUsage('ai_response', { question_category: category });
       } else {
+        analyticsService.trackError('ai_error', { service: 'copilot', screen: 'copilot' });
         throw new Error('Server request failed');
       }
 
@@ -688,16 +764,30 @@ export const AICopilot: React.FC<AICopilotProps> = ({ onNavigate, onOpenTrade })
                   onChange={(e) => setInput(e.target.value)}
                   placeholder="Ask copilot or prompt: 'Buy 10 Apple' / 'Sell 5 NVDA'..."
                   disabled={isLoading}
-                  className="w-full pl-3.5 pr-11 py-3 rounded-xl bg-ui-bg border border-ui-border text-[12px] text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-all disabled:opacity-60"
+                  className="w-full pl-3.5 pr-20 py-3 rounded-xl bg-ui-bg border border-ui-border text-[12px] text-text-main placeholder:text-text-muted focus:outline-none focus:border-primary transition-all disabled:opacity-60"
                 />
-                <button
-                  type="submit"
-                  disabled={!input.trim() || isLoading}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#A6822B] text-black hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
-                  title="Execute prompt"
-                >
-                  <Send size={13} className="stroke-[2.5]" />
-                </button>
+                <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={toggleVoice}
+                    className={`p-2 rounded-lg transition-all ${
+                      isListening 
+                        ? 'bg-negative text-white animate-pulse' 
+                        : 'bg-ui-surface hover:bg-ui-surface-hover text-text-muted hover:text-text-main'
+                    }`}
+                    title={isListening ? "Listening... click to stop" : "Voice command"}
+                  >
+                    {isListening ? <MicOff size={13} /> : <Mic size={13} />}
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!input.trim() || isLoading}
+                    className="p-2 rounded-lg bg-gradient-to-r from-[#D4AF37] to-[#A6822B] text-black hover:opacity-90 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none"
+                    title="Execute prompt"
+                  >
+                    <Send size={13} className="stroke-[2.5]" />
+                  </button>
+                </div>
               </div>
 
               <div className="flex items-center justify-between text-[10px] text-text-muted px-1">

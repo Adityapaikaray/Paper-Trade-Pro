@@ -54,6 +54,7 @@ import {
 } from '../utils/marketHours.ts';
 import { formatCurrency, formatCompactCurrency } from '../utils/formatters.ts';
 import { PositionDetailsModal } from './PositionDetailsModal.tsx';
+import { analyticsService } from '../services/analytics.ts';
 
 interface StockHeatmapViewProps {
   onTrade?: (stock: Stock, side?: 'BUY' | 'SELL') => void;
@@ -143,11 +144,24 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
 
   // Live exchange clock ticker (updates every second for accurate schedule changes)
   useEffect(() => {
+    analyticsService.trackHeatmapEvent('heatmap_view');
     const timer = setInterval(() => {
       setClockNow(new Date());
     }, 1000);
     return () => clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    analyticsService.trackHeatmapEvent('heatmap_index_change', { index: selectedIndexKey });
+  }, [selectedIndexKey]);
+
+  useEffect(() => {
+    analyticsService.trackHeatmapEvent('heatmap_timeframe_change', { timeframe: timeframeMetric });
+  }, [timeframeMetric]);
+
+  useEffect(() => {
+    analyticsService.trackHeatmapEvent('heatmap_filter', { filter: directionFilter });
+  }, [directionFilter]);
 
   // Close session popover on outside click
   useEffect(() => {
