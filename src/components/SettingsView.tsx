@@ -8,10 +8,11 @@ import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useUI } from '../contexts/UIContext.tsx';
 import { useMarketData } from '../contexts/MarketContext.tsx';
+import { useAuth } from '../contexts/AuthContext.tsx';
 import { 
   Settings, Moon, Sun, Trash2, Shield, Bell, User, DollarSign, 
   RotateCcw, AlertTriangle, CheckCircle2, X, RefreshCw, Briefcase, 
-  TrendingUp, TrendingDown, Info, Layers, Check, Globe
+  TrendingUp, TrendingDown, Info, Layers, Check, Globe, Mail, LogOut
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -19,6 +20,7 @@ type SettingsTab = 'general' | 'demo-portfolio' | 'preferences' | 'notifications
 
 const SettingsView: React.FC = () => {
   const { profile, resetAccount, marketContext, setMarketContext, summary } = usePortfolio();
+  const { user, openLoginModal, logout, isAuthenticated } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { addToast, openModal } = useUI();
   const { stocks } = useMarketData();
@@ -126,16 +128,25 @@ const SettingsView: React.FC = () => {
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
               {/* Profile Card */}
               <div className="bg-ui-surface rounded-3xl border border-ui-border p-6 shadow-sm">
-                <h3 className="text-base font-bold text-text-main mb-4 flex items-center gap-2">
-                  <User size={18} className="text-primary" /> User Profile
-                </h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-base font-bold text-text-main flex items-center gap-2">
+                    <User size={18} className="text-primary" /> User Profile &amp; Authentication
+                  </h3>
+                  <button
+                    onClick={openLoginModal}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold transition-all cursor-pointer"
+                  >
+                    <Mail size={13} />
+                    <span>Email Login / Switch</span>
+                  </button>
+                </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-primary-light flex items-center justify-center text-ui-bg font-black uppercase text-xl shadow-md shrink-0">
-                    AP
+                    {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'PU'}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-base font-bold text-text-main leading-tight">Aditya Paikaray</p>
-                    <p className="text-xs text-text-muted mt-0.5">adityapaikaray31@gmail.com &middot; Paper Trader Pro</p>
+                    <p className="text-base font-bold text-text-main leading-tight">{user?.name || "Prestige User"}</p>
+                    <p className="text-xs text-text-muted mt-0.5 font-mono">{user?.email || "adityapaikaray31@gmail.com"} &middot; {user?.tier || "Prestige Member"}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <span className="px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider">
                         Virtual Account Active
@@ -145,12 +156,21 @@ const SettingsView: React.FC = () => {
                       </span>
                     </div>
                   </div>
-                  <button 
-                    onClick={() => addToast('Profile details are synced with your local session.', 'info')}
-                    className="self-start sm:self-center px-4 py-2 bg-ui-surface-hover border border-ui-border text-text-main text-xs font-bold rounded-xl hover:bg-ui-border transition-colors shadow-sm"
-                  >
-                    Sync Profile
-                  </button>
+                  <div className="flex sm:flex-col gap-2">
+                    <button 
+                      onClick={() => addToast('Profile details are synced with your local session.', 'info')}
+                      className="px-4 py-2 bg-ui-surface-hover border border-ui-border text-text-main text-xs font-bold rounded-xl hover:bg-ui-border transition-colors shadow-sm cursor-pointer"
+                    >
+                      Sync Profile
+                    </button>
+                    <button 
+                      onClick={() => { logout(); addToast('Logged out successfully', 'info'); }}
+                      className="px-4 py-2 bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs font-bold rounded-xl hover:bg-rose-500/20 transition-colors shadow-sm flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <LogOut size={13} />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

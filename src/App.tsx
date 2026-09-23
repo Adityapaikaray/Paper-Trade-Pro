@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar.tsx';
 
 import TopBar from './components/TopBar.tsx';
@@ -17,15 +17,17 @@ import { WatchlistView } from './components/WatchlistView.tsx';
 import { OrdersView } from './components/OrdersView.tsx';
 import SettingsView from './components/SettingsView.tsx';
 
-// Code-split heavy analytical and auxiliary views
-const AnalyticsView = lazy(() => import('./components/AnalyticsView.tsx').then(m => ({ default: m.AnalyticsView })));
-const ResearchView = lazy(() => import('./components/ResearchView.tsx').then(m => ({ default: m.ResearchView })));
-const ToolsView = lazy(() => import('./components/ToolsView.tsx').then(m => ({ default: m.ToolsView })));
-const HistoryView = lazy(() => import('./components/HistoryView.tsx'));
-const NewsView = lazy(() => import('./components/NewsView.tsx'));
-const HelpSupportView = lazy(() => import('./components/HelpSupportView.tsx'));
-const StockHeatmapView = lazy(() => import('./components/StockHeatmapView.tsx'));
-const AIWealthManagerView = lazy(() => import('./components/AIWealthManager/AIWealthManagerView.tsx').then(m => ({ default: m.AIWealthManagerView })));
+import HistoryView from './components/HistoryView.tsx';
+import NewsView from './components/NewsView.tsx';
+import HelpSupportView from './components/HelpSupportView.tsx';
+import StockHeatmapView from './components/StockHeatmapView.tsx';
+import { PublicPageView } from './components/PublicPages/PublicPageView.tsx';
+import { Footer } from './components/Footer.tsx';
+import { ToolsView } from './components/ToolsView.tsx';
+import { ResearchView } from './components/ResearchView.tsx';
+import { AnalyticsView } from './components/AnalyticsView.tsx';
+import { AIWealthManagerView } from './components/AIWealthManager/AIWealthManagerView.tsx';
+import ErrorBoundary from './components/ErrorBoundary.tsx';
 
 import TradeView from './components/TradeView.tsx';
 import NotificationManager from './components/NotificationManager.tsx';
@@ -40,9 +42,11 @@ import { ThemeProvider } from './contexts/ThemeContext.tsx';
 import { MarketProvider } from './contexts/MarketContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SplashScreen from './components/SplashScreen.tsx';
+import LoginPage from './components/LoginPage.tsx';
 import { TradeProDashboardReveal } from './components/startup/TradeProDashboardReveal.tsx';
 import MarketSelection from './components/MarketSelection.tsx';
 import { NavigationProvider } from './contexts/NavigationContext.tsx';
+import { VoiceAssistantProvider } from './contexts/VoiceAssistantContext.tsx';
 
 import { Stock } from './types.ts';
 import { analyticsService, analytics } from './services/analytics.ts';
@@ -55,7 +59,9 @@ export default function AppWrapper() {
           <MarketProvider>
             <PortfolioProvider>
               <NavigationProvider>
-                <AppContent />
+                <VoiceAssistantProvider>
+                  <AppContent />
+                </VoiceAssistantProvider>
               </NavigationProvider>
             </PortfolioProvider>
           </MarketProvider>
@@ -71,6 +77,7 @@ import { useNavigation } from './contexts/NavigationContext.tsx';
 function AppContent() {
   const { marketContext } = usePortfolio();
   const { currentRoute, goBack, navigate, resetTo } = useNavigation();
+  const { isAuthenticated, isLoginModalOpen, openLoginModal, closeLoginModal, setRedirectAfterLogin } = useAuth();
   const activeTab = currentRoute.id;
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -79,10 +86,32 @@ function AppContent() {
     analytics.init();
   }, []);
 
+  const isPublicPage = [
+    'about', 'how-it-works', 'features', 'pricing', 'faq', 'contact', 
+    'privacy', 'terms', 'ai-trading', 'ai-trading-tools', 
+    'trading-risk-management', 'how-ai-trading-works',
+    'dashboard', 'market', 'key-index', 'news', 'help', 'tools', 'research'
+  ].includes(currentRoute.id);
+
+  const protectedRoutes = [
+    'portfolio', 'trade', 'wealth', 'ai-wealth-manager', 'heatmap', 'goals', 'watchlist', 'analytics', 'settings', 'orders', 'transactions'
+  ];
+
+  // If unauthenticated and accessing a protected feature, cleanly redirect to login with destination preserved
   useEffect(() => {
-    if (window.location.pathname === '/login') {
-      window.history.replaceState(null, '', '/');
+    if (!isAuthenticated && protectedRoutes.includes(currentRoute.id)) {
+      setRedirectAfterLogin(currentRoute.id);
+      navigate('login');
     }
+  }, [isAuthenticated, currentRoute.id, navigate, setRedirectAfterLogin]);
+
+  useEffect(() => {
+    if (isAuthenticated && (currentRoute.id === 'login' || currentRoute.id === 'signup')) {
+      navigate('dashboard');
+    }
+  }, [isAuthenticated, currentRoute.id, navigate]);
+
+  useEffect(() => {
     const titles: Record<string, string> = {
       dashboard: 'Home',
       market: 'Discover',
@@ -95,8 +124,22 @@ function AppContent() {
       settings: 'Settings',
       help: 'Help & Support',
       heatmap: 'Index Heatmap',
-      analytics: 'Google Analytics 4',
+      analytics: 'Portfolio Analytics',
       'ai-wealth-manager': 'AI Wealth Manager',
+      login: 'Sign In',
+      signup: 'Create Account',
+      about: 'About Us',
+      'how-it-works': 'How It Works',
+      features: 'Workstation Features',
+      pricing: 'Pricing & Plans',
+      faq: 'Frequently Asked Questions',
+      contact: 'Contact Support',
+      privacy: 'Privacy Policy',
+      terms: 'Terms of Service',
+      'ai-trading': 'AI Trading Guide',
+      'ai-trading-tools': 'AI Trading Tools',
+      'trading-risk-management': 'Trading Risk Management',
+      'how-ai-trading-works': 'How AI Trading Works',
     };
     const pageName = titles[currentRoute.id] || currentRoute.id.charAt(0).toUpperCase() + currentRoute.id.slice(1);
     document.title = `TradePro — ${pageName}`;
@@ -138,6 +181,15 @@ function AppContent() {
       return <AIWealthManagerView initialAction={currentRoute.params?.initialAction} />;
     }
 
+    const publicPages = [
+      'about', 'how-it-works', 'features', 'pricing', 'faq', 'contact', 
+      'privacy', 'terms', 'ai-trading', 'ai-trading-tools', 
+      'trading-risk-management', 'how-ai-trading-works'
+    ];
+    if (publicPages.includes(currentRoute.id)) {
+      return <PublicPageView pageId={currentRoute.id as any} />;
+    }
+
     if (activeTab === 'trade' && currentRoute.params?.stock) {
       return (
         <TradeView 
@@ -150,6 +202,10 @@ function AppContent() {
     }
 
     const handleTrade = (stock: Stock, side?: 'BUY' | 'SELL') => {
+      if (!isAuthenticated) {
+        openLoginModal('trade');
+        return;
+      }
       navigate('trade', { stock, side });
     };
 
@@ -193,12 +249,52 @@ function AppContent() {
     <>
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
 
+      {/* Unauthenticated Protected Route Interception */}
+      {!showSplash && !isAuthenticated && !isPublicPage && currentRoute.id !== 'login' && currentRoute.id !== 'signup' && (
+        <div className="fixed inset-0 z-[99990] bg-ui-bg overflow-y-auto">
+          <LoginPage 
+            onSuccess={() => navigate(currentRoute.id as any)} 
+            onClose={() => navigate('dashboard')}
+            showCloseButton={true}
+          />
+        </div>
+      )}
+
+      {/* Explicit Route Login/Signup when requested */}
+      {!showSplash && (currentRoute.id === 'login' || currentRoute.id === 'signup') && (
+        <div className="fixed inset-0 z-[99995] bg-ui-bg overflow-y-auto">
+          <LoginPage 
+            initialMode={currentRoute.id === 'signup' ? 'signup' : 'login'} 
+            onSuccess={() => navigate('dashboard')} 
+            onClose={() => navigate('dashboard')}
+          />
+        </div>
+      )}
+
+      {/* Explicit Email Login Modal Overlay (triggered via TopBar, Settings, or Mobile Menu) */}
+      <AnimatePresence>
+        {isLoginModalOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[99999] bg-ui-bg overflow-y-auto"
+          >
+            <LoginPage 
+              onSuccess={() => closeLoginModal()} 
+              onClose={() => closeLoginModal()} 
+              showCloseButton={true}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Market Selection if not chosen */}
-      {!showSplash && marketContext === null && (
+      {!showSplash && isAuthenticated && marketContext === null && (
         <MarketSelection onComplete={() => {}} />
       )}
       
-      {(!showSplash && marketContext !== null) && (
+      {(!showSplash && (isAuthenticated || isPublicPage) && marketContext !== null) && (
         <TradeProDashboardReveal
           sidebar={<Sidebar />}
           topBar={<TopBar onSearchFocus={() => setIsCommandPaletteOpen(true)} />}
@@ -214,40 +310,15 @@ function AppContent() {
                     transition={{ duration: 0.25, ease: "easeOut" }}
                     className="w-full"
                   >
-                    <Suspense fallback={
-                      <div className="w-full h-80 flex flex-col items-center justify-center gap-3">
-                        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                        <span className="text-xs font-mono font-semibold text-text-muted">Loading module...</span>
-                      </div>
-                    }>
+                    <ErrorBoundary fallbackMessage={`Unable to load ${activeTab} view`}>
                       {renderView()}
-                    </Suspense>
+                    </ErrorBoundary>
                   </motion.div>
                 </AnimatePresence>
               </div>
               
-              {/* Global Footer */}
-              <footer className="w-full max-w-[2000px] mx-auto py-8 border-t border-ui-border flex flex-col lg:flex-row items-center justify-between text-xs font-semibold text-text-muted mt-8 mb-12 md:mb-10 gap-4 text-center lg:text-left">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#00D084] animate-pulse" />
-                  Live market data &middot; Updated just now
-                </div>
-                
-                <div className="flex items-center gap-4 lg:gap-6 flex-wrap justify-center">
-                  <span className="flex gap-2"><span>New York</span> <span className="text-text-main">10:42 AM</span></span>
-                  <span className="flex gap-2"><span>Mumbai</span> <span className="text-text-main">08:12 PM</span></span>
-                  <span className="flex gap-2"><span>London</span> <span className="text-text-main">03:42 PM</span></span>
-                </div>
-                
-                <div className="flex flex-col items-center lg:items-end gap-1.5">
-                  <span className="text-primary-dark italic font-serif text-sm">
-                    Trade smarter. A brighter tomorrow.
-                  </span>
-                  <span className="text-[9px] text-text-muted font-sans font-bold uppercase tracking-[0.15em]">
-                    Designed & Created by Aditya Paikaray
-                  </span>
-                </div>
-              </footer>
+              {/* Global SEO & Terminal Footer */}
+              <Footer />
             </div>
           }
           auxiliary={

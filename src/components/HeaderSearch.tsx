@@ -155,9 +155,9 @@ const HeaderSearch: React.FC = () => {
                   <div className="px-3 pb-2 text-xs font-bold text-text-muted uppercase tracking-widest flex justify-between items-center">
                     Recent Searches
                   </div>
-                  {recentSearches.map(stock => (
+                  {recentSearches.map((stock, idx) => (
                     <button
-                      key={stock.symbol}
+                      key={`${stock.symbol}-${idx}`}
                       onClick={() => handleSelect(stock)}
                       className="w-full text-left px-3 py-2.5 hover:bg-ui-surface-hover transition-colors rounded-xl flex items-center justify-between group"
                     >
@@ -201,7 +201,7 @@ const HeaderSearch: React.FC = () => {
                   <div className="px-3 pb-2 text-xs font-bold text-text-muted uppercase tracking-widest">
                     Search Results
                   </div>
-                  {combinedResults.map(item => {
+                  {combinedResults.map((item, idx) => {
                     const isIndex = 'key' in item;
                     const symbol = isIndex ? (item as any).displaySymbol : (item as any).symbol;
                     const change = item.change;
@@ -209,7 +209,7 @@ const HeaderSearch: React.FC = () => {
                     
                     return (
                     <button
-                      key={symbol}
+                      key={`${isIndex ? 'idx' : 'stock'}-${symbol}-${idx}`}
                       onClick={() => handleSelect(item)}
                       className="w-full text-left px-3 py-2.5 hover:bg-ui-surface-hover transition-colors rounded-xl flex items-center justify-between group"
                     >

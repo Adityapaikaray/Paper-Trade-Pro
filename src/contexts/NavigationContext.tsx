@@ -18,16 +18,29 @@ export type RouteId =
   | 'tools'
   | 'news'
   | 'login'
+  | 'signup'
   | 'key-index'
   | 'heatmap'
-  | 'ai-wealth-manager';
+  | 'ai-wealth-manager'
+  | 'about'
+  | 'how-it-works'
+  | 'features'
+  | 'pricing'
+  | 'faq'
+  | 'contact'
+  | 'privacy'
+  | 'terms'
+  | 'ai-trading'
+  | 'ai-trading-tools'
+  | 'trading-risk-management'
+  | 'how-ai-trading-works';
 
 export interface RouteState {
   id: RouteId;
   params?: Record<string, any>;
 }
 
-export type TopLevelTab = 'dashboard' | 'market' | 'portfolio' | 'wealth' | 'more';
+export type TopLevelTab = 'dashboard' | 'market' | 'portfolio' | 'wealth' | 'more' | 'public';
 
 interface NavigationContextType {
   history: RouteState[];
@@ -42,8 +55,23 @@ interface NavigationContextType {
 
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
+const PUBLIC_ROUTES = [
+  'login', 'signup',
+  'about', 'how-it-works', 'features', 'pricing', 'faq', 'contact', 
+  'privacy', 'terms', 'ai-trading', 'ai-trading-tools', 
+  'trading-risk-management', 'how-ai-trading-works'
+];
+
 export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [history, setHistory] = useState<RouteState[]>([{ id: 'dashboard' }]);
+  const [history, setHistory] = useState<RouteState[]>(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.replace(/^\//, '').toLowerCase();
+      if (path && (PUBLIC_ROUTES.includes(path) || ['dashboard', 'market', 'portfolio', 'wealth', 'heatmap', 'orders', 'watchlist', 'alerts', 'transactions', 'settings', 'help', 'analytics'].includes(path))) {
+        return [{ id: path as RouteId }];
+      }
+    }
+    return [{ id: 'dashboard' }];
+  });
   const [isMenuOpen, setMenuOpen] = useState(false);
 
   const currentRoute = history[history.length - 1];
@@ -57,6 +85,9 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
        if (id === 'ai-wealth-manager') {
          return 'wealth';
        }
+       if (PUBLIC_ROUTES.includes(id)) {
+         return 'public';
+       }
        if (['orders', 'watchlist', 'alerts', 'transactions', 'settings', 'help', 'analytics', 'research', 'tools', 'news', 'heatmap', 'key-index'].includes(id)) {
          return 'more';
        }
@@ -69,10 +100,27 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
   const navigate = useCallback((id: RouteId, params?: Record<string, any>) => {
     setHistory(prev => [...prev, { id, params }]);
     setMenuOpen(false);
+    if (typeof window !== 'undefined') {
+      const targetUrl = id === 'dashboard' ? '/' : `/${id}`;
+      if (window.location.pathname !== targetUrl) {
+        window.history.pushState(null, '', targetUrl);
+      }
+    }
   }, []);
 
   const goBack = useCallback(() => {
-    setHistory(prev => (prev.length > 1 ? prev.slice(0, -1) : prev));
+    setHistory(prev => {
+      if (prev.length > 1) {
+        const next = prev.slice(0, -1);
+        if (typeof window !== 'undefined') {
+          const lastId = next[next.length - 1].id;
+          const targetUrl = lastId === 'dashboard' ? '/' : `/${lastId}`;
+          window.history.pushState(null, '', targetUrl);
+        }
+        return next;
+      }
+      return prev;
+    });
   }, []);
 
   const resetTo = useCallback((id: RouteId, params?: Record<string, any>) => {

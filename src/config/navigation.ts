@@ -1,4 +1,4 @@
-import { LayoutDashboard, Compass, Briefcase, Crown, TrendingUp, ListTodo, BellRing, History, Settings, HelpCircle, Eye, LayoutGrid, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, Compass, Briefcase, Crown, TrendingUp, ListTodo, BellRing, History, Settings, HelpCircle, Eye, LayoutGrid } from 'lucide-react';
 
 export interface NavItem {
   id: string;
@@ -16,7 +16,6 @@ export const primaryNavigation: NavItem[] = [
 
 export const secondaryNavigation: NavItem[] = [
   { id: 'heatmap', label: 'Index Heatmap', icon: LayoutGrid, isMore: true },
-  { id: 'analytics', label: 'Analytics (GA4)', icon: BarChart2, isMore: true },
   { id: 'orders', label: 'Orders', icon: TrendingUp, isMore: true },
   { id: 'watchlist', label: 'Watchlist', icon: ListTodo, isMore: true },
   { id: 'alerts', label: 'Alerts', icon: BellRing, isMore: true },

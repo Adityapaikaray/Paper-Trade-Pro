@@ -323,9 +323,9 @@ export const KeyIndexView: React.FC<KeyIndexViewProps> = ({ onTrade }) => {
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
-                {constituentStocks.map(stock => (
+                {constituentStocks.map((stock, idx) => (
                   <button
-                    key={stock.symbol}
+                    key={`${stock.symbol}-${idx}`}
                     onClick={() => onTrade(stock)}
                     className="p-3 bg-ui-bg hover:bg-primary/5 border border-ui-border hover:border-primary/40 rounded-xl transition-all text-left flex flex-col justify-between group shadow-xs hover:shadow-md"
                   >

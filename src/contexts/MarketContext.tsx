@@ -119,10 +119,14 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         try {
           const instRes = await axios.get('/api/instruments');
           if (Array.isArray(instRes.data) && instRes.data.length > 0) {
-            const mappedInstruments = instRes.data.map((i: any) => {
+            const seenSymbols = new Set<string>();
+            const mappedInstruments: Stock[] = [];
+            for (const i of instRes.data) {
               const sym = i.exchange_symbol || i.display_name;
+              if (!sym || seenSymbols.has(sym.toUpperCase())) continue;
+              seenSymbols.add(sym.toUpperCase());
               const existing = MOCK_STOCKS.find(m => m.symbol.toUpperCase() === sym.toUpperCase() || m.symbol.toUpperCase() === `${sym.toUpperCase()}:NSE`);
-              return {
+              mappedInstruments.push({
                 symbol: sym,
                 name: i.company_name || existing?.name || sym,
                 price: existing?.price || (i.country === 'India' || i.currency === '₹' ? 1500 : 150),
@@ -130,7 +134,7 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 changePercent: existing?.changePercent || 0,
                 volume: existing?.volume || '2.5M',
                 marketCap: existing?.marketCap || 'N/A',
-                pe: 'N/A',
+                description: existing?.description || i.company_name || sym,
                 sector: i.sector || existing?.sector || 'General',
                 country: i.exchange === 'NSE' || i.exchange === 'BSE' || i.country === 'India' ? 'India' : 'USA',
                 currency: i.currency || existing?.currency || (i.country === 'India' ? '₹' : '$'),
@@ -139,8 +143,8 @@ export const MarketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
                 dayLow: existing?.dayLow,
                 prevClose: existing?.prevClose,
                 history: []
-              };
-            });
+              });
+            }
             currentStocksList = mappedInstruments;
             setStocks(currentStocksList);
           }

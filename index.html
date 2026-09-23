@@ -3,17 +3,299 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TRADEPRO</title>
-    <meta name="description" content="Institutional trading and investment portfolio dashboard with AI Wealth Command Center and native Voice Assistant." />
-    <meta property="og:title" content="TRADEPRO" />
-    <meta property="og:description" content="Institutional trading and investment portfolio dashboard with AI Wealth Command Center and native Voice Assistant." />
+    
+    <!-- Primary Search Engine Optimization Meta Tags -->
+    <title>TradePro — Institutional Trading &amp; AI Wealth Management Platform</title>
+    <meta name="title" content="TradePro — Institutional Trading &amp; AI Wealth Management Platform" />
+    <meta name="description" content="TradePro is an institutional-grade trading workstation and AI wealth management platform providing real-time market data, quantitative portfolio analytics, and multi-asset simulated execution." />
+    <link rel="canonical" href="https://tradepro.ai.studio/" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="bingbot" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="author" content="Aditya Paikaray" />
+    <meta name="application-name" content="TradePro" />
+    <meta name="theme-color" content="#060A13" />
+
+    <!-- Open Graph / Facebook / LinkedIn / Slack -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tradepro.ai.studio/" />
+    <meta property="og:title" content="TradePro — Institutional Trading &amp; AI Wealth Management Platform" />
+    <meta property="og:description" content="TradePro is an institutional-grade trading workstation and AI wealth management platform providing real-time market data, quantitative portfolio analytics, and multi-asset simulated execution." />
+    <meta property="og:image" content="https://tradepro.ai.studio/tradepro-logo.svg" />
+    <meta property="og:site_name" content="TradePro" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter / X Social Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://tradepro.ai.studio/" />
+    <meta name="twitter:title" content="TradePro — Institutional Trading &amp; AI Wealth Management Platform" />
+    <meta name="twitter:description" content="TradePro is an institutional-grade trading workstation and AI wealth management platform providing real-time market data, quantitative portfolio analytics, and multi-asset simulated execution." />
+    <meta name="twitter:image" content="https://tradepro.ai.studio/tradepro-logo.svg" />
+
+    <!-- Favicon & Icons -->
     <link rel="icon" type="image/svg+xml" href="/tradepro-icon.svg" />
     <link rel="apple-touch-icon" href="/tradepro-icon.svg" />
     <link rel="manifest" href="/manifest.json" />
+
+    <!-- Schema.org JSON-LD Structured Data (Organization, WebSite, SoftwareApplication, FAQPage) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://tradepro.ai.studio/#organization",
+          "name": "TradePro",
+          "url": "https://tradepro.ai.studio/",
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://tradepro.ai.studio/tradepro-logo.svg"
+          },
+          "founder": {
+            "@type": "Person",
+            "name": "Aditya Paikaray"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "contactType": "Customer Support",
+            "email": "contact@tradepro.ai.studio",
+            "url": "https://tradepro.ai.studio/contact"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://tradepro.ai.studio/#website",
+          "url": "https://tradepro.ai.studio/",
+          "name": "TradePro",
+          "description": "Institutional trading and investment portfolio dashboard with AI Wealth Command Center and native Voice Assistant.",
+          "publisher": {
+            "@id": "https://tradepro.ai.studio/#organization"
+          },
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://tradepro.ai.studio/?s={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://tradepro.ai.studio/#software",
+          "name": "TradePro Workstation",
+          "applicationCategory": "FinanceApplication",
+          "operatingSystem": "All modern web browsers",
+          "description": "Institutional trading workstation, simulated order execution, quantitative risk analytics, and AI-driven wealth co-pilot.",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD",
+            "description": "Free Community Tier with paper trading and real-time market telemetry"
+          },
+          "publisher": {
+            "@id": "https://tradepro.ai.studio/#organization"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://tradepro.ai.studio/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is TradePro?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "TradePro is an institutional-grade trading workstation and AI wealth management platform providing real-time multi-asset market data, quantitative risk analytics, simulated paper trading execution, and an intelligent AI Wealth Command Center."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Does TradePro offer financial advice or guaranteed trading profits?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. TradePro provides software analytics, quantitative simulations, and educational market tools. TradePro does not offer financial advice, does not guarantee profits, and is not a registered broker-dealer or investment advisor. All financial trading carries substantial risk of capital loss."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What markets and asset classes does TradePro support?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "TradePro supports real-time and historical telemetry for US Equities (NYSE, NASDAQ), Indian Equities (NSE, BSE), major global equity indices, commodities, and foreign exchange pairs."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How does the AI Wealth Manager and Voice Assistant work?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "TradePro utilizes Google Gemini models for deterministic quantitative calculation interpretation, scenario forecasting, portfolio risk attribution, and hands-free voice-activated workflow navigation."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What are the pricing tiers for TradePro?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "TradePro provides a Free Community Tier ($0/month) for simulated trading and basic market telemetry, a Pro Trader Tier ($29/month) for real-time streaming charts and AI Wealth Copilot, and an Institutional Tier ($99/month) for quantitative risk engines and multi-broker API integrations."
+              }
+            }
+          ]
+        }
+      ]
+    }
+    </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Root Container with Crawlable Semantic HTML for Search & AI Crawlers -->
+    <div id="root">
+      <header>
+        <nav aria-label="Main Navigation">
+          <a href="/" aria-label="TradePro Home">TradePro</a>
+          <ul>
+            <li><a href="/about">About</a></li>
+            <li><a href="/features">Features</a></li>
+            <li><a href="/how-it-works">How It Works</a></li>
+            <li><a href="/pricing">Pricing</a></li>
+            <li><a href="/faq">FAQ</a></li>
+            <li><a href="/ai-trading">AI Trading</a></li>
+            <li><a href="/trading-risk-management">Risk Management</a></li>
+            <li><a href="/contact">Contact</a></li>
+          </ul>
+        </nav>
+      </header>
+
+      <main>
+        <section id="hero">
+          <h1>TradePro — Institutional Trading &amp; AI Wealth Management Platform</h1>
+          <p>
+            TradePro is an institutional-grade trading workstation and AI wealth management platform 
+            providing real-time multi-market data, quantitative risk analytics, simulated paper execution, 
+            and intelligent voice interaction.
+          </p>
+        </section>
+
+        <section id="what-it-is">
+          <h2>What is TradePro and Who is it For?</h2>
+          <p>
+            TradePro is an institutional-grade financial analytics and simulated execution platform 
+            engineered and operated by Aditya Paikaray. TradePro solves the fragmentation of retail trading 
+            tools by combining live multi-exchange market telemetry (US and Indian Equities), quantitative 
+            portfolio risk attribution (Sharpe ratio, Sortino ratio, max drawdown), and Google Gemini-powered 
+            conversational intelligence into a single low-latency workstation.
+          </p>
+          <p>
+            TradePro is designed for:
+          </p>
+          <ul>
+            <li><strong>Active Retail Traders:</strong> Traders seeking real-time candlestick charts, simulated order routing, and rapid keyboard or voice execution.</li>
+            <li><strong>Quantitative Investors:</strong> Researchers seeking deterministic portfolio risk metrics, sector concentration caps, and downside volatility modeling.</li>
+            <li><strong>AI Finance Observers:</strong> Analysts exploring LLM-assisted scenario stress tests, macroeconomic comparisons, and natural language portfolio querying.</li>
+          </ul>
+        </section>
+
+        <section id="features">
+          <h2>Main Workstation Features</h2>
+          <ul>
+            <li><strong>AI Wealth Command Center:</strong> Multi-modal financial co-pilot for stress testing, allocation shifts, and scenario simulations.</li>
+            <li><strong>Native Voice Assistant:</strong> Hands-free voice commands to query stock quotes, switch views, and trigger simulated orders.</li>
+            <li><strong>Interactive Candlestick Charts:</strong> Real-time TradingView Lightweight Charts with volume overlays, moving averages, and multiple timeframes.</li>
+            <li><strong>Real-Time Index Heatmap:</strong> Sector and capitalization heatmaps visualizing market breadth and percentage movements across NIFTY 50 and S&P 500.</li>
+            <li><strong>Quantitative Portfolio Analytics:</strong> Mathematical equity curve modeling, Sharpe ratio calculation, win/loss trade splits, and maximum drawdown tracking.</li>
+            <li><strong>Dual-Tab Secure Authentication:</strong> Secure 6-digit Email OTP authentication with cryptographic rate limiting and password fallback.</li>
+          </ul>
+        </section>
+
+        <section id="how-it-works">
+          <h2>How TradePro Works: 5-Stage Architecture</h2>
+          <ol>
+            <li><strong>Telemetry Ingestion:</strong> Continuous quote feeds from US (NYSE, NASDAQ) and Indian (NSE, BSE) exchanges normalized into a sub-second analytical pipeline.</li>
+            <li><strong>Quantitative Modeling:</strong> Automated risk engine calculating portfolio volatility, Sharpe ratios, and drawdowns deterministically.</li>
+            <li><strong>AI Wealth Co-Pilot:</strong> Gemini models analyzing portfolio holdings and historical stress scenarios with zero mathematical hallucination.</li>
+            <li><strong>Voice Processing:</strong> Local browser voice transcription routed to safety parsers for hands-free navigation.</li>
+            <li><strong>Simulated Execution:</strong> Risk-managed simulated paper ledger with realistic bid-ask spread and slippage dynamics.</li>
+          </ol>
+        </section>
+
+        <section id="supported-markets">
+          <h2>Supported Markets &amp; Instruments</h2>
+          <p>
+            TradePro supports real-time market data across US Equities (NYSE, NASDAQ), Indian Equities (NSE, BSE), 
+            global benchmark indices (S&amp;P 500, NASDAQ 100, NIFTY 50, SENSEX), commodities, and major foreign exchange currency pairs.
+          </p>
+        </section>
+
+        <section id="pricing">
+          <h2>Transparent Platform Pricing</h2>
+          <ul>
+            <li><strong>Community Tier ($0/month):</strong> Includes simulated paper trading with $100,000 virtual balance, real-time market quotes, candlestick charts, and index heatmaps.</li>
+            <li><strong>Pro Trader Tier ($29/month):</strong> Includes AI Wealth Command Center, native voice assistant execution, advanced Sharpe and risk attribution, and cloud sync.</li>
+            <li><strong>Institutional Tier ($99/month):</strong> Includes multi-broker API gateway integration, custom quantitative parameter encodings, and dedicated infrastructure.</li>
+          </ul>
+        </section>
+
+        <section id="educational-resources">
+          <h2>Quantitative &amp; AI Trading Educational Guides</h2>
+          <ul>
+            <li><a href="/ai-trading">What is AI Trading? Principles, Realities &amp; Risks</a>: Learn how machine learning is applied in modern quantitative finance.</li>
+            <li><a href="/ai-trading-tools">Modern AI Trading Tools &amp; Technologies</a>: Overview of natural language financial querying, stress testing, and order book analysis.</li>
+            <li><a href="/trading-risk-management">Trading Risk Management Principles</a>: Why capital preservation, position sizing, and stop-loss discipline dictate long-term survival.</li>
+            <li><a href="/how-ai-trading-works">How AI Trading Systems Work Under the Hood</a>: Technical anatomy of data pipelines, LLM guardrails, and latency optimization.</li>
+          </ul>
+        </section>
+
+        <section id="faq">
+          <h2>Frequently Asked Questions</h2>
+          <article>
+            <h3>What is TradePro?</h3>
+            <p>TradePro is an institutional-grade trading workstation and AI wealth management platform providing real-time multi-asset market data, quantitative risk analytics, simulated paper trading execution, and an intelligent AI Wealth Command Center.</p>
+          </article>
+          <article>
+            <h3>Does TradePro guarantee trading profits or 100% accuracy?</h3>
+            <p>No. TradePro provides software analytics, quantitative simulations, and educational market tools. TradePro does not offer financial advice, does not guarantee profits, and is not a registered broker-dealer or investment advisor. All financial trading carries substantial risk of capital loss.</p>
+          </article>
+          <article>
+            <h3>What markets and asset classes does TradePro support?</h3>
+            <p>TradePro supports real-time and historical telemetry for US Equities (NYSE, NASDAQ), Indian Equities (NSE, BSE), major global equity indices, commodities, and foreign exchange pairs.</p>
+          </article>
+          <article>
+            <h3>How does the AI Wealth Manager and Voice Assistant work?</h3>
+            <p>TradePro utilizes Google Gemini models for deterministic quantitative calculation interpretation, scenario forecasting, portfolio risk attribution, and hands-free voice-activated workflow navigation.</p>
+          </article>
+          <article>
+            <h3>What are the pricing tiers for TradePro?</h3>
+            <p>TradePro provides a Free Community Tier ($0/month) for simulated trading and basic market telemetry, a Pro Trader Tier ($29/month) for real-time streaming charts and AI Wealth Copilot, and an Institutional Tier ($99/month) for quantitative risk engines and multi-broker API integrations.</p>
+          </article>
+        </section>
+
+        <section id="regulatory-disclaimer">
+          <h2>Important Regulatory Notice &amp; Risk Disclaimer</h2>
+          <p>
+            TradePro is a software and quantitative technology platform designed for research, market observation, 
+            and simulated execution. TradePro is not a registered broker-dealer, investment advisor, financial planner, 
+            or regulatory authority under the SEC, FINRA, SEBI, or FCA. Financial markets involve substantial risk of capital loss, 
+            and past performance is never a guarantee of future returns. No information provided within TradePro constitutes 
+            personalized investment advice or a recommendation to buy or sell securities.
+          </p>
+        </section>
+
+        <section id="contact-company">
+          <h2>Company &amp; Contact Information</h2>
+          <p>Operator: Aditya Paikaray</p>
+          <p>Email: <a href="mailto:contact@tradepro.ai.studio">contact@tradepro.ai.studio</a></p>
+          <p>Website: <a href="https://tradepro.ai.studio/">https://tradepro.ai.studio/</a></p>
+        </section>
+      </main>
+
+      <footer>
+        <nav aria-label="Footer Navigation">
+          <p><strong>Platform:</strong> <a href="/about">About</a> | <a href="/features">Features</a> | <a href="/how-it-works">How It Works</a> | <a href="/pricing">Pricing</a></p>
+          <p><strong>Education:</strong> <a href="/ai-trading">AI Trading</a> | <a href="/ai-trading-tools">AI Tools</a> | <a href="/trading-risk-management">Risk Management</a> | <a href="/how-ai-trading-works">AI Architecture</a></p>
+          <p><strong>Legal &amp; Support:</strong> <a href="/faq">FAQ</a> | <a href="/contact">Contact</a> | <a href="/privacy">Privacy Policy</a> | <a href="/terms">Terms of Service</a> | <a href="/robots.txt">robots.txt</a> | <a href="/sitemap.xml">sitemap.xml</a></p>
+        </nav>
+        <p>&copy; 2026 TradePro. All rights reserved. Created &amp; Designed by Aditya Paikaray.</p>
+      </footer>
+    </div>
+
+    <!-- Client-side SPA Entrypoint -->
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
-

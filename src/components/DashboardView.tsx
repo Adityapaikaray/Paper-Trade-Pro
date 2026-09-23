@@ -449,11 +449,11 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
             </div>
 
             <div className="space-y-3">
-              {topMovers.map((stock) => {
+              {topMovers.map((stock, idx) => {
                 const isPos = stock.changePercent >= 0;
                 return (
                   <div 
-                    key={stock.symbol}
+                    key={`${stock.symbol}-${idx}`}
                     className="flex items-center justify-between p-2.5 rounded-xl hover:bg-ui-surface-hover/60 transition-colors border border-transparent hover:border-ui-border group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -519,7 +519,7 @@ const DashboardView: React.FC<DashboardViewProps> = ({ onTrade, onNavigate }) =>
 
                   return (
                     <div 
-                      key={order.id || idx}
+                      key={`${order.id || 'order'}-${idx}`}
                       className="flex items-center justify-between p-2.5 rounded-xl bg-ui-bg/50 border border-ui-border/60 text-xs"
                     >
                       <div className="flex items-center gap-2.5">

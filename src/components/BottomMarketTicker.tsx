@@ -82,7 +82,13 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
         }
       });
 
-    return list;
+    // Combine without duplicate IDs
+    const seenIds = new Set<string>();
+    return list.filter(item => {
+      if (seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      return true;
+    });
   }, [stocks, indices, priceTicks, indexTicks, isIndia]);
 
   const formatPrice = (val: number, curr: string) => {
@@ -99,7 +105,7 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
     return `${sign}${pct.toFixed(2)}%`;
   };
 
-  const renderItem = (item: TickerDisplayItem, keyPrefix: string) => {
+  const renderItem = (item: TickerDisplayItem, keyPrefix: string, idx: number) => {
     const hasTick = !!item.tick;
     const isTickUp = item.tick === 'up';
 
@@ -116,7 +122,7 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
 
     return (
       <button
-        key={`${keyPrefix}-${item.id}`}
+        key={`${keyPrefix}-${idx}-${item.id}`}
         onClick={() => {
           if (item.stockRef && onTrade) {
             onTrade(item.stockRef);
@@ -260,12 +266,12 @@ export const BottomMarketTicker: React.FC<BottomMarketTickerProps> = ({ onTrade 
         <div className="flex items-center shrink-0 animate-[ticker_45s_linear_infinite] hover:[animation-play-state:paused] will-change-transform">
           {/* Primary Track */}
           <div className="flex items-center gap-2.5 pr-2.5 shrink-0">
-            {tickerItems.map(item => renderItem(item, 'primary'))}
+            {tickerItems.map((item, idx) => renderItem(item, 'primary', idx))}
           </div>
 
           {/* Seamless Duplicate Track for Infinite Continuous Marquee */}
           <div className="flex items-center gap-2.5 pr-2.5 shrink-0" aria-hidden="true">
-            {tickerItems.map(item => renderItem(item, 'duplicate'))}
+            {tickerItems.map((item, idx) => renderItem(item, 'duplicate', idx))}
           </div>
         </div>
       </div>

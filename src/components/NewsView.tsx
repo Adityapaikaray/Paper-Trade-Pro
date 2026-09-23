@@ -118,9 +118,9 @@ const NewsView = () => {
           <div className="flex items-center justify-center pl-2 pr-4 border-r border-ui-border mr-2">
              <Filter size={14} className="text-text-muted" />
           </div>
-          {CATEGORIES.map(category => (
+          {CATEGORIES.map((category, cIdx) => (
             <button
-              key={category}
+              key={`${category}-${cIdx}`}
               onClick={() => setActiveCategory(category)}
               className={`px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 ${
                 activeCategory === category
@@ -157,13 +157,13 @@ const NewsView = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {SPECIFIC_CATEGORIES.map(category => {
+              {SPECIFIC_CATEGORIES.map((category, scIdx) => {
                 const article = categoryHighlights[category];
                 if (!article) return null;
                 
                 return (
                   <a 
-                    key={category}
+                    key={`${category}-${scIdx}`}
                     href={article.link}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -231,7 +231,7 @@ const NewsView = () => {
           <div className="grid gap-4">
             {articles.map((article, idx) => (
               <a
-                key={article.uuid}
+                key={article.uuid ? `${article.uuid}-${idx}` : `article-${idx}`}
                 href={article.link}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -259,8 +259,8 @@ const NewsView = () => {
                   
                   {article.relatedTickers && article.relatedTickers.length > 0 && (
                     <div className="flex flex-wrap gap-2 pt-2">
-                      {article.relatedTickers.slice(0, 4).map(ticker => (
-                        <span key={ticker} className="text-[9px] font-mono font-bold text-text-muted border border-ui-border px-1.5 py-0.5 rounded bg-ui-bg">
+                      {article.relatedTickers.slice(0, 4).map((ticker, tIdx) => (
+                        <span key={`${ticker}-${tIdx}`} className="text-[9px] font-mono font-bold text-text-muted border border-ui-border px-1.5 py-0.5 rounded bg-ui-bg">
                           {ticker}
                         </span>
                       ))}

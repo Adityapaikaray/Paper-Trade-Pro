@@ -137,9 +137,9 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
             <div className="flex items-center gap-2 bg-ui-bg p-1.5 rounded-2xl border border-ui-border shadow-md">
               <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-3">Region:</span>
               <div className="flex items-center gap-1">
-                {exchanges.map(exchange => (
+                {exchanges.map((exchange, idx) => (
                   <button
-                    key={exchange}
+                    key={`${exchange}-${idx}`}
                     onClick={() => setSelectedExchange(exchange)}
                     className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
                       selectedExchange === exchange 
@@ -156,9 +156,9 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
             <div className="flex items-center gap-2 bg-ui-bg p-1.5 rounded-2xl border border-ui-border shadow-md">
               <span className="text-[9px] font-black text-text-muted uppercase tracking-[0.2em] ml-3">Sector:</span>
               <div className="flex flex-wrap gap-1">
-                {sectors.map(sector => (
+                {sectors.map((sector, idx) => (
                   <button
-                    key={sector}
+                    key={`${sector}-${idx}`}
                     onClick={() => setSelectedSector(sector)}
                     className={`px-3.5 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all duration-300 ${
                       selectedSector === sector 
@@ -201,7 +201,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
               </tr>
             </thead>
             <tbody className="divide-y divide-ui-border">
-              {filteredStocks.map((stock) => {
+              {filteredStocks.map((stock, idx) => {
                 const tick = priceTicks[stock.symbol];
                 const dayLow = stock.dayLow ?? (stock.price * 0.985);
                 const dayHigh = stock.dayHigh ?? (stock.price * 1.015);
@@ -209,7 +209,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                 const rangePercent = rangeSpan > 0 ? Math.min(100, Math.max(0, ((stock.price - dayLow) / rangeSpan) * 100)) : 50;
 
                 return (
-                  <React.Fragment key={stock.symbol}>
+                  <React.Fragment key={`${stock.symbol}-${stock.exchange || ''}-${idx}`}>
                     <motion.tr initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3, ease: 'easeOut' }} 
                       className={`group hover:bg-ui-bg transition-all cursor-pointer ${expandedSymbol === stock.symbol ? 'bg-ui-bg' : ''}`}
                       onClick={() => toggleExpand(stock.symbol)}
@@ -340,8 +340,8 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                                 { label: 'Real Volume', value: stock.volume },
                                 { label: '52W Range', value: stock.fiftyTwoWeekHigh ? `${stock.currency}${stock.fiftyTwoWeekLow?.toFixed(0)} - ${stock.currency}${stock.fiftyTwoWeekHigh?.toFixed(0)}` : 'N/A' },
                                 { label: 'Region', value: stock.country }
-                              ].map(detail => (
-                                <div key={detail.label} className="p-4 bg-ui-surface rounded-2xl border border-ui-border">
+                              ].map((detail, dIdx) => (
+                                <div key={`${detail.label}-${dIdx}`} className="p-4 bg-ui-surface rounded-2xl border border-ui-border">
                                   <p className="text-[8px] font-black text-text-muted uppercase tracking-widest mb-1">{detail.label}</p>
                                   <p className="text-xs font-mono font-black text-text-main italic">{detail.value}</p>
                                 </div>

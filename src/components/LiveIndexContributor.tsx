@@ -51,9 +51,9 @@ export const LiveIndexContributor: React.FC<LiveIndexContributorProps> = ({ onTr
         </span>
       </div>
       <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-        {constituentStocks.map(stock => (
+        {constituentStocks.map((stock, idx) => (
           <button
-            key={stock.symbol}
+            key={`${stock.symbol}-${idx}`}
             onClick={() => onTrade && onTrade(stock)}
             className="min-w-[120px] p-3 bg-ui-bg hover:bg-primary/5 border border-ui-border hover:border-primary/40 rounded-xl transition-all text-left flex flex-col justify-between group shadow-xs hover:shadow-md shrink-0"
           >

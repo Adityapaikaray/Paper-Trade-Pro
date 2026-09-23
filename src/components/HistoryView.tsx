@@ -4,7 +4,13 @@ import { History as HistoryIcon, ArrowUpRight, ArrowDownLeft, Download, Filter, 
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useUI } from '../contexts/UIContext.tsx';
 
-const HistoryView: React.FC = () => {
+import { Stock } from '../types.ts';
+
+export interface HistoryViewProps {
+  onTrade?: (stock: Stock, side?: 'BUY' | 'SELL') => void;
+}
+
+export const HistoryView: React.FC<HistoryViewProps> = () => {
   const { profile, marketContext } = usePortfolio();
   const { addToast } = useUI();
   const [filterType, setFilterType] = useState<'ALL' | 'BUY' | 'SELL'>('ALL');

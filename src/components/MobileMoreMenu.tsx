@@ -2,7 +2,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   X, TrendingUp, ListTodo, BellRing, History, 
-  Settings, HelpCircle, LogOut, Sun, Moon 
+  Settings, HelpCircle, LogOut, Sun, Moon, Mail
 } from 'lucide-react';
 import { useNavigation, RouteId } from '../contexts/NavigationContext.tsx';
 import { useAuth } from '../contexts/AuthContext.tsx';
@@ -10,7 +10,7 @@ import { useTheme } from '../contexts/ThemeContext.tsx';
 
 const MobileMoreMenu: React.FC = () => {
   const { isMenuOpen, setMenuOpen, navigate, currentRoute } = useNavigation();
-  const { logout } = useAuth();
+  const { logout, openLoginModal } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
   const handleNavigate = (route: RouteId) => {
@@ -126,10 +126,20 @@ const MobileMoreMenu: React.FC = () => {
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-2 pb-6">
+              <div className="pt-2 pb-6 space-y-2.5">
+                <button
+                  onClick={() => {
+                    setMenuOpen(false);
+                    openLoginModal();
+                  }}
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold hover:bg-primary/20 active:scale-[0.98] transition-all cursor-pointer"
+                >
+                  <Mail size={18} />
+                  <span>Email Login / Switch</span>
+                </button>
                 <button
                   onClick={handleLogout}
-                  className="w-full flex items-center justify-center gap-2 py-4 rounded-xl bg-ui-surface border border-rose-500/20 text-rose-500 font-bold hover:bg-rose-500/10 active:scale-[0.98] transition-all"
+                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-ui-surface border border-rose-500/20 text-rose-500 font-bold hover:bg-rose-500/10 active:scale-[0.98] transition-all cursor-pointer"
                 >
                   <LogOut size={18} />
                   <span>Log Out</span>

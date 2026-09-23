@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Bell, Moon, Sun, Settings, LogOut, User, Menu, PlusCircle, RotateCcw, Check, CheckCheck, Trash2, X, AlertCircle, ArrowLeft, Mic } from 'lucide-react';
+import { Search, Bell, Moon, Sun, Settings, LogOut, User, Menu, PlusCircle, RotateCcw, Check, CheckCheck, Trash2, X, AlertCircle, ArrowLeft, Mic, Mail, KeyRound, ShieldCheck } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext.tsx';
 import { useUI } from '../contexts/UIContext.tsx';
@@ -21,7 +21,7 @@ interface TopBarProps {
 }
 
 const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, isAuthenticated, openLoginModal } = useAuth();
   const { addToast, toggleMobileMenu, openModal } = useUI();
   const { theme, toggleTheme } = useTheme();
   const { currentRoute, goBack, history, activeTab, navigate, setMenuOpen, isMenuOpen } = useNavigation();
@@ -390,9 +390,9 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
                       No notifications yet.
                     </div>
                   ) : (
-                    notifications.map((notif) => (
+                    notifications.map((notif, notifIdx) => (
                       <div
-                        key={notif.id}
+                        key={`${notif.id}-${notifIdx}`}
                         onClick={() => markNotificationAsRead(notif.id)}
                         className={`p-3.5 hover:bg-ui-surface-hover/80 transition-colors flex items-start gap-3 cursor-pointer group ${
                           !notif.read ? 'bg-primary/5' : ''
@@ -427,52 +427,72 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
           </AnimatePresence>
         </div>
         
-        {/* Profile */}
-        <div className="relative" ref={profileRef}>
-          <div 
-            onClick={() => setProfileOpen(!profileOpen)}
-            className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-ui-border cursor-pointer group"
+        {/* Profile / Email Login */}
+        {!isAuthenticated ? (
+          <button
+            onClick={() => openLoginModal()}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4A72C] to-[#B88E1F] hover:from-[#E5BE4A] hover:to-[#C59B27] text-white text-xs font-bold shadow-[0_4px_12px_rgba(212,167,44,0.3)] transition-all active:scale-95 cursor-pointer ml-1 sm:ml-2"
+            title="Login to TradePro"
           >
-            <div className="w-10 h-10 rounded-full bg-ui-bg border border-primary shadow-primary/20 transition-transform hover:scale-105 duration-300 flex items-center justify-center">
-              <div className="w-full h-full rounded-full flex items-center justify-center text-text-main font-black uppercase text-sm">
-                PU
+            <Mail size={15} />
+            <span>Login</span>
+          </button>
+        ) : (
+          <div className="relative" ref={profileRef}>
+            <div 
+              onClick={() => setProfileOpen(!profileOpen)}
+              className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-ui-border cursor-pointer group"
+            >
+              <div className="w-10 h-10 rounded-full bg-ui-bg border border-primary shadow-primary/20 transition-transform hover:scale-105 duration-300 flex items-center justify-center">
+                <div className="w-full h-full rounded-full flex items-center justify-center text-text-main font-black uppercase text-xs">
+                  {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'PU'}
+                </div>
+              </div>
+              <div className="hidden sm:flex flex-col items-start mr-1">
+                <p className="text-[13px] font-bold text-text-main leading-tight group-hover:text-primary transition-colors">{user?.name || "Prestige User"}</p>
+                <p className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mt-0.5">{user?.tier || "PAPER TRADER"}</p>
               </div>
             </div>
-            <div className="hidden sm:flex flex-col items-start mr-1">
-              <p className="text-[13px] font-bold text-text-main leading-tight group-hover:text-primary transition-colors">{user?.name || "Prestige User"}</p>
-              <p className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mt-0.5">PAPER TRADER</p>
-            </div>
+            <AnimatePresence>
+              {profileOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="absolute right-0 top-full mt-3 w-64 bg-ui-surface border border-ui-border rounded-2xl shadow-2xl overflow-hidden py-2 z-50"
+                >
+                  <div className="px-4 py-3 mb-1 border-b border-ui-border">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-bold text-text-main truncate">{user?.name || "TradePro User"}</p>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 flex items-center gap-1 shrink-0">
+                        <ShieldCheck size={11} /> Verified
+                      </span>
+                    </div>
+                    <p className="text-xs text-text-muted font-mono truncate mt-0.5">{user?.email || "trader@tradepro.com"}</p>
+                    <p className="text-[10px] text-primary font-bold uppercase tracking-wider mt-1">{user?.tier || "Pro Member"}</p>
+                  </div>
+                  
+                  <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3 cursor-pointer">
+                    <User size={16} /> Account Profile
+                  </button>
+                  <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3 cursor-pointer">
+                    <Settings size={16} /> Workstation Settings
+                  </button>
+                  <button onClick={() => { setProfileOpen(false); openLoginModal(); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-primary hover:bg-ui-surface-hover transition-colors flex items-center gap-3 cursor-pointer">
+                    <Mail size={16} className="text-primary" /> Switch Account / Email Login
+                  </button>
+                  
+                  <div className="h-px bg-ui-border my-2" />
+                  
+                  <button onClick={() => { setProfileOpen(false); logout(); addToast('Logged out successfully', 'info'); }} className="w-full text-left px-4 py-2 text-sm text-negative hover:bg-negative/10 transition-colors flex items-center gap-3 cursor-pointer">
+                    <LogOut size={16} /> Log Out
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
-          <AnimatePresence>
-            {profileOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute right-0 top-full mt-3 w-56 bg-ui-surface border border-ui-border rounded-2xl shadow-2xl overflow-hidden py-2 z-50"
-              >
-                <div className="px-4 py-2 mb-2 border-b border-ui-border">
-                  <p className="text-sm font-bold text-text-main">{user?.name || "Prestige User"}</p>
-                  <p className="text-xs text-text-muted">{user?.email || "adityapaikaray31@gmail.com"}</p>
-                </div>
-                
-                <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3">
-                  <User size={16} /> Profile
-                </button>
-                <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3">
-                  <Settings size={16} /> Settings
-                </button>
-                
-                <div className="h-px bg-ui-border my-2" />
-                
-                <button onClick={() => { setProfileOpen(false); logout(); addToast('Logged out successfully', 'success'); }} className="w-full text-left px-4 py-2 text-sm text-negative hover:bg-negative/10 transition-colors flex items-center gap-3">
-                  <LogOut size={16} /> Log Out
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        )}
       </div>
     </>
   );

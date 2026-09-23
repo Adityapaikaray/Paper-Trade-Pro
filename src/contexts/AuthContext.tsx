@@ -1,18 +1,40 @@
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+ * 
+ * TradePro Centralized Authentication Context
+ * Directly connected to Supabase project: ccnkvydgdrvzxfygkfjm
+ * URL: https://ccnkvydgdrvzxfygkfjm.supabase.co
+ * 
+ * Features:
+ * - Passwordless Email OTP flow
+ * - Supabase session persistence ('tradepro-supabase-auth')
+ * - Reacts to SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED
+ * - No PII analytics tracking
+ */
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { analyticsService } from '../services/analytics.ts';
+import { 
+  supabase, 
+  isSupabaseConfigured,
+  sendSupabaseOtp,
+  verifySupabaseOtp,
+  resendSupabaseOtp,
+  signOutUser,
+  UserProfile
+} from '../services/supabase.ts';
 
 export interface User {
   id?: string;
   name: string;
   email?: string;
-  phone?: string;
-  countryCode?: string;
-  mobileNumber?: string;
+  displayName?: string;
   accountNumber?: string;
   kycStatus?: string;
   tier?: string;
+  balance?: number;
+  emailVerified?: boolean;
   createdAt?: number;
 }
 
@@ -20,205 +42,261 @@ interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
   loading: boolean;
-  login: (token: string, user: User) => void;
+  isLoginModalOpen: boolean;
+  isSupabaseActive: boolean;
+  redirectAfterLogin: string | null;
+  openLoginModal: (redirectRoute?: string) => void;
+  closeLoginModal: () => void;
+  setRedirectAfterLogin: (route: string | null) => void;
+  
+  // Passwordless Email OTP Methods
+  sendEmailOtp: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  verifyEmailOtp: (email: string, otp: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  resendEmailOtp: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => Promise<void>;
-  sendOtp: (phone: string, countryCode?: string) => Promise<{ success: boolean; status?: string; message?: string; error?: string; requestId?: string; code?: string }>;
-  resendOtp: (phone: string, countryCode?: string) => Promise<{ success: boolean; status?: string; message?: string; error?: string; requestId?: string; code?: string }>;
-  verifyOtp: (phone: string, otp: string, countryCode?: string) => Promise<{ success: boolean; user?: User; token?: string; error?: string }>;
+
+  // Backwards compatibility wrappers
+  sendOtp: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  verifyOtp: (email: string, otp: string) => Promise<{ success: boolean; user?: User; error?: string }>;
+  resendOtp: (email: string) => Promise<{ success: boolean; message?: string; error?: string }>;
+  login: (token: string, user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const DEFAULT_USER: User = {
-  id: 'tp_usr_9876543210',
-  name: 'Aditya Paikaray',
-  email: 'adityapaikaray31@gmail.com',
-  phone: '+91 8249181397',
-  countryCode: '+91',
-  mobileNumber: '8249181397',
-  accountNumber: 'TP-8849201',
-  kycStatus: 'VERIFIED',
-  tier: 'PRO',
-  createdAt: Date.now()
-};
+const mapProfileToUser = (profile: UserProfile): User => ({
+  id: profile.id,
+  name: profile.displayName || profile.fullName || 'TradePro Trader',
+  displayName: profile.displayName || profile.fullName || 'TradePro Trader',
+  email: profile.email,
+  accountNumber: profile.accountNumber || 'TP-8249-89',
+  kycStatus: profile.kycStatus || 'VERIFIED',
+  tier: profile.tier || 'Pro Member',
+  balance: profile.balance || 100000,
+  emailVerified: profile.emailVerified ?? true,
+  createdAt: profile.createdAt || Date.now()
+});
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [user, setUser] = useState<User | null>(DEFAULT_USER);
-  const [loading, setLoading] = useState<boolean>(false);
+  const isSupabaseActive = isSupabaseConfigured();
 
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState<boolean>(false);
+  const [redirectAfterLogin, setRedirectAfterLogin] = useState<string | null>(null);
+
+  const openLoginModal = useCallback((targetRedirect?: string) => {
+    if (targetRedirect) {
+      setRedirectAfterLogin(targetRedirect);
+    }
+    setIsLoginModalOpen(true);
+  }, []);
+
+  const closeLoginModal = useCallback(() => {
+    setIsLoginModalOpen(false);
+  }, []);
+
+  // Initialize and restore Supabase Auth Session
   useEffect(() => {
     let isMounted = true;
 
-    const checkAuthSession = async () => {
-      const token = localStorage.getItem('tradepro_auth_token');
-      if (!token) {
-        if (isMounted) {
+    const initAuth = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (!error && session?.user && isMounted) {
+          const u = session.user;
+          const initialName = u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || 'TradePro Trader';
+          
+          // Attempt to query profile from public.profiles
+          let profileFromDb: any = null;
+          try {
+            const { data } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
+            if (data) profileFromDb = data;
+          } catch {
+            // ignore
+          }
+
+          const fullProfile: User = {
+            id: u.id,
+            name: profileFromDb?.display_name || profileFromDb?.full_name || initialName,
+            displayName: profileFromDb?.display_name || profileFromDb?.full_name || initialName,
+            email: u.email || '',
+            accountNumber: profileFromDb?.account_number || `TP-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(10 + Math.random() * 90)}`,
+            tier: profileFromDb?.tier || 'Pro Member',
+            balance: profileFromDb?.balance || 100000,
+            kycStatus: profileFromDb?.kyc_status || 'VERIFIED',
+            emailVerified: true,
+            createdAt: u.created_at ? new Date(u.created_at).getTime() : Date.now()
+          };
+
+          setUser(fullProfile);
           setIsAuthenticated(true);
-          setUser(DEFAULT_USER);
+          localStorage.setItem('tradepro_current_user', JSON.stringify(fullProfile));
           setLoading(false);
+          return;
         }
-        return;
+      } catch (e) {
+        console.warn('Supabase session load error:', e);
       }
 
-      try {
-        const response = await axios.get('/api/auth/me', {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 4000,
-        });
-        if (isMounted) {
-          if (response.data && response.data.user) {
-            setUser(response.data.user);
-            setIsAuthenticated(true);
-          } else {
-            localStorage.removeItem('tradepro_auth_token');
-            setIsAuthenticated(true);
-            setUser(DEFAULT_USER);
-          }
-        }
-      } catch (err) {
-        if (isMounted) {
-          localStorage.removeItem('tradepro_auth_token');
-          setIsAuthenticated(true);
-          setUser(DEFAULT_USER);
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      if (isMounted) {
+        setUser(null);
+        setIsAuthenticated(false);
+        setLoading(false);
       }
     };
 
-    checkAuthSession();
+    initAuth();
+
+    // Supabase Auth State Change Listener reacting to SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, USER_UPDATED
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+
+      if ((event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') && session?.user) {
+        const u = session.user;
+        const initialName = u.user_metadata?.full_name || u.user_metadata?.name || u.email?.split('@')[0] || 'TradePro Trader';
+        
+        let profileFromDb: any = null;
+        try {
+          const { data } = await supabase.from('profiles').select('*').eq('id', u.id).maybeSingle();
+          if (data) profileFromDb = data;
+        } catch {
+          // ignore
+        }
+
+        const mapped: User = {
+          id: u.id,
+          name: profileFromDb?.display_name || profileFromDb?.full_name || initialName,
+          displayName: profileFromDb?.display_name || profileFromDb?.full_name || initialName,
+          email: u.email || '',
+          accountNumber: profileFromDb?.account_number || `TP-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(10 + Math.random() * 90)}`,
+          tier: profileFromDb?.tier || 'Pro Member',
+          balance: profileFromDb?.balance || 100000,
+          kycStatus: profileFromDb?.kyc_status || 'VERIFIED',
+          emailVerified: true,
+          createdAt: u.created_at ? new Date(u.created_at).getTime() : Date.now()
+        };
+
+        setUser(mapped);
+        setIsAuthenticated(true);
+        sessionStorage.removeItem('tradepro_logged_out');
+        localStorage.setItem('tradepro_current_user', JSON.stringify(mapped));
+        setIsLoginModalOpen(false);
+      } else if (event === 'SIGNED_OUT') {
+        setUser(null);
+        setIsAuthenticated(false);
+        localStorage.removeItem('tradepro_current_user');
+        sessionStorage.setItem('tradepro_logged_out', 'true');
+      }
+    });
 
     return () => {
       isMounted = false;
+      subscription?.unsubscribe();
     };
   }, []);
 
-  // Helper: format to strict E.164 format
-  const formatToE164 = (phone: string, countryCode: string = '+91'): string => {
-    const cleanDigits = phone.replace(/\D/g, '');
-    const prefix = countryCode.startsWith('+') ? countryCode : `+${countryCode}`;
-    if (prefix === '+91') {
-      if (cleanDigits.length === 12 && cleanDigits.startsWith('91')) {
-        return `+${cleanDigits}`;
-      }
-      return `+91${cleanDigits}`;
-    }
-    return `${prefix}${cleanDigits}`;
-  };
+  // Send Passwordless Email OTP via Supabase Auth
+  const sendEmailOtp = useCallback(async (email: string) => {
+    // Track safe authentication event without PII
+    analyticsService.trackAuthEvent('otp_requested');
 
-  const sendOtp = async (phone: string, countryCode: string = '+91') => {
-    try {
-      const e164 = formatToE164(phone, countryCode);
-      const res = await axios.post('/api/auth/send-otp', { phoneNumber: e164 }, { timeout: 12000 });
-      if (res.data && res.data.success === true) {
-        return {
-          success: true,
-          status: 'pending',
-          message: res.data.message || 'OTP sent',
-          requestId: res.data.requestId
-        };
-      }
-      return {
-        success: false,
-        code: res.data?.code || 'MSG91_SEND_FAILED',
-        error: res.data?.message || res.data?.error || 'Unable to send OTP. Please try again.'
-      };
-    } catch (err: any) {
-      if (!err.response || err.code === 'ECONNABORTED') {
-        return { success: false, code: 'NETWORK_ERROR', error: 'Connection problem. Please check your internet connection.' };
-      }
-      const data = err.response?.data;
-      const errorMsg = data?.message || data?.error || 'Unable to send OTP. Please try again.';
-      return {
-        success: false,
-        code: data?.code || 'MSG91_SEND_FAILED',
-        error: errorMsg
-      };
+    const res = await sendSupabaseOtp(email);
+    if (!res.success) {
+      analyticsService.trackAuthEvent('otp_request_failed');
     }
-  };
+    return {
+      success: res.success,
+      message: res.data?.message,
+      error: res.error
+    };
+  }, []);
 
-  const resendOtp = async (phone: string, countryCode: string = '+91') => {
-    try {
-      const e164 = formatToE164(phone, countryCode);
-      const res = await axios.post('/api/auth/resend-otp', { phoneNumber: e164 }, { timeout: 12000 });
-      if (res.data && res.data.success === true) {
-        return {
-          success: true,
-          status: 'pending',
-          message: res.data.message || 'OTP sent',
-          requestId: res.data.requestId
-        };
-      }
-      return {
-        success: false,
-        code: res.data?.code || 'MSG91_SEND_FAILED',
-        error: res.data?.message || res.data?.error || 'Unable to send OTP. Please try again.'
-      };
-    } catch (err: any) {
-      if (!err.response || err.code === 'ECONNABORTED') {
-        return { success: false, code: 'NETWORK_ERROR', error: 'Connection problem. Please check your internet connection.' };
-      }
-      const data = err.response?.data;
-      const errorMsg = data?.message || data?.error || 'Unable to send OTP. Please try again.';
-      return {
-        success: false,
-        code: data?.code || 'MSG91_SEND_FAILED',
-        error: errorMsg
-      };
+  // Verify Passwordless Email OTP via Supabase Auth
+  const verifyEmailOtp = useCallback(async (email: string, otp: string) => {
+    analyticsService.trackAuthEvent('otp_verification_started');
+    const res = await verifySupabaseOtp(email, otp);
+
+    if (res.success && res.data?.user) {
+      // Safe authentication event without PII - recorded only after Supabase confirms
+      analyticsService.trackAuthEvent('otp_verification_success');
+
+      const mapped = mapProfileToUser(res.data.user);
+      setUser(mapped);
+      setIsAuthenticated(true);
+      sessionStorage.removeItem('tradepro_logged_out');
+      localStorage.setItem('tradepro_current_user', JSON.stringify(mapped));
+      setIsLoginModalOpen(false);
+      return { success: true, user: mapped };
     }
-  };
 
-  const verifyOtp = async (phone: string, otp: string, countryCode: string = '+91') => {
-    try {
-      const e164 = formatToE164(phone, countryCode);
-      const res = await axios.post('/api/auth/verify-otp', { phoneNumber: e164, otp: otp.trim() }, { timeout: 12000 });
-      if (res.data && res.data.success === true && res.data.token && res.data.user) {
-        localStorage.setItem('tradepro_auth_token', res.data.token);
-        setUser(res.data.user);
-        setIsAuthenticated(true);
-        return { success: true, user: res.data.user, token: res.data.token };
-      }
-      return { success: false, error: res.data?.message || res.data?.error || 'Invalid or expired OTP.' };
-    } catch (err: any) {
-      if (!err.response || err.code === 'ECONNABORTED') {
-        return { success: false, error: 'Connection problem. Please check your internet connection.' };
-      }
-      const errorMsg = err.response?.data?.message || err.response?.data?.error || 'Invalid or expired OTP.';
-      return { success: false, error: errorMsg };
+    // Safe failure event without PII
+    analyticsService.trackAuthEvent('otp_verification_failed');
+
+    return {
+      success: false,
+      error: res.error || 'Incorrect verification code. Please check the code and try again.'
+    };
+  }, []);
+
+  // Resend Passwordless Email OTP via Supabase Auth
+  const resendEmailOtp = useCallback(async (email: string) => {
+    analyticsService.trackAuthEvent('otp_requested');
+    const res = await resendSupabaseOtp(email);
+    if (!res.success) {
+      analyticsService.trackAuthEvent('otp_request_failed');
     }
-  };
+    return {
+      success: res.success,
+      message: res.data?.message,
+      error: res.error
+    };
+  }, []);
 
-  const login = (token: string, userData: User) => {
-    localStorage.setItem('tradepro_auth_token', token);
+  // Logout handler
+  const logout = useCallback(async () => {
+    analyticsService.trackAuthEvent('logout');
+    await signOutUser();
+    sessionStorage.setItem('tradepro_logged_out', 'true');
+    localStorage.removeItem('tradepro_current_user');
+    setUser(null);
+    setIsAuthenticated(false);
+  }, []);
+
+  // Backwards compatibility wrappers
+  const sendOtp = useCallback((email: string) => sendEmailOtp(email), [sendEmailOtp]);
+  const verifyOtp = useCallback((email: string, otp: string) => verifyEmailOtp(email, otp), [verifyEmailOtp]);
+  const resendOtp = useCallback((email: string) => resendEmailOtp(email), [resendEmailOtp]);
+
+  const login = useCallback((_token: string, userData: User) => {
+    localStorage.setItem('tradepro_current_user', JSON.stringify(userData));
+    sessionStorage.removeItem('tradepro_logged_out');
     setUser(userData);
     setIsAuthenticated(true);
-  };
-
-  const logout = async () => {
-    analyticsService.trackAuthEvent('logout');
-    const token = localStorage.getItem('tradepro_auth_token');
-    if (token) {
-      try {
-        await axios.post('/api/auth/logout', {}, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-      } catch (e) {
-        // Continue clearing client state regardless
-      }
-    }
-    localStorage.removeItem('tradepro_auth_token');
-    setIsAuthenticated(true);
-    setUser(DEFAULT_USER);
-    if (window.location.pathname === '/login') {
-      window.history.replaceState(null, '', '/');
-    }
-  };
+    setIsLoginModalOpen(false);
+  }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, user, loading, login, logout, sendOtp, resendOtp, verifyOtp }}>
+    <AuthContext.Provider value={{
+      isAuthenticated,
+      user,
+      loading,
+      isLoginModalOpen,
+      isSupabaseActive,
+      redirectAfterLogin,
+      openLoginModal,
+      closeLoginModal,
+      setRedirectAfterLogin,
+      sendEmailOtp,
+      verifyEmailOtp,
+      resendEmailOtp,
+      logout,
+      sendOtp,
+      verifyOtp,
+      resendOtp,
+      login
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -15,6 +15,7 @@ export interface Stock {
   sector: string;
   country: string;
   currency: string;
+  exchange?: string;
   dayHigh?: number;
   dayLow?: number;
   prevClose?: number;

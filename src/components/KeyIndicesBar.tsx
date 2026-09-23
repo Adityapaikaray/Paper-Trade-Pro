@@ -60,9 +60,9 @@ export const KeyIndicesBar: React.FC<KeyIndicesBarProps> = ({ className = '' }) 
         <div className="flex flex-col sm:flex-row sm:items-center gap-4">
           <div className="flex items-center gap-2">
             <div className="flex items-center bg-ui-bg p-1 rounded-xl border border-ui-border overflow-x-auto no-scrollbar max-w-[calc(100vw-3rem)] sm:max-w-md md:max-w-lg lg:max-w-none">
-              {regions.map(r => (
+              {regions.map((r, rIdx) => (
                 <button
-                  key={r.id}
+                  key={`${r.id}-${rIdx}`}
                   id={`region-filter-${r.id.toLowerCase()}`}
                   onClick={() => setSelectedRegion(r.id)}
                   className={`px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-wide transition-all whitespace-nowrap shrink-0 ${
@@ -91,13 +91,13 @@ export const KeyIndicesBar: React.FC<KeyIndicesBarProps> = ({ className = '' }) 
 
       {/* Grid of Key Indices */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3 pt-5">
-        {filteredIndices.map((idx: IndexQuote) => {
+        {filteredIndices.map((idx: IndexQuote, iIdx: number) => {
           const tick = indexTicks[idx.key];
           const isPositive = idx.change >= 0;
 
           return (
             <div
-              key={idx.key}
+              key={`${idx.key}-${iIdx}`}
               id={`index-card-${idx.key}`}
               className={`p-4 rounded-xl border transition-all duration-300 flex flex-col justify-between ${
                 tick === 'up'

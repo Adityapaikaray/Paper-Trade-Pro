@@ -577,8 +577,8 @@ const PortfolioView: React.FC = () => {
 
                 return (
                   <div className="space-y-4">
-                    {regionalTxs.slice().reverse().map(tx => (
-                      <div key={tx.id} className="flex items-center justify-between p-4 bg-ui-bg rounded-xl border border-ui-border hover:border-primary/30 transition-colors">
+                    {regionalTxs.slice().reverse().map((tx, idx) => (
+                      <div key={`${tx.id}-${idx}`} className="flex items-center justify-between p-4 bg-ui-bg rounded-xl border border-ui-border hover:border-primary/30 transition-colors">
                         <div className="flex items-center gap-4">
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
                             tx.type === 'BUY' ? 'bg-primary/10 text-primary' : 'bg-rose-500/10 text-rose-500'
@@ -695,8 +695,8 @@ const PortfolioView: React.FC = () => {
                 )}
                 
                 <div className="space-y-3">
-                  {assetAllocation.map(alloc => (
-                    <div key={alloc.name} className="flex items-center justify-between group cursor-pointer p-2 -mx-2 rounded-lg hover:bg-ui-bg transition-colors">
+                  {assetAllocation.map((alloc, idx) => (
+                    <div key={`${alloc.name}-${idx}`} className="flex items-center justify-between group cursor-pointer p-2 -mx-2 rounded-lg hover:bg-ui-bg transition-colors">
                       <div className="flex items-center gap-3">
                         <div className="w-3 h-3 rounded-full" style={{ backgroundColor: alloc.color }} />
                         <span className="text-sm font-bold text-text-main">{alloc.name}</span>

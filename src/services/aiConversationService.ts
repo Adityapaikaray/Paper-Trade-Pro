@@ -83,7 +83,7 @@ export function generateSpokenText(prompt: string, canonical: CanonicalWealthSna
 export async function queryAIWealthManager(
   prompt: string,
   contextPayload: AIWealthContextPayload,
-  history: { role: 'user' | 'model'; text: string }[]
+  history: { role: 'user' | 'model'; text: string }[] = []
 ): Promise<VisualAIResponse> {
   const c = contextPayload.canonicalSnapshot;
   const sym = c.currencySymbol;

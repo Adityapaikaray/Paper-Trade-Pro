@@ -1342,13 +1342,13 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
           ) : heatmapMode === 'sectors' ? (
             /* SECTOR HEATMAP MODE (Prompt Item 10) */
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {sectorGroups.map(([secName, secData]) => {
+              {sectorGroups.map(([secName, secData], idx) => {
                 const colorConfig = getPerformanceHeatColor(secData.avgReturn);
                 const isSelected = selectedSector === secName;
 
                 return (
                   <motion.div
-                    key={secName}
+                    key={`${secName}-${idx}`}
                     whileHover={{ scale: 1.01 }}
                     onClick={() => {
                       setSelectedSector(isSelected ? 'ALL' : secName);
@@ -1389,9 +1389,9 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
             </div>
           ) : (
             /* STOCKS HEATMAP MODE (Grouped by Sector) */
-            sectorGroups.map(([secName, secData]) => (
+            sectorGroups.map(([secName, secData], sIdx) => (
               <div
-                key={secName}
+                key={`${secName}-${sIdx}`}
                 className="bg-ui-surface border border-ui-border rounded-xl p-3.5 shadow-xs space-y-2.5 transition-colors"
               >
                 {/* Sector Header Strip */}
@@ -1427,7 +1427,7 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
 
                 {/* Constituent Tiles */}
                 <div className="flex flex-wrap gap-2">
-                  {secData.stocks.map(stock => {
+                  {secData.stocks.map((stock, stIdx) => {
                     const ret = stock.displayReturn;
                     const colorConfig = getPerformanceHeatColor(ret);
                     const isSelected = inspectedConstituent?.symbol === stock.symbol;
@@ -1459,7 +1459,7 @@ export const StockHeatmapView: React.FC<StockHeatmapViewProps> = ({
 
                     return (
                       <motion.div
-                        key={stock.symbol}
+                        key={`${stock.symbol}-${stIdx}`}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => handleTileSingleClick(stock)}

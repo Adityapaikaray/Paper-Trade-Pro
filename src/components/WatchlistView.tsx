@@ -107,9 +107,9 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onTrade }) => {
       <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
         {/* Sector filters */}
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-          {sectors.map((sec) => (
+          {sectors.map((sec, idx) => (
             <button
-              key={sec}
+              key={`${sec}-${idx}`}
               onClick={() => setSelectedSector(sec)}
               className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all ${
                 selectedSector === sec
@@ -140,13 +140,13 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onTrade }) => {
 
       {/* Watchlist Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-        {filteredWatchlist.map((stock) => {
+        {filteredWatchlist.map((stock, idx) => {
           const isPositive = stock.change >= 0;
           const curr = stock.currency || currencySymbol;
 
           return (
             <div
-              key={stock.symbol}
+              key={`${stock.symbol}-${idx}`}
               className="bg-ui-surface rounded-2xl p-5 border border-ui-border shadow-sm hover:shadow-md transition-all flex flex-col justify-between group"
             >
               {/* Top info */}

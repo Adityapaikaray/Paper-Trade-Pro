@@ -2,25 +2,24 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * 
- * TradePro Production-Grade Google Analytics 4 (GA4) & Telemetry System
+ * TradePro Application Telemetry & Internal Event Recording System
  * 
  * CORE PRINCIPLES & GOALS:
- * 1. Single Google Analytics tag initialization at startup via VITE_GA_MEASUREMENT_ID
+ * 1. Safe in-app route and user flow tracking without third-party external trackers
  * 2. Proper SPA route tracking without duplicate page_view events
- * 3. Centralized analyticsService for all product, navigation, and auth events
+ * 3. Centralized analyticsService for product, navigation, and auth events
  * 4. Strict privacy & compliance: Zero PII, no OTPs, passwords, phone numbers, or balances
  * 5. Strict metric segregation:
- *    - Website Users & Sessions = Google Analytics 4 / real website traffic
- *    - Product Events = in-app feature interactions (never added to visitor counts)
- *    - GitHub Clones/Views = developer repository activity (strictly isolated)
- *    - Cloud Run Requests = infrastructure server telemetry (never called website visitors)
- * 6. Resilient failure handling: Missing GA4 never breaks trading, wealth, AI, or auth
+ *    - Website Users & Sessions = session records
+ *    - Product Events = in-app feature interactions
+ *    - GitHub Clones/Views = developer repository activity
+ *    - Cloud Run Requests = infrastructure server telemetry
+ * 6. Resilient failure handling: Analytics operations never break trading, wealth, AI, or auth
  */
 
 declare global {
   interface Window {
     dataLayer?: any[];
-    gtag?: (...args: any[]) => void;
   }
 }
 
@@ -195,7 +194,7 @@ export interface DedicatedAnalyticsSnapshot {
   measurementId: string;
   consentGranted: boolean;
 
-  // Layer 1: Website Analytics (from GA4 / real sessions)
+  // Layer 1: Website & Session Telemetry
   websiteKPIs: WebsiteKPIs;
   trafficChart: { timestamp: string; label: string; users: number; sessions: number; pageViews: number }[];
   trafficSources: TrafficSourceItem[];
@@ -220,7 +219,7 @@ export interface DedicatedAnalyticsSnapshot {
   githubActivity: GithubDeveloperActivity;
 }
 
-export type GA4MetricsSnapshot = DedicatedAnalyticsSnapshot;
+export type AnalyticsMetricsSnapshot = DedicatedAnalyticsSnapshot;
 
 // Storage Keys
 const CLIENT_ID_KEY = 'tp_analytics_client_id';
@@ -229,10 +228,6 @@ const SESSION_ID_KEY = 'tp_analytics_session_id';
 const SESSION_EXPIRY_KEY = 'tp_analytics_session_expiry';
 const CONSENT_KEY = 'tp_analytics_consent';
 const EVENTS_CACHE_KEY = 'tp_analytics_events_cache';
-const GA_STORAGE_KEY = 'tradepro_ga_measurement_id';
-
-// Module-level guard preventing duplicate tag injection across React lifecycle/re-renders
-let isGtagScriptInjected = false;
 
 export class AnalyticsService {
   private clientId: string;
@@ -277,29 +272,16 @@ export class AnalyticsService {
     this.clientId = this.getOrCreateClientId();
     this.currentSessionId = this.getOrCreateSessionId();
     this.consentGranted = typeof window !== 'undefined' ? localStorage.getItem(CONSENT_KEY) !== 'false' : true;
-    
-    // Read from proper environment-variable system: VITE_GA_MEASUREMENT_ID
-    const envMeasurementId = 
-      ((import.meta as any).env?.VITE_GA_MEASUREMENT_ID as string) ||
-      ((import.meta as any).env?.VITE_GA4_MEASUREMENT_ID as string) ||
-      '';
-
-    const savedId = typeof window !== 'undefined' ? localStorage.getItem(GA_STORAGE_KEY) : null;
-    this.measurementId = (savedId || envMeasurementId || '').trim();
-
+    this.measurementId = '';
     this.loadEventsFromStorage();
   }
 
   /**
-   * Initializes Google Analytics 4 exactly once at application startup
+   * Initializes application telemetry without third-party trackers
    */
   public init(): void {
     if (this.isInitialized) return;
     this.isInitialized = true;
-
-    if (this.measurementId) {
-      this.initGtag();
-    }
 
     // Load infrastructure & GitHub telemetry without blocking
     this.fetchInfrastructureMetrics();
@@ -313,22 +295,15 @@ export class AnalyticsService {
   }
 
   public getMeasurementId(): string {
-    return this.measurementId;
+    return '';
   }
 
   public isConfigured(): boolean {
-    return Boolean(this.measurementId && this.measurementId.startsWith('G-'));
+    return false;
   }
 
-  public setMeasurementId(id: string): void {
-    const cleanId = id.trim().toUpperCase();
-    this.measurementId = cleanId;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(GA_STORAGE_KEY, cleanId);
-    }
-    if (cleanId && this.consentGranted) {
-      this.initGtag();
-    }
+  public setMeasurementId(_id: string): void {
+    this.measurementId = '';
     this.notify();
   }
 
@@ -336,11 +311,6 @@ export class AnalyticsService {
     this.consentGranted = granted;
     if (typeof window !== 'undefined') {
       localStorage.setItem(CONSENT_KEY, String(granted));
-      if (window.gtag) {
-        window.gtag('consent', 'update', {
-          analytics_storage: granted ? 'granted' : 'denied',
-        });
-      }
     }
     this.notify();
   }
@@ -364,50 +334,6 @@ export class AnalyticsService {
     this.fetchInfrastructureMetrics();
     this.fetchGithubActivity();
     this.notify();
-  }
-
-  private initGtag(): void {
-    if (typeof window === 'undefined' || !this.measurementId) return;
-
-    try {
-      window.dataLayer = window.dataLayer || [];
-      if (!window.gtag) {
-        window.gtag = function () {
-          window.dataLayer?.push(arguments);
-        };
-      }
-
-      // Initialize Consent Mode
-      window.gtag('consent', 'default', {
-        analytics_storage: this.consentGranted ? 'granted' : 'denied',
-        ad_storage: 'denied',
-        ad_user_data: 'denied',
-        ad_personalization: 'denied',
-      });
-
-      window.gtag('js', new Date());
-
-      // Single configuration call with send_page_view: false for SPA tracking
-      window.gtag('config', this.measurementId, {
-        send_page_view: false,
-        client_id: this.clientId,
-        cookie_flags: 'SameSite=None;Secure',
-        debug_mode: true, // Allows instant validation in Google Analytics DebugView & Realtime
-      });
-
-      // Inject script tag once
-      const scriptId = 'ga4-gtag-script';
-      if (!document.getElementById(scriptId) && !isGtagScriptInjected) {
-        isGtagScriptInjected = true;
-        const script = document.createElement('script');
-        script.id = scriptId;
-        script.async = true;
-        script.src = `https://www.googletagmanager.com/gtag/js?id=${this.measurementId}`;
-        document.head.appendChild(script);
-      }
-    } catch (e) {
-      console.warn('Analytics initialization error suppressed:', e);
-    }
   }
 
   /**
@@ -460,20 +386,6 @@ export class AnalyticsService {
 
     const pageTitle = title || `TradePro ${normalizedPath === '/' ? 'Home' : normalizedPath.replace('/', '')}`;
 
-    // Send page_view to GA4 if configured and consented
-    if (typeof window !== 'undefined' && window.gtag && this.measurementId && this.consentGranted) {
-      try {
-        window.gtag('event', 'page_view', {
-          page_title: pageTitle,
-          page_location: window.location.origin + normalizedPath,
-          page_path: normalizedPath,
-          screen_name: pageTitle,
-        });
-      } catch (e) {
-        // Analytics failure must NEVER break the application
-      }
-    }
-
     // Record verified event in local telemetry buffer
     const event: AnalyticsEventRecord = {
       id: `evt_pv_${now}_${Math.random().toString(36).substring(2, 6)}`,
@@ -503,11 +415,6 @@ export class AnalyticsService {
       const cleanParams = this.sanitizeParams(params);
       const now = Date.now();
       this.currentSessionId = this.getOrCreateSessionId();
-
-      // Send to GA4 if configured
-      if (typeof window !== 'undefined' && window.gtag && this.measurementId && this.consentGranted) {
-        window.gtag('event', eventName, cleanParams);
-      }
 
       const event: AnalyticsEventRecord = {
         id: `evt_${now}_${Math.random().toString(36).substring(2, 6)}`,
@@ -689,7 +596,7 @@ export class AnalyticsService {
     const expiry = parseInt(localStorage.getItem(SESSION_EXPIRY_KEY) || '0', 10);
     let sessId = localStorage.getItem(SESSION_ID_KEY);
 
-    // 30-minute standard GA4 session inactivity timeout
+    // 30-minute standard session inactivity timeout
     if (!sessId || now > expiry) {
       sessId = 'sess_' + now.toString(36) + '_' + Math.random().toString(36).substring(2, 6);
       localStorage.setItem(SESSION_ID_KEY, sessId);
@@ -1045,7 +952,7 @@ export class AnalyticsService {
       '/heatmap': { title: 'Index Heatmap', views: 0, clients: new Set() },
       '/watchlist': { title: 'Watchlist & Screener', views: 0, clients: new Set() },
       '/orders': { title: 'Orders & Executions', views: 0, clients: new Set() },
-      '/analytics': { title: 'Google Analytics 4', views: 0, clients: new Set() },
+      '/analytics': { title: 'Portfolio Analytics', views: 0, clients: new Set() },
     };
 
     events.forEach(e => {
