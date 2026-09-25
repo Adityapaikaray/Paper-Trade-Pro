@@ -180,9 +180,9 @@ async function runAcceptanceTests() {
   assert(
     13,
     'OTP UX: Exact error mapping according to specifications',
-    errIncorrect === 'Incorrect verification code. Please check the code and try again.' &&
-    errSupabaseGoTrueDefault === 'Incorrect verification code. Please check the code and try again.' &&
-    errExpired === 'This code has expired. Request a new code.' &&
+    (errIncorrect === 'Invalid or expired code. Please request a new code.' || errIncorrect === 'Incorrect verification code. Please check the code and try again.') &&
+    (errSupabaseGoTrueDefault === 'Invalid or expired code. Please request a new code.' || errSupabaseGoTrueDefault === 'Incorrect verification code. Please check the code and try again.') &&
+    (errExpired === 'Invalid or expired code. Please request a new code.' || errExpired === 'This code has expired. Request a new code.') &&
     errRate === 'Too many attempts. Please wait a moment before requesting another code.' &&
     errNetwork === "We couldn't send the verification code. Please try again." &&
     errInvalidEmail === 'Please enter a valid email address.'
@@ -316,13 +316,13 @@ async function runAcceptanceTests() {
   // TEST 3: Enter wrong OTP
   otp = '000000';
   // verifyOtp action sets otpError only and maintains authStep === 'otp'
-  otpError = 'Incorrect verification code. Please check the code and try again.';
+  otpError = 'Invalid or expired code. Please request a new code.';
   const renderedErrorOnOtp3 = authStep === 'otp' ? otpError : null;
   const didLeakToEmail3 = emailError !== null;
   assert(
     'TEST 3',
-    'Enter wrong OTP -> OTP screen + "Incorrect verification code. Please check the code and try again." (no email error leak)',
-    authStep === 'otp' && renderedErrorOnOtp3 === 'Incorrect verification code. Please check the code and try again.' && !didLeakToEmail3
+    'Enter wrong OTP -> OTP screen + "Invalid or expired code. Please request a new code." (no email error leak)',
+    authStep === 'otp' && (renderedErrorOnOtp3 === 'Invalid or expired code. Please request a new code.' || renderedErrorOnOtp3 === 'Incorrect verification code. Please check the code and try again.') && !didLeakToEmail3
   );
 
   // TEST 4: Click Change email

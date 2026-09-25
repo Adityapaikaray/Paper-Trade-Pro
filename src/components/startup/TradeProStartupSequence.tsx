@@ -8,7 +8,6 @@ import { useAuth } from '../../contexts/AuthContext.tsx';
 import { usePortfolio } from '../../contexts/PortfolioContext.tsx';
 import { TradeProSplash } from './TradeProSplash.tsx';
 import { TradeProGreeting } from './TradeProGreeting.tsx';
-import { LoginPage } from '../LoginPage.tsx';
 import { 
   resolveInvestorName, 
   isReturningSession, 
@@ -19,18 +18,17 @@ export interface TradeProStartupSequenceProps {
   onComplete: () => void;
 }
 
-type StartupStage = 'SPLASH' | 'LOGIN' | 'GREETING' | 'COMPLETE';
+type StartupStage = 'SPLASH' | 'GREETING' | 'COMPLETE';
 
 /**
  * TradePro Master Opening Sequence
  * Orchestrates:
  * 1. TradePro Opening Splash (Official logo + "TRADE. ANALYZE. GROW.")
- * 2. If unauthenticated -> LoginPage -> Greeting
- * 3. Personalized Greeting ("Good Morning, [Investor Name]" + Market context)
- * 4. Dashboard Reveal
+ * 2. Personalized Greeting ("Good Morning, [Investor Name]" + Market context)
+ * 3. Dashboard Reveal
  */
 export const TradeProStartupSequence: React.FC<TradeProStartupSequenceProps> = ({ onComplete }) => {
-  const { isAuthenticated, user } = useAuth();
+  const { user } = useAuth();
   const { profile, marketContext } = usePortfolio();
 
   const [currentStage, setCurrentStage] = useState<StartupStage>('SPLASH');
@@ -66,17 +64,6 @@ export const TradeProStartupSequence: React.FC<TradeProStartupSequenceProps> = (
 
   // Stage transitions
   const handleSplashComplete = useCallback(() => {
-    if (!isAuthenticated) {
-      // Unauthenticated users transition to Login
-      setCurrentStage('LOGIN');
-    } else {
-      // Authenticated users transition to Greeting
-      setCurrentStage('GREETING');
-    }
-  }, [isAuthenticated]);
-
-  const handleLoginSuccess = useCallback(() => {
-    // After login success, transition to personalized Greeting
     setCurrentStage('GREETING');
   }, []);
 
@@ -98,14 +85,7 @@ export const TradeProStartupSequence: React.FC<TradeProStartupSequenceProps> = (
         />
       )}
 
-      {/* 2. Login Flow: For unauthenticated users only */}
-      {currentStage === 'LOGIN' && (
-        <div className="fixed inset-0 z-[99999] bg-ui-bg overflow-y-auto">
-          <LoginPage onSuccess={handleLoginSuccess} />
-        </div>
-      )}
-
-      {/* 3. Stage 2: Personalized Greeting */}
+      {/* 2. Stage 2: Personalized Greeting */}
       {currentStage === 'GREETING' && (
         <TradeProGreeting
           investorName={investorName}

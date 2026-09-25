@@ -18,6 +18,10 @@ export interface IndexConstituent {
   prevClose: number;
   displayReturn?: number;
   exchange?: string;
+  rank?: number;
+  pointsContribution?: number | null;
+  percentContribution?: number | null;
+  marketStatus?: string;
   historicalReturns?: {
     '1W'?: number;
     '1M'?: number;
@@ -41,4 +45,8 @@ export interface IndexDefinition {
   baselinePercent: number;
   prevClose: number;
   constituents: IndexConstituent[];
+  totalConstituents?: number;
+  lastRebalanced?: string;
+  asOfDate?: string;
+  dataSource?: string;
 }

@@ -4,87 +4,89 @@
 @layer base {
   :root {
     /* Light Mode Variables (Default TradePro Design Tokens) */
-    --color-primary: #D4A72C; /* Gold */
-    --color-primary-light: #E5BE4A; 
-    --color-primary-dark: #B88E1F;
+    --color-primary: #C59A27; /* Refined Institutional Gold */
+    --color-primary-light: #DFB23E; 
+    --color-primary-dark: #9F7B18;
     
-    --ui-bg: #F7F5EF; /* Warm ivory / off-white application background */
-    --ui-sidebar: #FBFAF7; /* Elevated soft surface */
+    --ui-bg: #F8FAFC; /* Clean, soft neutral slate application background */
+    --ui-sidebar: #FFFFFF; /* Pure crisp navigation surface */
     --ui-surface: #FFFFFF; /* Pure white content cards */
-    --ui-surface-hover: #F6F4ED; /* Subtle hover */
+    --ui-surface-hover: #F1F5F9; /* Subtle hover */
+    --ui-surface-elevated: #FFFFFF;
     
-    --ui-border: #E5E0D6; /* Very subtle gray-beige borders */
+    --ui-border: #E2E8F0; /* Subtle slate borders */
     
-    --text-main: #17243A; /* Deep navy / charcoal typography */
-    --text-dark: #0D1624;
-    --text-muted: #6E7C90; /* Secondary muted text */
+    --text-main: #0F172A; /* Deep slate / charcoal typography */
+    --text-dark: #020617;
+    --text-muted: #64748B; /* Secondary muted text */
     
     /* Brand Typography Tokens (Light Mode) */
-    --brand-wordmark: #14213D; /* Strong premium deep navy */
-    --brand-tagline: #718096; /* Visible secondary navy/gray */
-    --brand-dot: #B88E1F; /* TradePro gold accent */
+    --brand-wordmark: #0F172A; /* Crisp deep slate */
+    --brand-tagline: #64748B; /* Visible secondary slate */
+    --brand-dot: #C59A27; /* TradePro gold accent */
 
     /* Splash Screen Tokens */
-    --splash-background: linear-gradient(180deg, #FCFAF7 0%, #F6F2EA 55%, #EDE7DC 100%);
+    --splash-background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 55%, #F1F5F9 100%);
     --splash-surface: transparent;
-    --splash-brand-text: #14213D;
-    --splash-tagline-text: #718096;
+    --splash-brand-text: #0F172A;
+    --splash-tagline-text: #64748B;
     
-    --color-positive: #00B887; /* Emerald green */
-    --color-positive-dark: #00966D;
-    --color-negative: #E15B5B; /* Muted red */
+    --color-positive: #059669; /* Emerald green */
+    --color-positive-dark: #047857;
+    --color-negative: #E11D48; /* Crimson red */
     
     --glass-opacity: 0;
-    --shadow-color: rgba(23, 36, 58, 0.04);
+    --shadow-color: rgba(15, 23, 42, 0.04);
   }
 
   :root.light,
   html.light,
   .light {
-    --brand-wordmark: #14213D;
-    --brand-tagline: #718096;
-    --brand-dot: #B88E1F;
-    --splash-background: linear-gradient(180deg, #FCFAF7 0%, #F6F2EA 55%, #EDE7DC 100%);
+    --brand-wordmark: #0F172A;
+    --brand-tagline: #64748B;
+    --brand-dot: #C59A27;
+    --splash-background: linear-gradient(180deg, #FFFFFF 0%, #F8FAFC 55%, #F1F5F9 100%);
     --splash-surface: transparent;
-    --splash-brand-text: #14213D;
-    --splash-tagline-text: #718096;
+    --splash-brand-text: #0F172A;
+    --splash-tagline-text: #64748B;
   }
 
   :root.dark,
   html.dark,
   .dark {
-    /* Dark Mode Variables */
+    /* Dark Mode Variables - Layered Institutional Surfaces */
     --color-primary: #D4AF37; /* Champagne Gold */
     --color-primary-light: #F0C75E; /* Bright Gold */
     --color-primary-dark: #A6822B;
     
-    --ui-bg: #000000; /* Main background */
-    --ui-sidebar: #050505;
-    --ui-surface: #0A0A0A; /* Cards */
-    --ui-surface-hover: #111111; /* Elevated cards */
+    --ui-bg: #090E17; /* Deep obsidian slate background */
+    --ui-sidebar: #0D1422; /* Primary navigation layer */
+    --ui-surface: #121B2C; /* Content cards & panels */
+    --ui-surface-hover: #18243A; /* Elevated cards / hover surface */
+    --ui-surface-elevated: #1F2E49; /* Modals / dropdowns */
     
-    --ui-border: #242424;
+    --ui-border: #1E2D44; /* Crisp subtle slate borders */
     
-    --text-main: #F5F5F0; 
-    --text-dark: #FFFFFF; 
-    --text-muted: #8C8C8C; 
+    --text-main: #E2E8F0; /* Soft balanced high-contrast text */
+    --text-dark: #F8FAFC; 
+    --text-muted: #8493A8; /* Secondary quiet informational text */
     
     /* Brand Typography Tokens (Dark Mode) */
-    --brand-wordmark: #F5F7FA; /* Clear high contrast soft white */
-    --brand-tagline: #AAB4C3; /* Readable soft gray */
-    --brand-dot: #E5B83B; /* TradePro gold accent */
+    --brand-wordmark: #F8FAFC; /* Clear high contrast soft white */
+    --brand-tagline: #94A3B8; /* Readable soft slate */
+    --brand-dot: #D4AF37; /* TradePro gold accent */
 
     /* Splash Screen Tokens */
-    --splash-background: linear-gradient(180deg, #0D0E12 0%, #050608 100%);
+    --splash-background: linear-gradient(180deg, #0F1626 0%, #090E17 100%);
     --splash-surface: transparent;
-    --splash-brand-text: #F5F7FA;
-    --splash-tagline-text: #AAB4C3;
+    --splash-brand-text: #F8FAFC;
+    --splash-tagline-text: #94A3B8;
     
-    --color-positive: #00D084; /* Emerald */
-    --color-positive-dark: #007A50; /* Deep emerald */
-    --color-negative: #FF5C5C; /* Negative red */
+    --color-positive: #10B981; /* Emerald */
+    --color-positive-dark: #059669; /* Deep emerald */
+    --color-negative: #F43F5E; /* Negative rose red */
     
-    --shadow-color: rgba(0, 0, 0, 0.9);
+    --shadow-color: rgba(0, 0, 0, 0.5);
   }
   
   html,
@@ -122,6 +124,7 @@
   --color-ui-sidebar: var(--ui-sidebar);
   --color-ui-surface: var(--ui-surface);
   --color-ui-surface-hover: var(--ui-surface-hover);
+  --color-ui-surface-elevated: var(--ui-surface-elevated);
   --color-ui-border: var(--ui-border);
   
   --color-text-main: var(--text-main);
@@ -139,14 +142,15 @@
 
 @layer components {
   .vibrant-card {
-    @apply rounded-3xl border border-ui-border transition-all duration-500;
+    @apply rounded-2xl border border-ui-border transition-all duration-200;
     background-color: var(--ui-surface);
-    box-shadow: 0 10px 40px -10px var(--shadow-color);
+    box-shadow: 0 4px 20px -2px var(--shadow-color);
   }
   
   .vibrant-card:hover {
-    @apply border-primary/30;
-    background-color: var(--ui-surface-hover);
+    @apply border-ui-border/90;
+    background-color: var(--ui-surface);
+    box-shadow: 0 8px 30px -4px var(--shadow-color);
   }
   
   .vibrant-heading {

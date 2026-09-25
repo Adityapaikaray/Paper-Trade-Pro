@@ -424,5 +424,111 @@ export const INDIA_INDICES: Record<string, IndexDefinition> = {
       { symbol: 'TRENT', name: 'Trent Limited', weight: 1.6, sector: 'Retail', marketCap: '2.6T', price: 7320.00, change: 110.00, changePercent: 1.53, volume: '1.5M', dayHigh: 7380.00, dayLow: 7190.00, prevClose: 7210.00 },
       { symbol: 'ZOMATO', name: 'Zomato Limited', weight: 1.5, sector: 'Consumer Internet', marketCap: '2.4T', price: 275.00, change: 4.80, changePercent: 1.78, volume: '34.5M', dayHigh: 279.00, dayLow: 269.00, prevClose: 270.20 }
     ]
+  },
+
+  niftyfin: {
+    id: 'niftyfin',
+    name: 'NIFTY Financial Services',
+    symbol: '^CNXFIN',
+    displaySymbol: 'NIFTY FIN SERVICE',
+    region: 'IN',
+    currency: '₹',
+    description: 'Tracks the performance of 20 leading Indian financial institutions including banks, NBFCs, and insurance leaders.',
+    baselinePrice: 24185.30,
+    baselineChange: 142.60,
+    baselinePercent: 0.59,
+    prevClose: 24042.70,
+    constituents: [
+      { symbol: 'HDFCBANK', name: 'HDFC Bank', weight: 26.4, sector: 'Financials', marketCap: '12.8T', price: 1712.50, change: 11.20, changePercent: 0.66, volume: '18.5M', dayHigh: 1724.00, dayLow: 1698.00, prevClose: 1701.30 },
+      { symbol: 'ICICIBANK', name: 'ICICI Bank', weight: 22.8, sector: 'Financials', marketCap: '8.9T', price: 1264.30, change: 14.80, changePercent: 1.18, volume: '12.1M', dayHigh: 1272.00, dayLow: 1248.00, prevClose: 1249.50 },
+      { symbol: 'SBIN', name: 'State Bank of India', weight: 10.5, sector: 'Financials', marketCap: '7.4T', price: 832.50, change: 6.40, changePercent: 0.77, volume: '16.2M', dayHigh: 839.00, dayLow: 824.00, prevClose: 826.10 },
+      { symbol: 'KOTAKBANK', name: 'Kotak Mahindra Bank', weight: 9.2, sector: 'Financials', marketCap: '3.6T', price: 1824.00, change: 4.50, changePercent: 0.25, volume: '4.2M', dayHigh: 1840.00, dayLow: 1812.00, prevClose: 1819.50 },
+      { symbol: 'AXISBANK', name: 'Axis Bank', weight: 8.8, sector: 'Financials', marketCap: '3.7T', price: 1195.00, change: -5.50, changePercent: -0.46, volume: '5.8M', dayHigh: 1210.00, dayLow: 1188.00, prevClose: 1200.50 },
+      { symbol: 'BAJFINANCE', name: 'Bajaj Finance', weight: 7.6, sector: 'Financials', marketCap: '4.5T', price: 7320.00, change: 85.00, changePercent: 1.18, volume: '1.9M', dayHigh: 7380.00, dayLow: 7240.00, prevClose: 7235.00 },
+      { symbol: 'BAJAJFINSV', name: 'Bajaj Finserv', weight: 4.2, sector: 'Financials', marketCap: '2.8T', price: 1840.00, change: 22.00, changePercent: 1.21, volume: '1.8M', dayHigh: 1855.00, dayLow: 1820.00, prevClose: 1818.00 },
+      { symbol: 'HDFCLIFE', name: 'HDFC Life Insurance', weight: 3.2, sector: 'Financials', marketCap: '1.5T', price: 685.00, change: 4.20, changePercent: 0.62, volume: '3.4M', dayHigh: 692.00, dayLow: 680.00, prevClose: 680.80 },
+      { symbol: 'SBILIFE', name: 'SBI Life Insurance', weight: 3.1, sector: 'Financials', marketCap: '1.6T', price: 1540.00, change: 12.00, changePercent: 0.79, volume: '1.6M', dayHigh: 1555.00, dayLow: 1528.00, prevClose: 1528.00 },
+      { symbol: 'CHOLAFIN', name: 'Cholamandalam Inv', weight: 2.2, sector: 'Financials', marketCap: '1.1T', price: 1380.00, change: 18.00, changePercent: 1.32, volume: '2.1M', dayHigh: 1395.00, dayLow: 1362.00, prevClose: 1362.00 },
+      { symbol: 'SHRIRAMFIN', name: 'Shriram Finance', weight: 2.0, sector: 'Financials', marketCap: '1.2T', price: 3180.00, change: -15.00, changePercent: -0.47, volume: '1.4M', dayHigh: 3220.00, dayLow: 3160.00, prevClose: 3195.00 }
+    ]
+  },
+
+  niftymidcap100: {
+    id: 'niftymidcap100',
+    name: 'NIFTY Midcap 100',
+    symbol: '^CNXMD',
+    displaySymbol: 'NIFTY MIDCAP 100',
+    region: 'IN',
+    currency: '₹',
+    description: 'Captures the movement and performance of the top 100 mid-sized growth champions on the NSE.',
+    baselinePrice: 58450.60,
+    baselineChange: 265.40,
+    baselinePercent: 0.46,
+    prevClose: 58185.20,
+    constituents: [
+      { symbol: 'POLYCAB', name: 'Polycab India', weight: 2.8, sector: 'Industrials', marketCap: '980B', price: 6540.00, change: 125.00, changePercent: 1.95, volume: '1.1M', dayHigh: 6590.00, dayLow: 6410.00, prevClose: 6415.00 },
+      { symbol: 'PERSISTENT', name: 'Persistent Systems', weight: 2.6, sector: 'Technology', marketCap: '780B', price: 5450.00, change: 88.00, changePercent: 1.64, volume: '0.9M', dayHigh: 5490.00, dayLow: 5360.00, prevClose: 5362.00 },
+      { symbol: 'COFORGE', name: 'Coforge Limited', weight: 2.4, sector: 'Technology', marketCap: '520B', price: 7850.00, change: 142.00, changePercent: 1.84, volume: '0.6M', dayHigh: 7920.00, dayLow: 7710.00, prevClose: 7708.00 },
+      { symbol: 'MAXHEALTH', name: 'Max Healthcare', weight: 2.3, sector: 'Healthcare', marketCap: '890B', price: 920.00, change: 18.00, changePercent: 2.00, volume: '3.2M', dayHigh: 930.00, dayLow: 902.00, prevClose: 902.00 },
+      { symbol: 'FEDERALBNK', name: 'Federal Bank', weight: 2.2, sector: 'Financials', marketCap: '480B', price: 198.50, change: 2.50, changePercent: 1.28, volume: '14.2M', dayHigh: 201.00, dayLow: 196.00, prevClose: 196.00 },
+      { symbol: 'AUROPHARMA', name: 'Aurobindo Pharma', weight: 2.1, sector: 'Healthcare', marketCap: '820B', price: 1410.00, change: 22.00, changePercent: 1.58, volume: '2.4M', dayHigh: 1425.00, dayLow: 1388.00, prevClose: 1388.00 },
+      { symbol: 'BHARATFORG', name: 'Bharat Forge', weight: 1.9, sector: 'Automobile', marketCap: '680B', price: 1460.00, change: -12.00, changePercent: -0.82, volume: '1.8M', dayHigh: 1485.00, dayLow: 1450.00, prevClose: 1472.00 },
+      { symbol: 'VOLTAS', name: 'Voltas Limited', weight: 1.8, sector: 'Consumer Cyclical', marketCap: '580B', price: 1760.00, change: -15.00, changePercent: -0.85, volume: '1.6M', dayHigh: 1790.00, dayLow: 1750.00, prevClose: 1775.00 },
+      { symbol: 'DIXON', name: 'Dixon Technologies', weight: 1.7, sector: 'Technology', marketCap: '840B', price: 14200.00, change: 320.00, changePercent: 2.31, volume: '0.8M', dayHigh: 14350.00, dayLow: 13880.00, prevClose: 13880.00 },
+      { symbol: 'ASHOKLEY', name: 'Ashok Leyland', weight: 1.6, sector: 'Automobile', marketCap: '640B', price: 224.00, change: 1.80, changePercent: 0.81, volume: '12.8M', dayHigh: 227.00, dayLow: 222.00, prevClose: 222.20 }
+    ]
+  },
+
+  niftysmallcap100: {
+    id: 'niftysmallcap100',
+    name: 'NIFTY Smallcap 100',
+    symbol: '^CNXSC',
+    displaySymbol: 'NIFTY SMALLCAP 100',
+    region: 'IN',
+    currency: '₹',
+    description: 'Benchmark measuring the potential and momentum of 100 dynamic small-cap corporate leaders.',
+    baselinePrice: 18850.20,
+    baselineChange: 135.80,
+    baselinePercent: 0.73,
+    prevClose: 18714.40,
+    constituents: [
+      { symbol: 'BSE', name: 'BSE Limited', weight: 3.2, sector: 'Financials', marketCap: '620B', price: 4620.00, change: 125.00, changePercent: 2.78, volume: '2.8M', dayHigh: 4680.00, dayLow: 4495.00, prevClose: 4495.00 },
+      { symbol: 'CDSL', name: 'CDSL', weight: 2.8, sector: 'Financials', marketCap: '340B', price: 1640.00, change: 38.00, changePercent: 2.37, volume: '4.2M', dayHigh: 1660.00, dayLow: 1602.00, prevClose: 1602.00 },
+      { symbol: 'SUZLON', name: 'Suzlon Energy', weight: 2.6, sector: 'Energy', marketCap: '940B', price: 68.50, change: 1.80, changePercent: 2.70, volume: '45.0M', dayHigh: 69.80, dayLow: 66.70, prevClose: 66.70 },
+      { symbol: 'ANGELONE', name: 'Angel One', weight: 2.2, sector: 'Financials', marketCap: '280B', price: 3120.00, change: 65.00, changePercent: 2.13, volume: '1.2M', dayHigh: 3160.00, dayLow: 3055.00, prevClose: 3055.00 },
+      { symbol: 'KEI', name: 'KEI Industries', weight: 2.0, sector: 'Industrials', marketCap: '420B', price: 4580.00, change: 95.00, changePercent: 2.12, volume: '0.7M', dayHigh: 4620.00, dayLow: 4485.00, prevClose: 4485.00 },
+      { symbol: 'CYIENT', name: 'Cyient Limited', weight: 1.8, sector: 'Technology', marketCap: '220B', price: 1980.00, change: -18.00, changePercent: -0.90, volume: '0.8M', dayHigh: 2020.00, dayLow: 1970.00, prevClose: 1998.00 },
+      { symbol: 'RADICO', name: 'Radico Khaitan', weight: 1.6, sector: 'Consumer Defensive', marketCap: '310B', price: 2320.00, change: 35.00, changePercent: 1.53, volume: '0.5M', dayHigh: 2350.00, dayLow: 2285.00, prevClose: 2285.00 },
+      { symbol: 'KAYNES', name: 'Kaynes Technology', weight: 1.5, sector: 'Technology', marketCap: '380B', price: 5850.00, change: 110.00, changePercent: 1.92, volume: '0.4M', dayHigh: 5920.00, dayLow: 5740.00, prevClose: 5740.00 },
+      { symbol: 'SONACOMS', name: 'Sona BLW Precision', weight: 1.4, sector: 'Automobile', marketCap: '410B', price: 710.00, change: -8.00, changePercent: -1.11, volume: '1.5M', dayHigh: 725.00, dayLow: 705.00, prevClose: 718.00 },
+      { symbol: 'MANAPPURAM', name: 'Manappuram Finance', weight: 1.2, sector: 'Financials', marketCap: '160B', price: 188.00, change: -2.50, changePercent: -1.31, volume: '6.4M', dayHigh: 192.00, dayLow: 186.00, prevClose: 190.50 }
+    ]
+  },
+
+  bse500: {
+    id: 'bse500',
+    name: 'BSE 500 Index',
+    symbol: '^BSE500',
+    displaySymbol: 'BSE 500',
+    region: 'IN',
+    currency: '₹',
+    description: 'Premier broad market representation comprising top 500 established Indian equities across large, mid and small caps on the BSE.',
+    baselinePrice: 38240.80,
+    baselineChange: 185.30,
+    baselinePercent: 0.49,
+    prevClose: 38055.50,
+    constituents: [
+      { symbol: 'RELIANCE', name: 'Reliance Industries', weight: 5.8, sector: 'Energy', marketCap: '20.2T', price: 1226.40, change: 8.50, changePercent: 0.70, volume: '14.2M', dayHigh: 1235.00, dayLow: 1215.20, prevClose: 1217.90 },
+      { symbol: 'HDFCBANK', name: 'HDFC Bank', weight: 5.2, sector: 'Financials', marketCap: '12.8T', price: 1712.50, change: 11.20, changePercent: 0.66, volume: '18.5M', dayHigh: 1724.00, dayLow: 1698.00, prevClose: 1701.30 },
+      { symbol: 'ICICIBANK', name: 'ICICI Bank', weight: 4.5, sector: 'Financials', marketCap: '8.9T', price: 1264.30, change: 14.80, changePercent: 1.18, volume: '12.1M', dayHigh: 1272.00, dayLow: 1248.00, prevClose: 1249.50 },
+      { symbol: 'TCS', name: 'Tata Consultancy Services', weight: 3.2, sector: 'Technology', marketCap: '15.4T', price: 4210.00, change: 18.50, changePercent: 0.44, volume: '3.1M', dayHigh: 4235.00, dayLow: 4185.00, prevClose: 4191.50 },
+      { symbol: 'INFY', name: 'Infosys', weight: 3.1, sector: 'Technology', marketCap: '7.8T', price: 1892.40, change: -12.30, changePercent: -0.65, volume: '8.4M', dayHigh: 1912.00, dayLow: 1880.00, prevClose: 1904.70 },
+      { symbol: 'BHARTIARTL', name: 'Bharti Airtel', weight: 2.9, sector: 'Telecom', marketCap: '9.4T', price: 1642.00, change: 22.40, changePercent: 1.38, volume: '6.7M', dayHigh: 1655.00, dayLow: 1620.00, prevClose: 1619.60 },
+      { symbol: 'ITC', name: 'ITC Limited', weight: 2.3, sector: 'FMCG', marketCap: '6.2T', price: 498.20, change: -2.10, changePercent: -0.42, volume: '11.8M', dayHigh: 504.00, dayLow: 495.00, prevClose: 500.30 },
+      { symbol: 'LT', name: 'Larsen & Toubro', weight: 2.2, sector: 'Industrials', marketCap: '5.1T', price: 3680.00, change: 29.00, changePercent: 0.79, volume: '2.8M', dayHigh: 3710.00, dayLow: 3650.00, prevClose: 3651.00 },
+      { symbol: 'BEL', name: 'Bharat Electronics', weight: 1.9, sector: 'Defense', marketCap: '2.1T', price: 294.00, change: 4.20, changePercent: 1.45, volume: '18.5M', dayHigh: 298.00, dayLow: 289.00, prevClose: 289.80 },
+      { symbol: 'HAL', name: 'Hindustan Aeronautics', weight: 1.8, sector: 'Defense', marketCap: '3.1T', price: 4620.00, change: 68.00, changePercent: 1.49, volume: '2.4M', dayHigh: 4670.00, dayLow: 4540.00, prevClose: 4552.00 },
+      { symbol: 'TRENT', name: 'Trent Limited', weight: 1.7, sector: 'Retail', marketCap: '2.6T', price: 7320.00, change: 110.00, changePercent: 1.53, volume: '1.5M', dayHigh: 7380.00, dayLow: 7190.00, prevClose: 7210.00 }
+    ]
   }
 };

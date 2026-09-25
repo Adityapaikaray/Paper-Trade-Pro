@@ -6,37 +6,29 @@
 import { IndexDefinition, IndexConstituent } from './indices/types.ts';
 import { INDIA_INDICES } from './indices/indiaIndices.ts';
 import { US_INDICES } from './indices/usIndices.ts';
+import { ALL_SUPPORTED_INDICES, US_INDEX_KEYS as REG_US_KEYS, INDIA_INDEX_KEYS as REG_IN_KEYS } from './indices/indexRegistry.ts';
 
 export * from './indices/types.ts';
+export * from './indices/indexRegistry.ts';
 
 export const INDEX_HEATMAP_CONFIG: Record<string, IndexDefinition> = {
   ...INDIA_INDICES,
-  ...US_INDICES
+  ...US_INDICES,
+  ...ALL_SUPPORTED_INDICES
 };
 
 export const INDIA_INDEX_KEYS = [
-  'nifty',
-  'sensex',
-  'niftybank',
-  'niftyit',
+  ...REG_IN_KEYS,
   'niftyauto',
   'niftyfmcg',
   'niftypharma',
   'niftyenergy',
   'niftymetal',
-  'niftyrealty',
-  'niftymidcap50',
-  'niftynext50',
-  'nifty100',
-  'nifty200',
-  'nifty500'
+  'niftyrealty'
 ];
 
 export const US_INDEX_KEYS = [
-  'sandp500',
-  'nasdaq',
-  'dow',
-  'russell2000'
+  ...REG_US_KEYS
 ];
 
 /**

@@ -21,14 +21,25 @@ VITE_SUPABASE_PUBLISHABLE_KEY=your_publishable_or_anon_key_here
 
 ## 2. Supabase Auth Configuration (Dashboard)
 1. Go to your Supabase Project: https://supabase.com/dashboard/project/ccnkvydgdrvzxfygkfjm
-2. Navigate to **Authentication** -> **Providers** -> **Email**:
+2. Navigate to **Authentication** -> **URL Configuration**:
+   - **Site URL:** `http://localhost:3000` (or your deployed URL)
+   - **Redirect URLs:** Add:
+     - `http://localhost:3000/**`
+     - `https://ais-pre-7mlxzz62wwlyshkchc2toz-753953125617.asia-east1.run.app/**`
+     - `https://ais-dev-7mlxzz62wwlyshkchc2toz-753953125617.asia-east1.run.app/**`
+3. Navigate to **Authentication** -> **Providers** -> **Email**:
    - Enable Email Provider: **ON**
    - Confirm email: **ON** (or default)
    - Secure email change: **ON**
-3. Navigate to **Authentication** -> **Email Templates** -> **Magic Link** / **Confirmation**:
-   - **Subject:** `Your TradePro verification code`
-   - **Body:** Paste the contents of `supabase/email_template.html`.
-   - Ensure the token variable `{{ .Token }}` is present so Supabase delivers the 6-digit one-time code.
+4. Navigate to **Authentication** -> **Email Templates**:
+   - **Magic Link**:
+     - **Subject:** `Your TradePro verification code`
+     - **Body:** Paste the contents of `supabase/email_template.html`.
+     - *Crucial:* Uses `{{ .Token }}` instead of `{{ .ConfirmationURL }}`.
+   - **Confirm signup (Confirmation)**:
+     - **Subject:** `Your TradePro verification code`
+     - **Body:** Paste the contents of `supabase/email_template.html`.
+     - *Crucial:* Replace `{{ .ConfirmationURL }}` with `{{ .Token }}` so new user signups receive the 6-digit numeric OTP code instead of an email confirmation link.
 
 ---
 

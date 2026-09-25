@@ -3,14 +3,19 @@ import React, { createContext, useContext, useState, useCallback, ReactNode } fr
 export type RouteId = 
   | 'dashboard' 
   | 'market' 
+  | 'watchlist'
   | 'portfolio' 
+  | 'charts'
+  | 'ai-insights'
+  | 'options'
+  | 'futures'
+  | 'alerts'
+  | 'api'
+  | 'settings'
   | 'wealth'
   | 'more'
   | 'orders' 
-  | 'watchlist' 
-  | 'alerts'
   | 'transactions' 
-  | 'settings' 
   | 'help'
   | 'trade'
   | 'analytics'
@@ -21,6 +26,7 @@ export type RouteId =
   | 'signup'
   | 'key-index'
   | 'heatmap'
+  | 'contributors'
   | 'ai-wealth-manager'
   | 'about'
   | 'how-it-works'
@@ -56,7 +62,6 @@ interface NavigationContextType {
 const NavigationContext = createContext<NavigationContextType | undefined>(undefined);
 
 const PUBLIC_ROUTES = [
-  'login', 'signup',
   'about', 'how-it-works', 'features', 'pricing', 'faq', 'contact', 
   'privacy', 'terms', 'ai-trading', 'ai-trading-tools', 
   'trading-risk-management', 'how-ai-trading-works'
@@ -66,7 +71,10 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
   const [history, setHistory] = useState<RouteState[]>(() => {
     if (typeof window !== 'undefined') {
       const path = window.location.pathname.replace(/^\//, '').toLowerCase();
-      if (path && (PUBLIC_ROUTES.includes(path) || ['dashboard', 'market', 'portfolio', 'wealth', 'heatmap', 'orders', 'watchlist', 'alerts', 'transactions', 'settings', 'help', 'analytics'].includes(path))) {
+      if (path === 'login' || path === 'signup') {
+        return [{ id: 'dashboard' }];
+      }
+      if (path && (PUBLIC_ROUTES.includes(path) || ['dashboard', 'market', 'watchlist', 'portfolio', 'charts', 'ai-insights', 'options', 'futures', 'alerts', 'api', 'settings', 'wealth', 'heatmap', 'orders', 'transactions', 'help', 'analytics'].includes(path))) {
         return [{ id: path as RouteId }];
       }
     }
@@ -98,10 +106,11 @@ export const NavigationProvider: React.FC<{ children: ReactNode }> = ({ children
   const activeTab = deriveActiveTab(history);
 
   const navigate = useCallback((id: RouteId, params?: Record<string, any>) => {
-    setHistory(prev => [...prev, { id, params }]);
+    const targetId = (id === 'login' || id === 'signup') ? 'dashboard' : id;
+    setHistory(prev => [...prev, { id: targetId, params }]);
     setMenuOpen(false);
     if (typeof window !== 'undefined') {
-      const targetUrl = id === 'dashboard' ? '/' : `/${id}`;
+      const targetUrl = targetId === 'dashboard' ? '/' : `/${targetId}`;
       if (window.location.pathname !== targetUrl) {
         window.history.pushState(null, '', targetUrl);
       }

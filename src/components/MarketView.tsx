@@ -15,6 +15,7 @@ import { Stock } from '../types.ts';
 import AlertModal from './AlertModal.tsx';
 import StockChart from './StockChart.tsx';
 import KeyIndicesBar from './KeyIndicesBar.tsx';
+import AssetDetailPageModal from './AssetDetailPageModal.tsx';
 
 interface MarketViewProps {
   onTrade: (stock: Stock, side?: "BUY" | "SELL") => void;
@@ -29,6 +30,7 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
   const [selectedSector, setSelectedSector] = React.useState('All');
   const [alertStock, setAlertStock] = React.useState<Stock | null>(null);
   const [expandedSymbol, setExpandedSymbol] = React.useState<string | null>(null);
+  const [detailStock, setDetailStock] = React.useState<Stock | null>(null);
 
   const isIndia = marketContext === 'IN';
   const regionalStatus = getRegionalMarketStatus(marketContext);
@@ -211,8 +213,8 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
                 return (
                   <React.Fragment key={`${stock.symbol}-${stock.exchange || ''}-${idx}`}>
                     <motion.tr initial={{ opacity: 0, scale: 0.98 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 0.3, ease: 'easeOut' }} 
-                      className={`group hover:bg-ui-bg transition-all cursor-pointer ${expandedSymbol === stock.symbol ? 'bg-ui-bg' : ''}`}
-                      onClick={() => toggleExpand(stock.symbol)}
+                      className="group hover:bg-ui-bg transition-all cursor-pointer"
+                      onClick={() => setDetailStock(stock)}
                     >
                       <td className="px-4 md:px-8 py-4 md:py-6 sticky left-0 bg-ui-surface group-hover:bg-ui-bg transition-all z-10">
                         <div className="flex items-center gap-3 md:gap-5">
@@ -382,6 +384,13 @@ const MarketView: React.FC<MarketViewProps> = ({ onTrade }) => {
       <AlertModal 
         stock={alertStock} 
         onClose={() => setAlertStock(null)} 
+      />
+
+      <AssetDetailPageModal
+        stock={detailStock}
+        isOpen={!!detailStock}
+        onClose={() => setDetailStock(null)}
+        onTrade={onTrade}
       />
     </div>
   );

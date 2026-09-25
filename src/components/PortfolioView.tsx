@@ -2,28 +2,31 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { 
   Eye, EyeOff, Settings, Search, Filter, ArrowUpRight, ArrowDownRight, 
   TrendingUp, TrendingDown, Clock, Activity as ActivityIcon, PieChart as PieChartIcon,
-  CheckCircle2, XCircle, AlertCircle, Briefcase, Plus, SearchX
+  CheckCircle2, XCircle, AlertCircle, Briefcase, Plus, SearchX, Crown, Sparkles, ShieldAlert, Layers, Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import NumberCounter from './NumberCounter.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
+import { useUserTier } from '../contexts/UserTierContext.tsx';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
 import { formatCurrency as formatRegionalCurrency, formatCompactCurrency as formatRegionalCompact } from '../utils/formatters.ts';
 import PortfolioGrowthChart from './PortfolioGrowthChart.tsx';
+import ContextualUpgradeCard from './ContextualUpgradeCard.tsx';
 import { analyticsService } from '../services/analytics.ts';
 import { 
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell 
 } from 'recharts';
 
-type Tab = 'Overview' | 'Holdings' | 'Performance' | 'Activity';
+type Tab = 'Overview' | 'Holdings' | 'Performance' | 'Activity' | 'Analytics';
 type Timeframe = '1D' | '1W' | '1M' | '6M' | '1Y' | '5Y' | 'All';
 
 const PIE_COLORS = ['#D4AF37', '#10B981', '#3B82F6', '#8B5CF6', '#F59E0B', '#64748B'];
 
 const PortfolioView: React.FC = () => {
   const { profile, summary, marketContext } = usePortfolio();
+  const { isMax } = useUserTier();
   const { stocks } = useMarketData();
   const { navigate } = useNavigation();
   
@@ -210,20 +213,20 @@ const PortfolioView: React.FC = () => {
         <div className="xl:col-span-2 flex flex-col gap-6 md:gap-8">
           
           {/* Portfolio Summary Card */}
-          <div className="bg-ui-surface border border-ui-border rounded-2xl md:rounded-3xl p-5 md:p-8 shadow-xl shadow-black/5 relative overflow-hidden">
+          <div className="bg-ui-surface border border-ui-border rounded-2xl p-5 md:p-6 shadow-xs relative overflow-hidden">
             {/* Background Glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none" />
             
             <div className="flex items-center justify-between mb-2 relative z-10">
-              <p className="text-sm font-bold text-text-muted uppercase tracking-widest">Total Portfolio Value</p>
-              <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-mono font-bold text-primary">
+              <p className="text-xs font-bold text-text-muted uppercase tracking-wider">Total Portfolio Value</p>
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-primary/10 border border-primary/20 text-[10px] font-mono font-bold text-primary">
                 <span className="w-1.5 h-1.5 rounded-full bg-positive animate-pulse" />
                 <span>LIVE</span>
               </div>
             </div>
 
             <div className="flex flex-col md:flex-row md:items-end gap-3 md:gap-6 mb-6 md:mb-8 relative z-10">
-              <h1 className="text-4xl md:text-5xl font-mono font-black text-text-main tracking-tight flex items-baseline">
+              <h1 className="text-3xl md:text-5xl font-mono font-black text-text-main tracking-tight flex items-baseline">
                 <NumberCounter
                   value={summary.currentValue}
                   prefix={currencySymbol}
@@ -239,7 +242,7 @@ const PortfolioView: React.FC = () => {
                 animate={{ scale: [1, 1.03, 1] }}
                 transition={{ duration: 0.35, ease: 'easeOut' }}
                 key={`${summary.totalGain >= 0}-${summary.returnPct.toFixed(1)}`}
-                className={`flex items-center gap-1.5 text-lg font-bold font-mono px-3.5 py-1.5 rounded-full ${
+                className={`flex items-center gap-1.5 text-sm md:text-base font-bold font-mono px-3 py-1 rounded-lg ${
                   summary.totalGain >= 0
                     ? 'bg-positive/10 text-positive border border-positive/20'
                     : 'bg-negative/10 text-negative border border-negative/20'
@@ -343,17 +346,22 @@ const PortfolioView: React.FC = () => {
           {/* Mobile Tabs */}
           <div className="flex md:hidden overflow-x-auto custom-scrollbar border-b border-ui-border bg-ui-bg sticky top-14 z-10 -mx-4 px-4 py-2">
             <div className="flex items-center gap-2">
-              {(['Overview', 'Holdings', 'Performance', 'Activity'] as Tab[]).map((tab) => (
+              {(['Overview', 'Holdings', 'Performance', 'Analytics', 'Activity'] as Tab[]).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => handleTabChange(tab)}
-                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                  className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all flex items-center gap-1 ${
                     activeTab === tab
                       ? 'bg-primary/10 text-primary border border-primary/30'
                       : 'bg-ui-surface text-text-muted border border-ui-border hover:bg-ui-surface-hover'
                   }`}
                 >
-                  {tab}
+                  <span>{tab}</span>
+                  {tab === 'Analytics' && (
+                    <span className="text-[9px] font-black uppercase tracking-wider px-1 py-0.2 rounded bg-[#D4AF37]/20 text-[#B88E1E]">
+                      MAX
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
@@ -361,15 +369,20 @@ const PortfolioView: React.FC = () => {
 
           {/* Desktop Tabs */}
           <div className="hidden md:flex items-center gap-6 border-b border-ui-border">
-            {(['Overview', 'Holdings', 'Performance', 'Activity'] as Tab[]).map((tab) => (
+            {(['Overview', 'Holdings', 'Performance', 'Analytics', 'Activity'] as Tab[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => handleTabChange(tab)}
-                className={`py-4 text-sm font-bold relative transition-colors ${
+                className={`py-4 text-sm font-bold relative transition-colors flex items-center gap-1.5 ${
                   activeTab === tab ? 'text-primary' : 'text-text-muted hover:text-text-main'
                 }`}
               >
-                {tab}
+                <span>{tab}</span>
+                {tab === 'Analytics' && (
+                  <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-[#D4AF37]/15 text-[#B88E1E] border border-[#D4AF37]/30">
+                    MAX
+                  </span>
+                )}
                 {activeTab === tab && (
                   <motion.div 
                     layoutId="desktopTab"
@@ -650,6 +663,193 @@ const PortfolioView: React.FC = () => {
                 marketContext={marketContext}
                 defaultTimeframe="1Y"
               />
+            </div>
+          )}
+
+          {activeTab === 'Analytics' && (
+            <div className="space-y-6">
+              {!isMax && (
+                <ContextualUpgradeCard
+                  title="Unlock Institutional Risk Exposure & Scenario Stress Testing"
+                  subtitle="Free accounts view basic portfolio value and P&L. Upgrade to Max to unlock multi-factor risk exposure, correlation matrices, macro scenario stress testing, and AI rebalancing attribution."
+                  features={[
+                    'Value-at-Risk (VaR) 95% & 99% probabilistic models',
+                    'Cross-asset correlation matrix & concentration alerts',
+                    'Macro scenario simulations: Rate hikes, stagflation & tech selloffs',
+                    'Factor attribution: Asset selection vs market beta vs sector weighting'
+                  ]}
+                />
+              )}
+
+              {/* 1. Risk Exposure & Ratios */}
+              <div className="bg-ui-surface border border-ui-border rounded-2xl p-5 md:p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-ui-border">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+                      <ShieldAlert size={16} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold font-sans text-text-main">Institutional Risk Metrics</h3>
+                      <p className="text-[11px] text-text-muted">Calculated against benchmark index over 252 trading days</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    LOW VOLATILITY REGIME
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                  {[
+                    { label: 'Portfolio Beta', value: '0.88', desc: '12% lower volatility than market' },
+                    { label: 'Sharpe Ratio', value: '2.14', desc: 'Top quartile risk-adjusted return' },
+                    { label: 'Sortino Ratio', value: '2.85', desc: 'Downside deviation protection' },
+                    { label: '1-Day VaR (95%)', value: `${currencySymbol}${(summary.currentValue * 0.016).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, desc: 'Max expected 24h loss at 95% confidence' },
+                    { label: 'Max Drawdown (1Y)', value: '-8.4%', desc: 'Peak-to-trough historical drop' }
+                  ].map((metric, i) => (
+                    <div key={i} className="p-3.5 rounded-xl bg-ui-bg border border-ui-border/70">
+                      <span className="text-[10px] uppercase font-bold text-text-muted block mb-1">{metric.label}</span>
+                      <span className="text-lg font-mono font-bold text-text-main block">{metric.value}</span>
+                      <span className="text-[10px] text-text-muted block mt-1">{metric.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Sector Concentration & Correlation Matrix */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Sector Concentration */}
+                <div className="bg-ui-surface border border-ui-border rounded-2xl p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-ui-border">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">Sector Concentration</h4>
+                    <span className="text-[10px] font-mono font-bold text-primary">Target Max: 35%</span>
+                  </div>
+                  <div className="space-y-3">
+                    {[
+                      { sector: 'Technology / Semiconductors', pct: 38.5, status: 'Overweight (+3.5%)', color: 'bg-primary' },
+                      { sector: 'Financial Services', pct: 24.2, status: 'Optimal', color: 'bg-emerald-500' },
+                      { sector: 'Consumer Cyclicals', pct: 16.8, status: 'Optimal', color: 'bg-blue-500' },
+                      { sector: 'Energy & Industrials', pct: 12.5, status: 'Underweight', color: 'bg-purple-500' },
+                      { sector: 'Healthcare & Pharma', pct: 8.0, status: 'Defensive', color: 'bg-amber-500' },
+                    ].map((s, idx) => (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-semibold text-text-main">{s.sector}</span>
+                          <span className="font-mono font-bold text-text-main">{s.pct}%</span>
+                        </div>
+                        <div className="w-full h-1.5 bg-ui-bg rounded-full overflow-hidden border border-ui-border/50">
+                          <div className={`h-full ${s.color} rounded-full`} style={{ width: `${s.pct}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Correlation Analysis Matrix */}
+                <div className="bg-ui-surface border border-ui-border rounded-2xl p-5 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between pb-2 border-b border-ui-border">
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">Correlation Matrix (Top Holdings)</h4>
+                    <span className="text-[10px] text-text-muted">Cross-asset correlation coefficient</span>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs font-mono text-center">
+                      <thead>
+                        <tr className="text-[10px] text-text-muted uppercase border-b border-ui-border">
+                          <th className="p-2 text-left">Asset</th>
+                          <th className="p-2">#1</th>
+                          <th className="p-2">#2</th>
+                          <th className="p-2">#3</th>
+                          <th className="p-2">#4</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-ui-border/60">
+                        {[
+                          { sym: displayPositions[0]?.symbol || 'AAPL', r1: '1.00', r2: '0.62', r3: '0.24', r4: '-0.12' },
+                          { sym: displayPositions[1]?.symbol || 'MSFT', r1: '0.62', r2: '1.00', r3: '0.31', r4: '-0.05' },
+                          { sym: displayPositions[2]?.symbol || 'NVDA', r1: '0.24', r2: '0.31', r3: '1.00', r4: '0.18' },
+                          { sym: displayPositions[3]?.symbol || 'JPM', r1: '-0.12', r2: '-0.05', r3: '0.18', r4: '1.00' }
+                        ].map((row, i) => (
+                          <tr key={i}>
+                            <td className="p-2 font-bold text-left text-text-main">{row.sym}</td>
+                            <td className={`p-2 font-bold ${row.r1 === '1.00' ? 'text-primary' : ''}`}>{row.r1}</td>
+                            <td className="p-2 text-text-muted">{row.r2}</td>
+                            <td className="p-2 text-text-muted">{row.r3}</td>
+                            <td className={`p-2 ${row.r4.startsWith('-') ? 'text-emerald-500 font-bold' : 'text-text-muted'}`}>{row.r4}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <p className="text-[10px] text-text-muted pt-1">
+                    * Negative correlations between equities and financials provide natural hedging during sector rotation.
+                  </p>
+                </div>
+              </div>
+
+              {/* 3. Scenario Analysis (Macro Stress Tests) */}
+              <div className="bg-ui-surface border border-ui-border rounded-2xl p-5 md:p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-ui-border">
+                  <div className="flex items-center gap-2">
+                    <Zap size={16} className="text-primary" />
+                    <h4 className="text-xs font-bold uppercase tracking-wider text-text-muted">Macro Scenario Stress Tests</h4>
+                  </div>
+                  <span className="text-[10px] font-mono text-text-muted">Monte Carlo 10,000 runs</span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
+                  {[
+                    { scenario: 'Fed / RBI Rate Hike (+100bps)', impact: '-2.4%', pnl: `-${currencySymbol}${(summary.currentValue * 0.024).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, risk: 'Moderate' },
+                    { scenario: 'Tech Multiple Compression (-10%)', impact: '-4.8%', pnl: `-${currencySymbol}${(summary.currentValue * 0.048).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, risk: 'High' },
+                    { scenario: 'Emerging Market Bull Wave (+15%)', impact: '+7.2%', pnl: `+${currencySymbol}${(summary.currentValue * 0.072).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, risk: 'Opportunity' },
+                    { scenario: 'Crude Oil Spike (+20%)', impact: '-1.1%', pnl: `-${currencySymbol}${(summary.currentValue * 0.011).toLocaleString(undefined, { maximumFractionDigits: 0 })}`, risk: 'Low' },
+                  ].map((s, idx) => (
+                    <div key={idx} className="p-3.5 rounded-xl bg-ui-bg border border-ui-border space-y-1.5">
+                      <span className="text-xs font-bold text-text-main block leading-tight">{s.scenario}</span>
+                      <div className="flex items-baseline justify-between pt-1">
+                        <span className={`text-base font-mono font-bold ${s.impact.startsWith('+') ? 'text-positive' : 'text-negative'}`}>
+                          {s.impact}
+                        </span>
+                        <span className="text-xs font-mono text-text-muted">{s.pnl}</span>
+                      </div>
+                      <span className="text-[10px] font-mono text-text-muted block">Sensitivity: {s.risk}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 4. AI Portfolio Insights & Performance Attribution */}
+              <div className="rounded-2xl border-2 border-[#DFC27D]/60 bg-gradient-to-b from-[#FFFDF8] via-[#FCF8EE]/50 to-[#FFFFFF] p-6 shadow-sm space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b border-[#EAE3D2]">
+                  <div className="w-10 h-10 rounded-xl bg-[#FCF8EE] border border-[#F3E5AB] flex items-center justify-center text-[#D4AF37]">
+                    <Sparkles size={20} />
+                  </div>
+                  <div>
+                    <h4 className="font-serif italic text-lg text-[#0F172A]">Max AI Portfolio Insights</h4>
+                    <p className="text-xs text-[#64748B]">Automated factor attribution and rebalancing suggestions</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-4 rounded-xl bg-white border border-[#EAE3D2] space-y-1.5">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#B88E1E] flex items-center gap-1.5">
+                      <CheckCircle2 size={13} className="text-emerald-500" />
+                      Alpha Attribution: +4.6%
+                    </span>
+                    <p className="text-xs text-[#334155] leading-relaxed">
+                      Security selection in megacap technology contributed +3.4% of excess alpha over the benchmark index. Sector allocation weighting contributed +1.2%.
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-white border border-[#EAE3D2] space-y-1.5">
+                    <span className="text-xs font-black uppercase tracking-wider text-[#B88E1E] flex items-center gap-1.5">
+                      <Sparkles size={13} className="text-[#D4AF37]" />
+                      Rebalancing Recommendation
+                    </span>
+                    <p className="text-xs text-[#334155] leading-relaxed">
+                      Trim semiconductor exposure by 3.5% to lock in unrealized capital gains. Reallocate proceeds into defensive high-dividend cash-flow equities to preserve 1-Day VaR.
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 

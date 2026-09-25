@@ -130,15 +130,8 @@ const SettingsView: React.FC = () => {
               <div className="bg-ui-surface rounded-3xl border border-ui-border p-6 shadow-sm">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-base font-bold text-text-main flex items-center gap-2">
-                    <User size={18} className="text-primary" /> User Profile &amp; Authentication
+                    <User size={18} className="text-primary" /> User Profile &amp; Account
                   </h3>
-                  <button
-                    onClick={openLoginModal}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 text-xs font-bold transition-all cursor-pointer"
-                  >
-                    <Mail size={13} />
-                    <span>Email Login / Switch</span>
-                  </button>
                 </div>
                 <div className="flex flex-col sm:flex-row sm:items-center gap-4">
                   <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-primary-light flex items-center justify-center text-ui-bg font-black uppercase text-xl shadow-md shrink-0">

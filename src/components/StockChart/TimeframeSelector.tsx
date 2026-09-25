@@ -12,7 +12,7 @@ interface TimeframeSelectorProps {
   isLoading?: boolean;
 }
 
-const TIMEFRAMES: Timeframe[] = ['1D', '1W', '1M', '3M', '1Y', '5Y', 'All'];
+const TIMEFRAMES: Timeframe[] = ['1D', '1W', '1M', '3M', '6M', '1Y', '5Y', 'MAX'];
 
 export const TimeframeSelector: React.FC<TimeframeSelectorProps> = ({
   selected,

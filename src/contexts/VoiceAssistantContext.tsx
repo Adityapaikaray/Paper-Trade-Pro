@@ -325,17 +325,15 @@ export const VoiceAssistantProvider: React.FC<{ children: ReactNode }> = ({ chil
                 </div>
               </div>
 
-              {/* Central Voice Orb & Wave */}
-              <div className="flex flex-col items-center justify-center py-4 space-y-3">
+              {/* Central Voice Orb & Subtle Waveform */}
+              <div className="flex flex-col items-center justify-center py-4 space-y-4">
                 <div className="relative flex items-center justify-center">
-                  {/* Glowing rings */}
+                  {/* Subtle calm concentric rings */}
                   {(voiceState === 'LISTENING' || voiceState === 'SPEAKING') && (
                     <motion.div
-                      animate={{ scale: [1, 1.35, 1], opacity: [0.6, 0.15, 0.6] }}
-                      transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
-                      className={`absolute w-24 h-24 rounded-full ${
-                        voiceState === 'LISTENING' ? 'bg-[#EF4444]/25' : 'bg-[#D4AF37]/25'
-                      } blur-xl`}
+                      animate={{ scale: [1, 1.15, 1], opacity: [0.35, 0.15, 0.35] }}
+                      transition={{ repeat: Infinity, duration: 2.4, ease: 'easeInOut' }}
+                      className="absolute w-28 h-28 rounded-full bg-primary/20 blur-md pointer-events-none"
                     />
                   )}
 
@@ -348,42 +346,65 @@ export const VoiceAssistantProvider: React.FC<{ children: ReactNode }> = ({ chil
                         startListening();
                       }
                     }}
-                    className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center border-2 transition-all shadow-xl active:scale-95 ${
+                    className={`relative z-10 w-20 h-20 rounded-full flex items-center justify-center border transition-all duration-200 shadow-sm active:scale-95 cursor-pointer ${
                       voiceState === 'LISTENING'
-                        ? 'bg-[#EF4444] border-[#EF4444] text-white animate-pulse shadow-[0_0_25px_rgba(239,68,68,0.5)]'
+                        ? 'bg-primary/20 border-primary text-primary shadow-[0_0_20px_rgba(212,175,55,0.25)]'
                         : voiceState === 'SPEAKING'
-                        ? 'bg-[#D4AF37] border-[#F5E6BE] text-[#070C16] shadow-[0_0_25px_rgba(212,175,55,0.4)]'
+                        ? 'bg-primary border-primary text-ui-bg shadow-[0_0_20px_rgba(212,175,55,0.3)]'
                         : voiceState === 'PROCESSING'
-                        ? 'bg-[#1A2744] border-[#3B82F6] text-[#60A5FA]'
-                        : 'bg-[#0A1020] hover:bg-[#1A2744] border-[#D4AF37]/50 text-[#D4AF37]'
+                        ? 'bg-ui-surface-hover border-ui-border text-primary'
+                        : 'bg-ui-surface hover:bg-ui-surface-hover border-ui-border text-text-main hover:border-primary/50'
                     }`}
+                    title={voiceState === 'LISTENING' ? 'Click to stop listening' : 'Click to speak'}
                   >
                     {voiceState === 'PROCESSING' ? (
-                      <Loader2 size={28} className="animate-spin" />
+                      <Loader2 size={26} className="animate-spin text-primary" />
                     ) : voiceState === 'SPEAKING' ? (
-                      <Volume2 size={28} className="animate-bounce" />
+                      <Volume2 size={26} />
                     ) : (
-                      <Mic size={28} />
+                      <Mic size={26} />
                     )}
                   </button>
                 </div>
 
+                {/* Subtle Audio Waveform Visualizer when active */}
+                {(voiceState === 'LISTENING' || voiceState === 'SPEAKING') && (
+                  <div className="flex items-center gap-1.5 h-6">
+                    {[0.6, 1, 0.4, 0.9, 0.5, 0.8, 0.3].map((initialScale, i) => (
+                      <motion.div
+                        key={i}
+                        animate={{
+                          scaleY: voiceState === 'LISTENING' ? [0.3, 1, 0.3] : [0.5, 1.2, 0.5],
+                        }}
+                        transition={{
+                          repeat: Infinity,
+                          duration: 0.8 + (i % 3) * 0.2,
+                          ease: 'easeInOut',
+                          delay: i * 0.1,
+                        }}
+                        className="w-1 bg-primary rounded-full origin-center"
+                        style={{ height: `${initialScale * 18}px` }}
+                      />
+                    ))}
+                  </div>
+                )}
+
                 {/* State Label */}
                 <div className="text-center">
                   <span
-                    className={`text-xs font-mono font-bold uppercase tracking-wider ${
+                    className={`text-xs font-mono font-semibold tracking-wide ${
                       voiceState === 'LISTENING'
-                        ? 'text-[#EF4444]'
+                        ? 'text-primary'
                         : voiceState === 'SPEAKING'
-                        ? 'text-[#D4AF37]'
+                        ? 'text-primary'
                         : voiceState === 'PROCESSING'
-                        ? 'text-[#60A5FA]'
+                        ? 'text-text-muted'
                         : 'text-text-muted'
                     }`}
                   >
-                    {voiceState === 'LISTENING' && '● LISTENING — Speak your question...'}
-                    {voiceState === 'PROCESSING' && 'Calculating canonical figures...'}
-                    {voiceState === 'SPEAKING' && 'TradePro Voice Speaking...'}
+                    {voiceState === 'LISTENING' && 'Listening — speak your question...'}
+                    {voiceState === 'PROCESSING' && 'Analyzing data...'}
+                    {voiceState === 'SPEAKING' && 'TradePro speaking...'}
                     {voiceState === 'IDLE' && 'Tap microphone to speak'}
                   </span>
                 </div>

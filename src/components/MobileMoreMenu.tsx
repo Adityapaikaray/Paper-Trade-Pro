@@ -128,21 +128,11 @@ const MobileMoreMenu: React.FC = () => {
               {/* Action Buttons */}
               <div className="pt-2 pb-6 space-y-2.5">
                 <button
-                  onClick={() => {
-                    setMenuOpen(false);
-                    openLoginModal();
-                  }}
-                  className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-primary/10 border border-primary/20 text-primary font-bold hover:bg-primary/20 active:scale-[0.98] transition-all cursor-pointer"
-                >
-                  <Mail size={18} />
-                  <span>Email Login / Switch</span>
-                </button>
-                <button
                   onClick={handleLogout}
                   className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl bg-ui-surface border border-rose-500/20 text-rose-500 font-bold hover:bg-rose-500/10 active:scale-[0.98] transition-all cursor-pointer"
                 >
                   <LogOut size={18} />
-                  <span>Log Out</span>
+                  <span>Reset Session</span>
                 </button>
               </div>
 

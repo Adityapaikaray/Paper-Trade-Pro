@@ -7,6 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { Newspaper, ExternalLink, Clock, RefreshCw, AlertTriangle, TrendingUp, Filter, ChevronRight, Globe } from 'lucide-react';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { NewsArticle } from '../types.ts';
+import { EmptyState } from './ui/EmptyState.tsx';
 
 const CATEGORIES = ['Trending', 'Markets', 'Technology', 'Earnings', 'Economy'];
 const SPECIFIC_CATEGORIES = ['Markets', 'Technology', 'Earnings', 'Economy'];
@@ -114,21 +115,18 @@ const NewsView = () => {
         </div>
 
         {/* Categories */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2 pt-2 border-b border-ui-border">
-          <div className="flex items-center justify-center pl-2 pr-4 border-r border-ui-border mr-2">
-             <Filter size={14} className="text-text-muted" />
-          </div>
+        <div className="flex gap-2 overflow-x-auto scrollbar-none pb-2 pt-1 border-b border-ui-border">
           {CATEGORIES.map((category, cIdx) => (
             <button
               key={`${category}-${cIdx}`}
               onClick={() => setActiveCategory(category)}
-              className={`px-5 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all duration-300 ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all duration-150 cursor-pointer ${
                 activeCategory === category
-                  ? 'bg-text-main text-ui-bg'
-                  : 'bg-ui-surface border border-ui-border text-text-muted hover:border-text-muted/50'
+                  ? 'bg-ui-surface text-text-main font-bold shadow-xs border border-ui-border'
+                  : 'text-text-muted hover:text-text-main hover:bg-ui-surface/50 border border-transparent'
               }`}
             >
-              {category === 'Trending' && <TrendingUp size={12} className="inline mr-1.5 -mt-0.5" />}
+              {category === 'Trending' && <TrendingUp size={12} className="inline mr-1.5 -mt-0.5 text-primary" />}
               {category}
             </button>
           ))}
@@ -291,10 +289,13 @@ const NewsView = () => {
             ))}
             
             {articles.length === 0 && !loading && (
-               <div className="py-20 text-center text-text-muted flex flex-col items-center">
-                <Newspaper size={40} className="mb-4 opacity-10" />
-                <p className="text-[10px] font-black uppercase tracking-[0.2em]">No Trending News Found</p>
-              </div>
+              <EmptyState
+                icon={<Newspaper size={24} />}
+                title="No Articles Found"
+                description={`We couldn't find recent market news for ${activeCategory}. Try refreshing or selecting another category.`}
+                actionLabel="Refresh Feed"
+                onAction={() => fetchNews(activeCategory)}
+              />
             )}
           </div>
         </div>

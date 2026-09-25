@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Star, Trash2, ArrowUpRight, ArrowDownRight, Bell, ChevronDown, Plus, TrendingUp, TrendingDown, ShoppingBag } from 'lucide-react';
+import { Search, Star, Trash2, ArrowUpRight, ArrowDownRight, Bell, ChevronDown, Plus, TrendingUp, TrendingDown, ShoppingBag, Eye } from 'lucide-react';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useMarketData } from '../hooks/useMarketData.ts';
 import { useUI } from '../contexts/UIContext.tsx';
 import { Stock } from '../types.ts';
+import AssetDetailPageModal from './AssetDetailPageModal.tsx';
 
 interface WatchlistViewProps {
   onTrade: (stock: Stock, side?: "BUY" | "SELL") => void;
@@ -17,6 +18,7 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onTrade }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortOption, setSortOption] = useState<'change_desc' | 'change_asc' | 'price_desc' | 'symbol_asc'>('change_desc');
   const [selectedSector, setSelectedSector] = useState('All');
+  const [detailStock, setDetailStock] = useState<Stock | null>(null);
 
   const isIndia = marketContext === 'IN';
   const currencySymbol = isIndia ? '₹' : '$';
@@ -211,8 +213,15 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onTrade }) => {
                 </div>
               </div>
 
-              {/* Action Buttons: Buy / Sell */}
+              {/* Action Buttons: Buy / Sell / Details */}
               <div className="mt-5 pt-4 border-t border-ui-border flex items-center gap-2">
+                <button
+                  onClick={() => setDetailStock(stock)}
+                  className="py-2 px-3 rounded-xl bg-ui-bg text-text-muted hover:text-text-main border border-ui-border font-bold text-xs transition-all flex items-center justify-center gap-1"
+                  title="View full asset analytics"
+                >
+                  <Eye size={13} />
+                </button>
                 <button
                   onClick={() => onTrade(stock, 'BUY')}
                   className="flex-1 py-2 rounded-xl bg-positive/10 text-positive border border-positive/30 hover:bg-positive hover:text-white font-bold text-xs transition-all flex items-center justify-center gap-1"
@@ -230,6 +239,13 @@ export const WatchlistView: React.FC<WatchlistViewProps> = ({ onTrade }) => {
           );
         })}
       </div>
+
+      <AssetDetailPageModal
+        stock={detailStock}
+        isOpen={!!detailStock}
+        onClose={() => setDetailStock(null)}
+        onTrade={onTrade}
+      />
     </div>
   );
 };

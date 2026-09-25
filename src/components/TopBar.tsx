@@ -12,7 +12,9 @@ import { useTheme } from '../contexts/ThemeContext.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import { useNavigation } from '../contexts/NavigationContext.tsx';
 import { useVoiceAssistant } from '../contexts/VoiceAssistantContext.tsx';
+import { useUserTier } from '../contexts/UserTierContext.tsx';
 import { formatCurrency } from '../utils/formatters.ts';
+import { Crown } from 'lucide-react';
 import HeaderSearch from './HeaderSearch.tsx';
 
 interface TopBarProps {
@@ -24,6 +26,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
   const { user, logout, isAuthenticated, openLoginModal } = useAuth();
   const { addToast, toggleMobileMenu, openModal } = useUI();
   const { theme, toggleTheme } = useTheme();
+  const { isMax, toggleTier } = useUserTier();
   const { currentRoute, goBack, history, activeTab, navigate, setMenuOpen, isMenuOpen } = useNavigation();
   const { openVoice, isOpen: isVoiceOpen, voiceState } = useVoiceAssistant();
   const {
@@ -130,7 +133,7 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
         <div className="relative" ref={switcherRef}>
           <div 
             onClick={() => setSwitcherOpen(!switcherOpen)}
-            className="flex items-center gap-2 sm:gap-3 lg:gap-4 px-3 sm:px-4 lg:px-5 py-2 sm:py-2.5 bg-ui-surface border border-ui-border rounded-full shadow-md cursor-pointer hover:border-primary hover:shadow-primary/10 transition-all select-none"
+            className="flex items-center gap-2 sm:gap-3 lg:gap-4 px-3 sm:px-4 lg:px-4 py-1.5 sm:py-2 bg-ui-surface border border-ui-border rounded-xl shadow-xs cursor-pointer hover:border-ui-border/90 transition-all select-none"
             title="Switch Market Region (US / India)"
           >
             <div className="text-[16px] sm:text-[18px] leading-none">{marketContext === 'IN' ? '🇮🇳' : '🇺🇸'}</div>
@@ -217,6 +220,29 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
             )}
           </AnimatePresence>
         </div>
+
+        {/* TradePro Max Status / Upgrade Button */}
+        {isMax ? (
+          <div 
+            onClick={toggleTier}
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#FCF8EE] border border-[#DFC27D]/60 text-[#B88E1E] text-xs font-bold shadow-xs cursor-pointer hover:bg-[#F8F2DE] transition-all select-none"
+            title="Max Tier Active • Click to preview Free Mode"
+          >
+            <Crown size={14} className="text-[#D4AF37]" strokeWidth={2.4} />
+            <span className="font-sans font-bold">Max Active</span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded bg-[#D4AF37]/20 text-[#0F172A] font-mono">LIVE</span>
+          </div>
+        ) : (
+          <button
+            onClick={() => openModal('upgrade')}
+            className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-[#D4AF37] via-[#E5BE4A] to-[#D4AF37] text-[#0A1124] text-xs font-bold shadow-xs hover:brightness-105 active:scale-95 transition-all cursor-pointer"
+            title="Upgrade to TradePro Max ($0.99/mo | ₹49/mo)"
+          >
+            <Crown size={14} strokeWidth={2.4} />
+            <span>Upgrade to Max</span>
+            <span className="text-[10px] opacity-80 font-mono hidden md:inline">($0.99/mo)</span>
+          </button>
+        )}
 
         {/* Theme Toggle Switch (Desktop & Tablet Pill) */}
         <div 
@@ -427,72 +453,58 @@ const TopBar: React.FC<TopBarProps> = ({ onSearchFocus, onNavigate }) => {
           </AnimatePresence>
         </div>
         
-        {/* Profile / Email Login */}
-        {!isAuthenticated ? (
-          <button
-            onClick={() => openLoginModal()}
-            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-[#D4A72C] to-[#B88E1F] hover:from-[#E5BE4A] hover:to-[#C59B27] text-white text-xs font-bold shadow-[0_4px_12px_rgba(212,167,44,0.3)] transition-all active:scale-95 cursor-pointer ml-1 sm:ml-2"
-            title="Login to TradePro"
+        {/* Profile */}
+        <div className="relative" ref={profileRef}>
+          <div 
+            onClick={() => setProfileOpen(!profileOpen)}
+            className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-ui-border cursor-pointer group"
           >
-            <Mail size={15} />
-            <span>Login</span>
-          </button>
-        ) : (
-          <div className="relative" ref={profileRef}>
-            <div 
-              onClick={() => setProfileOpen(!profileOpen)}
-              className="flex items-center gap-3 pl-2 sm:pl-4 border-l border-ui-border cursor-pointer group"
-            >
-              <div className="w-10 h-10 rounded-full bg-ui-bg border border-primary shadow-primary/20 transition-transform hover:scale-105 duration-300 flex items-center justify-center">
-                <div className="w-full h-full rounded-full flex items-center justify-center text-text-main font-black uppercase text-xs">
-                  {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'PU'}
-                </div>
-              </div>
-              <div className="hidden sm:flex flex-col items-start mr-1">
-                <p className="text-[13px] font-bold text-text-main leading-tight group-hover:text-primary transition-colors">{user?.name || "Prestige User"}</p>
-                <p className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mt-0.5">{user?.tier || "PAPER TRADER"}</p>
+            <div className="w-10 h-10 rounded-full bg-ui-bg border border-primary shadow-primary/20 transition-transform hover:scale-105 duration-300 flex items-center justify-center">
+              <div className="w-full h-full rounded-full flex items-center justify-center text-text-main font-black uppercase text-xs">
+                {user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() : 'PU'}
               </div>
             </div>
-            <AnimatePresence>
-              {profileOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute right-0 top-full mt-3 w-64 bg-ui-surface border border-ui-border rounded-2xl shadow-2xl overflow-hidden py-2 z-50"
-                >
-                  <div className="px-4 py-3 mb-1 border-b border-ui-border">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="text-sm font-bold text-text-main truncate">{user?.name || "TradePro User"}</p>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 flex items-center gap-1 shrink-0">
-                        <ShieldCheck size={11} /> Verified
-                      </span>
-                    </div>
-                    <p className="text-xs text-text-muted font-mono truncate mt-0.5">{user?.email || "trader@tradepro.com"}</p>
-                    <p className="text-[10px] text-primary font-bold uppercase tracking-wider mt-1">{user?.tier || "Pro Member"}</p>
-                  </div>
-                  
-                  <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3 cursor-pointer">
-                    <User size={16} /> Account Profile
-                  </button>
-                  <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3 cursor-pointer">
-                    <Settings size={16} /> Workstation Settings
-                  </button>
-                  <button onClick={() => { setProfileOpen(false); openLoginModal(); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-primary hover:bg-ui-surface-hover transition-colors flex items-center gap-3 cursor-pointer">
-                    <Mail size={16} className="text-primary" /> Switch Account / Email Login
-                  </button>
-                  
-                  <div className="h-px bg-ui-border my-2" />
-                  
-                  <button onClick={() => { setProfileOpen(false); logout(); addToast('Logged out successfully', 'info'); }} className="w-full text-left px-4 py-2 text-sm text-negative hover:bg-negative/10 transition-colors flex items-center gap-3 cursor-pointer">
-                    <LogOut size={16} /> Log Out
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <div className="hidden sm:flex flex-col items-start mr-1">
+              <p className="text-[13px] font-bold text-text-main leading-tight group-hover:text-primary transition-colors">{user?.name || "Prestige User"}</p>
+              <p className="text-[9px] font-black text-primary uppercase tracking-widest leading-none mt-0.5">{user?.tier || "PAPER TRADER"}</p>
+            </div>
           </div>
-        )}
+          <AnimatePresence>
+            {profileOpen && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="absolute right-0 top-full mt-3 w-64 bg-ui-surface border border-ui-border rounded-2xl shadow-2xl overflow-hidden py-2 z-50"
+              >
+                <div className="px-4 py-3 mb-1 border-b border-ui-border">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold text-text-main truncate">{user?.name || "TradePro User"}</p>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-emerald-500/10 text-emerald-400 flex items-center gap-1 shrink-0">
+                      <ShieldCheck size={11} /> Verified
+                    </span>
+                  </div>
+                  <p className="text-xs text-text-muted font-mono truncate mt-0.5">{user?.email || "trader@tradepro.com"}</p>
+                  <p className="text-[10px] text-primary font-bold uppercase tracking-wider mt-1">{user?.tier || "Pro Member"}</p>
+                </div>
+                
+                <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3 cursor-pointer">
+                  <User size={16} /> Account Profile
+                </button>
+                <button onClick={() => { setProfileOpen(false); navigate('settings'); }} className="w-full text-left px-4 py-2 text-sm text-text-muted hover:text-text-main hover:bg-ui-surface-hover transition-colors flex items-center gap-3 cursor-pointer">
+                  <Settings size={16} /> Workstation Settings
+                </button>
+                
+                <div className="h-px bg-ui-border my-2" />
+                
+                <button onClick={() => { setProfileOpen(false); logout(); addToast('Session refreshed', 'info'); }} className="w-full text-left px-4 py-2 text-sm text-negative hover:bg-negative/10 transition-colors flex items-center gap-3 cursor-pointer">
+                  <LogOut size={16} /> Reset Profile
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </>
   );

@@ -8,7 +8,6 @@ import crypto from "crypto";
 import fs from "fs";
 import { GoogleGenAI } from "@google/genai";
 import cookieParser from "cookie-parser";
-import { sendOtpEmail, maskEmailForLogs } from "./server/emailService.ts";
 
 dotenv.config();
 
@@ -167,23 +166,6 @@ app.get("/sitemap.xml", (_req, res) => {
 // --- SECURE EMAIL OTP AUTHENTICATION BACKEND ---
 // ============================================================================
 
-interface EmailRateLimitRecord {
-  lastSentAt: number;
-  requestCount: number;
-  windowStart: number;
-}
-
-interface StoredOtpRecord {
-  email: string;
-  otpHash: string;
-  salt: string;
-  expiresAt: number;
-  verifyAttempts: number;
-  createdAt: number;
-}
-
-const emailRateLimitStore = new Map<string, EmailRateLimitRecord>();
-const otpStore = new Map<string, StoredOtpRecord>();
 const users = new Map<string, any>(); // email -> user object
 const sessions = new Map<string, any>(); // token -> user object
 
@@ -212,21 +194,6 @@ users.set('adityapaikaray31@gmail.com', {
   createdAt: Date.now()
 });
 
-// Periodic cleanup of expired OTPs and stale rate-limit records (every 2 minutes)
-setInterval(() => {
-  const now = Date.now();
-  for (const [email, record] of otpStore.entries()) {
-    if (now > record.expiresAt) {
-      otpStore.delete(email);
-    }
-  }
-  for (const [email, record] of emailRateLimitStore.entries()) {
-    if (now - record.windowStart > 600000 && now - record.lastSentAt > 60000) {
-      emailRateLimitStore.delete(email);
-    }
-  }
-}, 120000);
-
 // Validate and normalize email address
 function normalizeEmail(emailInput?: string): { valid: boolean; email: string; error?: string } {
   if (!emailInput || typeof emailInput !== 'string') {
@@ -240,252 +207,9 @@ function normalizeEmail(emailInput?: string): { valid: boolean; email: string; e
   return { valid: true, email };
 }
 
-// Cryptographically secure OTP hash with per-OTP salt using SHA-256
-function computeOtpHash(email: string, otp: string, salt: string): string {
-  return crypto.createHash('sha256').update(`${email}:${otp}:${salt}`).digest('hex');
-}
-
-// Constant-time timing-safe hash comparison
-function verifyOtpHash(email: string, candidateOtp: string, storedHash: string, salt: string): boolean {
-  const candidateHash = computeOtpHash(email, candidateOtp, salt);
-  const candidateBuffer = Buffer.from(candidateHash, 'hex');
-  const storedBuffer = Buffer.from(storedHash, 'hex');
-  if (candidateBuffer.length !== storedBuffer.length) return false;
-  return crypto.timingSafeEqual(candidateBuffer, storedBuffer);
-}
-
-// Controller: Send Email OTP
-async function handleSendEmailOtpRequest(req: express.Request, res: express.Response) {
-  try {
-    const rawEmail = req.body.email || req.body.username || req.body.emailAddress || req.body.phoneNumber || req.body.mobile;
-    const validation = normalizeEmail(rawEmail);
-    if (!validation.valid) {
-      return res.status(400).json({
-        success: false,
-        code: 'INVALID_EMAIL',
-        message: validation.error || 'Enter a valid email address.'
-      });
-    }
-
-    const { email } = validation;
-    const masked = maskEmailForLogs(email);
-    const now = Date.now();
-
-    // 1. Rate Limiting Check
-    const rateLimit = emailRateLimitStore.get(email);
-    if (rateLimit) {
-      // 30s cooldown between resends
-      const elapsedSinceLast = now - rateLimit.lastSentAt;
-      if (elapsedSinceLast < 30000) {
-        const remainingSeconds = Math.ceil((30000 - elapsedSinceLast) / 1000);
-        return res.status(429).json({
-          success: false,
-          code: 'OTP_RATE_LIMITED',
-          message: `Too many OTP requests. Please wait ${remainingSeconds}s before requesting a new code.`
-        });
-      }
-
-      // Max 5 OTP requests per 10 minutes
-      const windowElapsed = now - rateLimit.windowStart;
-      if (windowElapsed < 600000 && rateLimit.requestCount >= 5) {
-        return res.status(429).json({
-          success: false,
-          code: 'OTP_RATE_LIMITED',
-          message: 'Too many attempts. Try again later.'
-        });
-      }
-    }
-
-    // 2. Generate cryptographically secure 6-digit OTP (never Math.random())
-    const otp = crypto.randomInt(100000, 1000000).toString();
-    const salt = crypto.randomBytes(16).toString('hex');
-    const otpHash = computeOtpHash(email, otp, salt);
-    const expiresAt = now + 10 * 60 * 1000; // 10 minutes expiry
-
-    // 3. Store hashed OTP (NEVER plain OTP)
-    otpStore.set(email, {
-      email,
-      otpHash,
-      salt,
-      expiresAt,
-      verifyAttempts: 0,
-      createdAt: now
-    });
-
-    // 4. Update Rate Limit Record
-    const windowStart = rateLimit && (now - rateLimit.windowStart < 600000)
-      ? rateLimit.windowStart
-      : now;
-    const requestCount = rateLimit && (now - rateLimit.windowStart < 600000)
-      ? rateLimit.requestCount + 1
-      : 1;
-
-    emailRateLimitStore.set(email, {
-      lastSentAt: now,
-      requestCount,
-      windowStart
-    });
-
-    // 5. Send OTP via Email Delivery Service
-    const sendResult = await sendOtpEmail({ to: email, otp });
-    if (!sendResult.success) {
-      return res.status(500).json({
-        success: false,
-        code: 'EMAIL_SEND_FAILED',
-        message: 'Unable to deliver verification code. Please try again.'
-      });
-    }
-
-    // 6. Return success response (NEVER return OTP in response)
-    return res.json({
-      success: true,
-      message: 'Verification code sent to your email',
-      expiresIn: 600
-    });
-  } catch (err: any) {
-    console.error('[Auth] Send Email OTP error:', err?.message || err);
-    return res.status(500).json({
-      success: false,
-      code: 'SERVER_ERROR',
-      message: 'Unable to send verification code. Please try again.'
-    });
-  }
-}
-
-// Controller: Verify Email OTP
-async function handleVerifyEmailOtpRequest(req: express.Request, res: express.Response) {
-  try {
-    const rawEmail = req.body.email || req.body.username || req.body.emailAddress || req.body.phoneNumber || req.body.mobile;
-    const rawOtp = req.body.otp || req.body.code;
-
-    const validation = normalizeEmail(rawEmail);
-    if (!validation.valid) {
-      return res.status(400).json({
-        success: false,
-        error: 'Enter a valid email address.'
-      });
-    }
-
-    const { email } = validation;
-
-    if (!rawOtp || typeof rawOtp !== 'string' || rawOtp.trim().length !== 6 || !/^\d{6}$/.test(rawOtp.trim())) {
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid verification code'
-      });
-    }
-
-    const candidateOtp = rawOtp.trim();
-    const storedRecord = otpStore.get(email);
-    const now = Date.now();
-
-    // Check if OTP exists
-    if (!storedRecord) {
-      return res.status(400).json({
-        success: false,
-        error: 'Code expired. Request a new one.'
-      });
-    }
-
-    // Check if OTP expired (10 minutes)
-    if (now > storedRecord.expiresAt) {
-      otpStore.delete(email);
-      return res.status(400).json({
-        success: false,
-        error: 'Code expired. Request a new one.'
-      });
-    }
-
-    // Check failed attempts (Max 5 attempts per OTP)
-    if (storedRecord.verifyAttempts >= 5) {
-      otpStore.delete(email); // Invalidate OTP
-      return res.status(429).json({
-        success: false,
-        error: 'Too many attempts. Try again later.'
-      });
-    }
-
-    // Timing-safe constant-time comparison (with dev preview test code support)
-    const isHashMatch = verifyOtpHash(email, candidateOtp, storedRecord.otpHash, storedRecord.salt);
-    const isDevPreviewMatch = candidateOtp === '123456';
-    const isValid = isHashMatch || isDevPreviewMatch;
-
-    if (!isValid) {
-      storedRecord.verifyAttempts += 1;
-      if (storedRecord.verifyAttempts >= 5) {
-        otpStore.delete(email);
-        return res.status(429).json({
-          success: false,
-          error: 'Too many attempts. Try again later.'
-        });
-      }
-      return res.status(400).json({
-        success: false,
-        error: 'Invalid verification code'
-      });
-    }
-
-    // Successful Verification: Single-use, delete immediately
-    otpStore.delete(email);
-
-    // Retrieve or initialize persistent user profile (default balance $100,000 virtual cash for first-time login)
-    let user = users.get(email);
-    if (!user) {
-      const shortId = Math.floor(1000 + Math.random() * 9000);
-      const namePart = email.split('@')[0];
-      const capitalizedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-      user = {
-        id: `tp_usr_${Date.now()}_${shortId}`,
-        name: email === 'adityapaikaray31@gmail.com' ? 'Aditya Paikaray' : capitalizedName,
-        email,
-        accountNumber: `TP-${shortId}-89`,
-        kycStatus: 'VERIFIED',
-        tier: 'PRO',
-        balance: 100000,
-        createdAt: Date.now()
-      };
-      users.set(email, user);
-    }
-
-    // Generate high-entropy session token
-    const token = 'tp_sess_' + crypto.randomBytes(32).toString('hex');
-    sessions.set(token, user);
-
-    // Set secure HttpOnly cookie for persistent session
-    res.cookie('tradepro_session', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
-      path: '/'
-    });
-
-    return res.json({
-      success: true,
-      status: 'approved',
-      token,
-      user
-    });
-  } catch (err: any) {
-    console.error('[Auth] Verify Email OTP error:', err?.message || err);
-    return res.status(500).json({
-      success: false,
-      error: 'Invalid verification code'
-    });
-  }
-}
-
-// 1. Primary Email OTP Endpoints
-app.post('/api/auth/send-email-otp', handleSendEmailOtpRequest);
-app.post('/api/auth/verify-email-otp', handleVerifyEmailOtpRequest);
-
-// 2. Compatibility aliases
-app.post('/api/auth/send-otp', handleSendEmailOtpRequest);
-app.post('/api/auth/resend-otp', handleSendEmailOtpRequest);
-app.post('/api/auth/verify-otp', handleVerifyEmailOtpRequest);
-app.post('/api/auth/otp/send', handleSendEmailOtpRequest);
-app.post('/api/auth/otp/retry', handleSendEmailOtpRequest);
-app.post('/api/auth/otp/verify', handleVerifyEmailOtpRequest);
+// All authentication and Email OTP verification are handled exclusively by Supabase Auth:
+// - signInWithOtp({ email, options: { shouldCreateUser: true } })
+// - verifyOtp({ email, token, type: 'email' })
 
 app.post('/api/auth/signup', (req, res) => {
   const { name, email, password } = req.body;
@@ -906,21 +630,175 @@ app.get("/api/market-status", (req, res) => {
 
 // Key global and domestic indices
 const KEY_INDICES = [
-  { key: "dow", name: "Dow Jones", symbol: "^DJI", displaySymbol: "DOW 30", region: "US", currency: "$", baselinePrice: 51682.64, baselineChange: -95.40, baselinePct: -0.18 },
-  { key: "sandp500", name: "S&P 500", symbol: "^GSPC", displaySymbol: "S&P 500", region: "US", currency: "$", baselinePrice: 7650.50, baselineChange: 12.74, baselinePct: 0.17 },
-  { key: "nasdaq", name: "Nasdaq", symbol: "^IXIC", displaySymbol: "NASDAQ", region: "US", currency: "$", baselinePrice: 26522.55, baselineChange: 104.24, baselinePct: 0.39 },
-  { key: "dax", name: "DAX 40", symbol: "^GDAXI", displaySymbol: "DAX", region: "Europe", currency: "€", baselinePrice: 25304.06, baselineChange: -233.74, baselinePct: -0.92 },
+  { key: "dow", name: "Dow Jones", symbol: "^DJI", displaySymbol: "DOW 30", region: "US", currency: "$", baselinePrice: 43280.20, baselineChange: -72.40, baselinePct: -0.17 },
+  { key: "sandp500", name: "S&P 500", symbol: "^GSPC", displaySymbol: "S&P 500", region: "US", currency: "$", baselinePrice: 5892.40, baselineChange: 14.85, baselinePct: 0.25 },
+  { key: "nasdaq", name: "Nasdaq-100", symbol: "^NDX", displaySymbol: "NASDAQ-100", region: "US", currency: "$", baselinePrice: 20450.80, baselineChange: 68.45, baselinePct: 0.34 },
+  { key: "russell2000", name: "Russell 2000", symbol: "^RUT", displaySymbol: "RUSSELL 2000", region: "US", currency: "$", baselinePrice: 2280.50, baselineChange: -12.40, baselinePct: -0.54 },
+  { key: "sandp100", name: "S&P 100", symbol: "^OEX", displaySymbol: "S&P 100", region: "US", currency: "$", baselinePrice: 2650.40, baselineChange: 18.20, baselinePct: 0.69 },
   { key: "nifty", name: "Nifty 50", symbol: "^NSEI", displaySymbol: "NIFTY 50", region: "India", currency: "₹", baselinePrice: 23346.40, baselineChange: 75.80, baselinePct: 0.33 },
+  { key: "niftybank", name: "Nifty Bank", symbol: "^NSEBANK", displaySymbol: "BANK NIFTY", region: "India", currency: "₹", baselinePrice: 56358.70, baselineChange: 302.95, baselinePct: 0.54 },
+  { key: "niftyit", name: "Nifty IT", symbol: "^CNXIT", displaySymbol: "NIFTY IT", region: "India", currency: "₹", baselinePrice: 42180.20, baselineChange: -115.40, baselinePct: -0.27 },
+  { key: "niftyfin", name: "Nifty Financial Services", symbol: "^CNXFIN", displaySymbol: "NIFTY FIN", region: "India", currency: "₹", baselinePrice: 24890.50, baselineChange: 142.30, baselinePct: 0.58 },
+  { key: "niftymidcap100", name: "Nifty Midcap 100", symbol: "^CRSMID", displaySymbol: "NIFTY MID 100", region: "India", currency: "₹", baselinePrice: 58420.40, baselineChange: 312.80, baselinePct: 0.54 },
+  { key: "niftysmallcap100", name: "Nifty Smallcap 100", symbol: "^CNXSM100", displaySymbol: "NIFTY SML 100", region: "India", currency: "₹", baselinePrice: 18920.40, baselineChange: 142.10, baselinePct: 0.76 },
   { key: "sensex", name: "BSE Sensex", symbol: "^BSESN", displaySymbol: "SENSEX", region: "India", currency: "₹", baselinePrice: 74294.96, baselineChange: -41.54, baselinePct: -0.06 },
-  { key: "niftybank", name: "Nifty Bank", symbol: "^NSEBANK", displaySymbol: "BANK NIFTY", region: "India", currency: "₹", baselinePrice: 56358.70, baselineChange: 302.95, baselinePct: 0.54 }
+  { key: "bse500", name: "BSE 500", symbol: "^BSE500", displaySymbol: "BSE 500", region: "India", currency: "₹", baselinePrice: 34280.90, baselineChange: 185.40, baselinePct: 0.54 }
 ];
 
-
 app.get("/api/indices", async (req, res) => {
-  const symbols = ['^DJI', '^GSPC', '^IXIC', '^GDAXI', '^NSEI', '^BSESN', '^NSEBANK'];
+  const symbols = ['^DJI', '^GSPC', '^IXIC', '^NDX', '^RUT', '^OEX', '^NSEI', '^BSESN', '^NSEBANK', '^CNXIT', '^CNXFIN', '^BSE500'];
   const queries = symbols.map(s => ({ exchange: 'UNKNOWN', symbol: s }));
   const quotes = await provider.getQuotes(queries);
   res.json(quotes);
+});
+
+// Cache for evaluated index constituents
+const indexConstituentCache = new Map<string, { data: any; expiresAt: number }>();
+
+app.get("/api/indices/:indexKey/constituents", async (req, res) => {
+  try {
+    const rawKey = req.params.indexKey.toLowerCase().replace(/[^a-z0-9]/g, '');
+    const now = Date.now();
+    const cached = indexConstituentCache.get(rawKey);
+    const forceRefresh = req.query.refresh === 'true';
+
+    if (!forceRefresh && cached && cached.expiresAt > now) {
+      return res.json(cached.data);
+    }
+
+    // Try finding JSON file
+    const candidatePaths = [
+      path.join(process.cwd(), 'src', 'data', 'indices', 'constituents', `${rawKey}.json`),
+      path.join('/app/applet/src/data/indices/constituents', `${rawKey}.json`),
+      path.join('/src/data/indices/constituents', `${rawKey}.json`)
+    ];
+
+    let filePath = candidatePaths.find(p => fs.existsSync(p));
+    if (!filePath) {
+      // Fallback aliases
+      if (rawKey === 'sp500' || rawKey === 'gspc') filePath = candidatePaths[0].replace(rawKey, 'sandp500');
+      if (rawKey === 'sp100') filePath = candidatePaths[0].replace(rawKey, 'sandp100');
+      if (rawKey === 'banknifty') filePath = candidatePaths[0].replace(rawKey, 'niftybank');
+      if (rawKey === 'dji') filePath = candidatePaths[0].replace(rawKey, 'dow');
+    }
+
+    if (!filePath || !fs.existsSync(filePath)) {
+      return res.status(404).json({ error: `Constituents not found for index ${req.params.indexKey}` });
+    }
+
+    const indexJson = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    const isPriceWeighted = indexJson.id === 'dow';
+    const indexPrevClose = indexJson.prevClose || indexJson.baselinePrice;
+
+    // Optional: Hydrate top constituents with live quotes from provider
+    const constituentsToQuote = indexJson.constituents.slice(0, 30);
+    const quoteQueries = constituentsToQuote.map((c: any) => ({
+      exchange: c.exchange || (indexJson.region === 'IN' ? 'NSE' : 'NASDAQ'),
+      symbol: c.symbol
+    }));
+
+    let liveQuotes: Record<string, any> = {};
+    try {
+      liveQuotes = await provider.getQuotes(quoteQueries);
+    } catch (e) {
+      // Keep baseline
+    }
+
+    // Dow divisor calibration
+    let dowDivisor = 0.1517279996;
+    if (isPriceWeighted) {
+      const sumPrices = indexJson.constituents.reduce((acc: number, c: any) => acc + (c.prevClose || c.price), 0);
+      if (sumPrices > 0 && indexPrevClose > 0) {
+        dowDivisor = sumPrices / indexPrevClose;
+      }
+    }
+
+    let netPoints = 0;
+    const updatedConstituents = indexJson.constituents.map((c: any, idx: number) => {
+      const lq = liveQuotes[c.symbol] || liveQuotes[`${c.exchange}:${c.symbol}`] || liveQuotes[`${c.symbol}.NS`];
+      let price = c.price;
+      let change = c.change;
+      let changePercent = c.changePercent;
+      let dayHigh = c.dayHigh;
+      let dayLow = c.dayLow;
+      let prevClose = c.prevClose || (price - change);
+      let volume = c.volume;
+
+      if (lq && lq.price) {
+        price = Number(lq.price.toFixed(2));
+        change = lq.change !== undefined ? Number(lq.change.toFixed(2)) : change;
+        changePercent = lq.changePercent !== undefined ? Number(lq.changePercent.toFixed(2)) : changePercent;
+        dayHigh = lq.high !== undefined ? Number(lq.high.toFixed(2)) : dayHigh;
+        dayLow = lq.low !== undefined ? Number(lq.low.toFixed(2)) : dayLow;
+        prevClose = lq.previousClose !== undefined ? Number(lq.previousClose.toFixed(2)) : prevClose;
+      }
+
+      // Calculate Point Contribution
+      let pointsContribution = 0;
+      if (isPriceWeighted) {
+        pointsContribution = Number((change / dowDivisor).toFixed(2));
+      } else {
+        const weightFactor = (c.weight || 1) / 100.0;
+        pointsContribution = Number((indexPrevClose * weightFactor * (changePercent / 100.0)).toFixed(2));
+      }
+
+      netPoints += pointsContribution;
+
+      return {
+        ...c,
+        rank: idx + 1,
+        price,
+        change,
+        changePercent,
+        prevClose,
+        dayHigh,
+        dayLow,
+        volume,
+        pointsContribution,
+        marketStatus: lq?.marketState || c.marketStatus || 'REGULAR'
+      };
+    });
+
+    const indexCurrentValue = Number((indexPrevClose + netPoints).toFixed(2));
+    const indexAbsChange = Number(netPoints.toFixed(2));
+    const indexPctChange = indexPrevClose > 0 ? Number(((netPoints / indexPrevClose) * 100).toFixed(2)) : 0;
+
+    const payload = {
+      index: {
+        id: indexJson.id,
+        name: indexJson.name,
+        symbol: indexJson.symbol,
+        displaySymbol: indexJson.displaySymbol,
+        region: indexJson.region,
+        currency: indexJson.currency,
+        description: indexJson.description,
+        currentValue: indexCurrentValue,
+        pointChange: indexAbsChange,
+        percentChange: indexPctChange,
+        prevClose: indexPrevClose,
+        totalConstituents: updatedConstituents.length,
+        marketStatus: indexJson.region === 'IN' ? 'NSE REGULAR' : 'NYSE REGULAR',
+        lastUpdated: now,
+        asOfDate: indexJson.asOfDate || 'Current Trading Session',
+        lastRebalanced: indexJson.lastRebalanced || '2025-01-15',
+        dataSource: indexJson.dataSource || 'Institutional Market Data & Exchange Indexes'
+      },
+      constituents: updatedConstituents
+    };
+
+    // Cache for 30s
+    indexConstituentCache.set(rawKey, { data: payload, expiresAt: now + 30000 });
+    res.json(payload);
+  } catch (err: any) {
+    console.error('Error fetching constituents:', err?.message);
+    res.status(500).json({ error: 'Failed to retrieve index constituents' });
+  }
+});
+
+app.post("/api/indices/:indexKey/refresh", async (req, res) => {
+  const rawKey = req.params.indexKey.toLowerCase().replace(/[^a-z0-9]/g, '');
+  indexConstituentCache.delete(rawKey);
+  res.redirect(`/api/indices/${rawKey}/constituents?refresh=true`);
 });
 
 // Dedicated interactive chart endpoint supporting multi-timeframe queries for both indices and stocks
@@ -946,6 +824,9 @@ app.get("/api/chart/:symbol", async (req, res) => {
       interval = interval || "1d";
     } else if (requestedRange === "3M") {
       range = "3mo";
+      interval = interval || "1d";
+    } else if (requestedRange === "6M") {
+      range = "6mo";
       interval = interval || "1d";
     } else if (requestedRange === "1Y") {
       range = "1y";

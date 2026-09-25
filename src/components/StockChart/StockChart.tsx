@@ -493,7 +493,7 @@ export const StockChart: React.FC<StockChartProps> = ({
   return (
     <div
       ref={chartWrapperRef}
-      className={`w-full flex flex-col bg-ui-surface rounded-2xl md:rounded-3xl border border-ui-border shadow-xs transition-all ${
+      className={`w-full flex flex-col bg-ui-surface rounded-2xl border border-ui-border shadow-xs transition-all ${
         isFullscreen
           ? 'fixed inset-0 z-50 rounded-none p-4 md:p-6 bg-ui-surface overflow-hidden'
           : 'p-4 md:p-5'
@@ -541,11 +541,27 @@ export const StockChart: React.FC<StockChartProps> = ({
       <div className="relative w-full flex-1 min-h-[300px]" style={{ height: isFullscreen ? 'calc(100vh - 120px)' : height }}>
         {/* Loading Skeleton */}
         {isLoading && validCandles.length === 0 && (
-          <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-ui-surface/80 backdrop-blur-xs rounded-xl">
-            <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin mb-3" />
-            <span className="text-xs font-mono font-bold text-text-muted">
-              Loading {resolvedTicker} candlestick data...
-            </span>
+          <div className="absolute inset-0 z-20 flex flex-col justify-between p-6 bg-ui-surface/90 backdrop-blur-xs rounded-xl pointer-events-none">
+            <div className="flex justify-between items-center">
+              <div className="space-y-2">
+                <div className="w-32 h-4 bg-ui-border/50 rounded-md animate-pulse" />
+                <div className="w-20 h-3 bg-ui-border/30 rounded-md animate-pulse" />
+              </div>
+              <div className="w-16 h-4 bg-ui-border/40 rounded-md animate-pulse" />
+            </div>
+            <div className="flex items-end gap-2 h-40 pt-4">
+              {Array.from({ length: 20 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="flex-1 bg-ui-border/30 rounded-t-sm animate-pulse"
+                  style={{ height: `${20 + (i % 6) * 12}%` }}
+                />
+              ))}
+            </div>
+            <div className="flex justify-between pt-3 border-t border-ui-border/40 text-[10px] text-text-muted font-mono">
+              <span>Loading telemetry...</span>
+              <span className="animate-pulse">Connecting feed</span>
+            </div>
           </div>
         )}
 

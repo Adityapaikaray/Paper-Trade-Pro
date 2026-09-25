@@ -6,7 +6,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { getStockHistory, OHLCVCandle, StockHistoryResult } from '../services/marketData.ts';
 
-export type Timeframe = '1D' | '1W' | '1M' | '3M' | '1Y' | '5Y' | 'All';
+export type Timeframe = '1D' | '1W' | '1M' | '3M' | '6M' | '1Y' | '5Y' | 'MAX' | 'All';
 
 interface UseStockHistoryProps {
   ticker: string;

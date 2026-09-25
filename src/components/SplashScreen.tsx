@@ -7,7 +7,6 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useTheme } from '../contexts/ThemeContext.tsx';
 import { useInvestorDisplayName } from '../hooks/useInvestorDisplayName.ts';
 import { TradeProIcon } from './TradeProLogo.tsx';
-import { LoginPage } from './LoginPage.tsx';
 import { 
   isReturningSession, 
   markSessionStartupSeen 
@@ -17,7 +16,7 @@ export interface SplashScreenProps {
   onComplete: () => void;
 }
 
-type SequenceStage = 'BRAND_SPLASH' | 'LOGIN' | 'GREETING' | 'COMPLETE';
+type SequenceStage = 'BRAND_SPLASH' | 'GREETING' | 'COMPLETE';
 
 /**
  * TradePro Multi-Stage Opening Sequence:
@@ -143,11 +142,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
     }, exitDuration);
     return () => clearTimeout(timer);
   }, [isBrandExiting, isReturning, prefersReducedMotion]);
-
-  // Login success transitions smoothly to the greeting sequence
-  const handleLoginSuccess = useCallback(() => {
-    setCurrentStage('GREETING');
-  }, []);
 
   // =========================================================================
   // STAGE 3: GREETING SEQUENCE ("Good Morning, [Name]" -> Hold -> Fade Out)
@@ -346,15 +340,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
       )}
 
       {/* =========================================================================
-          OPTIONAL LOGIN OVERLAY (If user clicks 'Sign In' during greeting)
-         ========================================================================= */}
-      {currentStage === 'LOGIN' && (
-        <div className="fixed inset-0 z-[99999] bg-ui-bg overflow-y-auto">
-          <LoginPage onSuccess={handleLoginSuccess} />
-        </div>
-      )}
-
-      {/* =========================================================================
           STAGE 3: 'GOOD MORNING, [NAME]' GREETING SCREEN
           (3) Uses authentication-aware hook to fetch display name with seamless fallback
          ========================================================================= */}
@@ -454,24 +439,6 @@ export const SplashScreen: React.FC<SplashScreenProps> = ({ onComplete }) => {
                   {marketLabel}
                 </span>
               </div>
-
-              {/* Seamless guest helper for non-authenticated users */}
-              {!isAuthenticated && isFallback && (
-                <div 
-                  className="flex items-center gap-2 text-[11px] text-text-muted/80 mt-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <button
-                    type="button"
-                    onClick={() => setCurrentStage('LOGIN')}
-                    className="underline hover:text-primary font-medium transition-colors cursor-pointer"
-                  >
-                    Sign In
-                  </button>
-                  <span>&middot;</span>
-                  <span>Tap anywhere to continue</span>
-                </div>
-              )}
             </div>
           </div>
         </div>

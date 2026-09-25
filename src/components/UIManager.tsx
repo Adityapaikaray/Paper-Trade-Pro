@@ -6,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext.tsx';
 import { usePortfolio } from '../contexts/PortfolioContext.tsx';
 import StockChart from './StockChart.tsx';
 import ResetPortfolioModal from './ResetPortfolioModal.tsx';
+import UpgradeToMaxModal from './UpgradeToMaxModal.tsx';
 
 // --- TOAST COMPONENT ---
 const ToastContainer = () => {
@@ -59,80 +60,6 @@ const ToastContainer = () => {
           );
         })}
       </AnimatePresence>
-    </div>
-  );
-};
-
-// --- UPGRADE MODAL ---
-const UpgradeModal = () => {
-  const { activeModal, closeModal, addToast } = useUI();
-  
-  if (activeModal !== 'upgrade') return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        onClick={closeModal}
-        className="absolute inset-0 bg-ui-bg/60 backdrop-blur-sm"
-      />
-      <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 10 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 10 }}
-        transition={{ duration: 0.25, ease: "easeOut" }}
-        className="relative w-full max-w-2xl bg-ui-surface border border-primary/30 rounded-2xl shadow-2xl shadow-primary/10 overflow-hidden flex flex-col"
-      >
-        <button onClick={closeModal} className="absolute top-4 right-4 text-text-muted hover:text-text-main z-10 transition-colors">
-          <X size={20} />
-        </button>
-        
-        <div className="p-8 text-center border-b border-ui-border bg-primary/5">
-          <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary mx-auto mb-4">
-            <Crown size={32} />
-          </div>
-          <h2 className="text-2xl font-serif font-black text-text-main italic mb-2">Upgrade to Pro</h2>
-          <p className="text-sm text-text-muted">Unlock institutional-grade analytics, level 2 data, and real-time market insights.</p>
-        </div>
-        
-        <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 rounded-xl border border-ui-border bg-ui-bg/50 flex flex-col">
-            <h3 className="text-lg font-bold text-text-main mb-1">Free Tier</h3>
-            <p className="text-2xl font-mono text-text-muted mb-4">$0 <span className="text-xs">/mo</span></p>
-            <ul className="text-sm text-text-muted space-y-2 mb-6 flex-1">
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-emerald-500" /> Basic portfolio tracking</li>
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-emerald-500" /> End-of-day market data</li>
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-emerald-500" /> Standard charts</li>
-            </ul>
-            <button disabled className="w-full py-2.5 rounded-lg bg-ui-border text-text-muted text-sm font-bold opacity-50 cursor-not-allowed">
-              Current Plan
-            </button>
-          </div>
-          
-          <div className="p-6 rounded-xl border border-primary/40 bg-primary/5 flex flex-col relative overflow-hidden">
-            <div className="absolute top-0 right-0 bg-primary text-ui-bg text-[9px] font-black uppercase px-3 py-1 rounded-bl-lg">Recommended</div>
-            <h3 className="text-lg font-bold text-primary mb-1">Pro Tier</h3>
-            <p className="text-2xl font-mono text-text-main mb-4">$49 <span className="text-xs text-text-muted">/mo</span></p>
-            <ul className="text-sm text-text-main space-y-2 mb-6 flex-1">
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-primary" /> Real-time level 2 data</li>
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-primary" /> Advanced AI Analytics</li>
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-primary" /> Options & Futures trading</li>
-              <li className="flex gap-2 items-center"><CheckCircle size={14} className="text-primary" /> Priority API access</li>
-            </ul>
-            <button 
-              onClick={() => {
-                closeModal();
-                addToast('Upgraded to Pro successfully!', 'success');
-              }}
-              className="w-full py-2.5 rounded-lg bg-primary text-ui-bg hover:bg-primary-light transition-colors shadow-lg shadow-primary/20 text-sm font-bold"
-            >
-              Upgrade Now
-            </button>
-          </div>
-        </div>
-      </motion.div>
     </div>
   );
 };
@@ -522,7 +449,7 @@ export const UIManager = () => {
     <>
       <ToastContainer />
       <AnimatePresence mode="wait">
-        {activeModal === 'upgrade' && <UpgradeModal key="upgrade" />}
+        {activeModal === 'upgrade' && <UpgradeToMaxModal key="upgrade" />}
         {activeModal === 'add-position' && <AddPositionModal key="add-pos" />}
         {activeModal === 'asset-details' && <AssetDetailsDrawer key="asset-details" />}
         {activeModal === 'modify-allocation' && <ModifyAllocationModal key="modify-allocation" />}

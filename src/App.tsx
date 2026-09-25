@@ -21,6 +21,7 @@ import HistoryView from './components/HistoryView.tsx';
 import NewsView from './components/NewsView.tsx';
 import HelpSupportView from './components/HelpSupportView.tsx';
 import StockHeatmapView from './components/StockHeatmapView.tsx';
+import IndexContributorsView from './components/IndexContributorsView.tsx';
 import { PublicPageView } from './components/PublicPages/PublicPageView.tsx';
 import { Footer } from './components/Footer.tsx';
 import { ToolsView } from './components/ToolsView.tsx';
@@ -29,11 +30,19 @@ import { AnalyticsView } from './components/AnalyticsView.tsx';
 import { AIWealthManagerView } from './components/AIWealthManager/AIWealthManagerView.tsx';
 import ErrorBoundary from './components/ErrorBoundary.tsx';
 
+import ChartsView from './components/ChartsView.tsx';
+import AIInsightsView from './components/AIInsightsView.tsx';
+import OptionsView from './components/OptionsView.tsx';
+import FuturesView from './components/FuturesView.tsx';
+import ApiAccessView from './components/ApiAccessView.tsx';
+import AlertsView from './components/AlertsView.tsx';
+
 import TradeView from './components/TradeView.tsx';
 import NotificationManager from './components/NotificationManager.tsx';
 import PortfolioHistoryRecorder from './components/PortfolioHistoryRecorder.tsx';
 import CommandPalette from './components/CommandPalette.tsx';
 import { UIProvider } from './contexts/UIContext.tsx';
+import { UserTierProvider } from './contexts/UserTierContext.tsx';
 import { UIManager } from './components/UIManager.tsx';
 import AICopilot from './components/AICopilot.tsx';
 import { AuthProvider, useAuth } from './contexts/AuthContext.tsx';
@@ -42,7 +51,6 @@ import { ThemeProvider } from './contexts/ThemeContext.tsx';
 import { MarketProvider } from './contexts/MarketContext.tsx';
 import { motion, AnimatePresence } from 'framer-motion';
 import SplashScreen from './components/SplashScreen.tsx';
-import LoginPage from './components/LoginPage.tsx';
 import { TradeProDashboardReveal } from './components/startup/TradeProDashboardReveal.tsx';
 import MarketSelection from './components/MarketSelection.tsx';
 import { NavigationProvider } from './contexts/NavigationContext.tsx';
@@ -56,15 +64,17 @@ export default function AppWrapper() {
     <UIProvider>
       <ThemeProvider>
         <AuthProvider>
-          <MarketProvider>
-            <PortfolioProvider>
-              <NavigationProvider>
-                <VoiceAssistantProvider>
-                  <AppContent />
-                </VoiceAssistantProvider>
-              </NavigationProvider>
-            </PortfolioProvider>
-          </MarketProvider>
+          <UserTierProvider>
+            <MarketProvider>
+              <PortfolioProvider>
+                <NavigationProvider>
+                  <VoiceAssistantProvider>
+                    <AppContent />
+                  </VoiceAssistantProvider>
+                </NavigationProvider>
+              </PortfolioProvider>
+            </MarketProvider>
+          </UserTierProvider>
         </AuthProvider>
       </ThemeProvider>
     </UIProvider>
@@ -77,7 +87,6 @@ import { useNavigation } from './contexts/NavigationContext.tsx';
 function AppContent() {
   const { marketContext } = usePortfolio();
   const { currentRoute, goBack, navigate, resetTo } = useNavigation();
-  const { isAuthenticated, isLoginModalOpen, openLoginModal, closeLoginModal, setRedirectAfterLogin } = useAuth();
   const activeTab = currentRoute.id;
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
@@ -86,30 +95,12 @@ function AppContent() {
     analytics.init();
   }, []);
 
-  const isPublicPage = [
-    'about', 'how-it-works', 'features', 'pricing', 'faq', 'contact', 
-    'privacy', 'terms', 'ai-trading', 'ai-trading-tools', 
-    'trading-risk-management', 'how-ai-trading-works',
-    'dashboard', 'market', 'key-index', 'news', 'help', 'tools', 'research'
-  ].includes(currentRoute.id);
-
-  const protectedRoutes = [
-    'portfolio', 'trade', 'wealth', 'ai-wealth-manager', 'heatmap', 'goals', 'watchlist', 'analytics', 'settings', 'orders', 'transactions'
-  ];
-
-  // If unauthenticated and accessing a protected feature, cleanly redirect to login with destination preserved
+  // Redirect legacy login/signup routes straight to dashboard
   useEffect(() => {
-    if (!isAuthenticated && protectedRoutes.includes(currentRoute.id)) {
-      setRedirectAfterLogin(currentRoute.id);
-      navigate('login');
-    }
-  }, [isAuthenticated, currentRoute.id, navigate, setRedirectAfterLogin]);
-
-  useEffect(() => {
-    if (isAuthenticated && (currentRoute.id === 'login' || currentRoute.id === 'signup')) {
+    if (currentRoute.id === 'login' || currentRoute.id === 'signup') {
       navigate('dashboard');
     }
-  }, [isAuthenticated, currentRoute.id, navigate]);
+  }, [currentRoute.id, navigate]);
 
   useEffect(() => {
     const titles: Record<string, string> = {
@@ -124,6 +115,7 @@ function AppContent() {
       settings: 'Settings',
       help: 'Help & Support',
       heatmap: 'Index Heatmap',
+      contributors: 'Index Contributors',
       analytics: 'Portfolio Analytics',
       'ai-wealth-manager': 'AI Wealth Manager',
       login: 'Sign In',
@@ -202,16 +194,24 @@ function AppContent() {
     }
 
     const handleTrade = (stock: Stock, side?: 'BUY' | 'SELL') => {
-      if (!isAuthenticated) {
-        openLoginModal('trade');
-        return;
-      }
       navigate('trade', { stock, side });
     };
 
     switch (activeTab) {
       case 'dashboard':
         return <DashboardView onTrade={handleTrade} />;
+      case 'charts':
+        return <ChartsView />;
+      case 'ai-insights':
+        return <AIInsightsView />;
+      case 'options':
+        return <OptionsView />;
+      case 'futures':
+        return <FuturesView />;
+      case 'api':
+        return <ApiAccessView />;
+      case 'alerts':
+        return <AlertsView onTrade={handleTrade} />;
       case 'key-index':
         return <KeyIndexView onTrade={handleTrade} />;
       case 'market':
@@ -240,6 +240,8 @@ function AppContent() {
         return <HelpSupportView />;
       case 'heatmap':
         return <StockHeatmapView onTrade={handleTrade} />;
+      case 'contributors':
+        return <IndexContributorsView onTrade={handleTrade} />;
       default:
         return <DashboardView onTrade={handleTrade} />;
     }
@@ -249,52 +251,12 @@ function AppContent() {
     <>
       {showSplash && <SplashScreen onComplete={() => setShowSplash(false)} />}
 
-      {/* Unauthenticated Protected Route Interception */}
-      {!showSplash && !isAuthenticated && !isPublicPage && currentRoute.id !== 'login' && currentRoute.id !== 'signup' && (
-        <div className="fixed inset-0 z-[99990] bg-ui-bg overflow-y-auto">
-          <LoginPage 
-            onSuccess={() => navigate(currentRoute.id as any)} 
-            onClose={() => navigate('dashboard')}
-            showCloseButton={true}
-          />
-        </div>
-      )}
-
-      {/* Explicit Route Login/Signup when requested */}
-      {!showSplash && (currentRoute.id === 'login' || currentRoute.id === 'signup') && (
-        <div className="fixed inset-0 z-[99995] bg-ui-bg overflow-y-auto">
-          <LoginPage 
-            initialMode={currentRoute.id === 'signup' ? 'signup' : 'login'} 
-            onSuccess={() => navigate('dashboard')} 
-            onClose={() => navigate('dashboard')}
-          />
-        </div>
-      )}
-
-      {/* Explicit Email Login Modal Overlay (triggered via TopBar, Settings, or Mobile Menu) */}
-      <AnimatePresence>
-        {isLoginModalOpen && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[99999] bg-ui-bg overflow-y-auto"
-          >
-            <LoginPage 
-              onSuccess={() => closeLoginModal()} 
-              onClose={() => closeLoginModal()} 
-              showCloseButton={true}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Market Selection if not chosen */}
-      {!showSplash && isAuthenticated && marketContext === null && (
+      {!showSplash && marketContext === null && (
         <MarketSelection onComplete={() => {}} />
       )}
       
-      {(!showSplash && (isAuthenticated || isPublicPage) && marketContext !== null) && (
+      {(!showSplash && marketContext !== null) && (
         <TradeProDashboardReveal
           sidebar={<Sidebar />}
           topBar={<TopBar onSearchFocus={() => setIsCommandPaletteOpen(true)} />}
